@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { SHOPPING_SLOTS } from "./meal-slots";
 
 export type GroceryLine = {
   name: string;
@@ -170,24 +171,16 @@ export type PlannedMealWithRecipe = Awaited<
 >[number];
 
 /**
- * The single meal planned per day.
- *
- * The plan holds one meal a day and it is dinner. Querying that slot
- * explicitly keeps the grocery list honest: a row in another slot - left by
- * earlier data, or a future second-meal feature - would otherwise contribute
- * ingredients to the list while being invisible on the planner, which is a
- * confusing thing to debug from a shopping list that does not match the week.
+ * Re-exported so server code that already reaches for grocery.ts keeps working.
+ * The definitions live in meal-slots.ts, which imports nothing, because the
+ * planner is a client component and this module reaches Prisma on line one.
  */
-export const PLANNED_SLOT = "DINNER" as const;
-
-/**
- * The slots that make up an evening, and so the shopping.
- *
- * A side is a second row on the same date, which is why the unique constraint
- * on (household, date, slot) never had to change. Both are fetched here, or a
- * side would be planned and then quietly missing from the list you shop from.
- */
-export const SHOPPING_SLOTS = ["DINNER", "SIDE"] as const;
+export {
+  DINNER_SLOTS,
+  SIDE_SLOTS,
+  SHOPPING_SLOTS,
+  FIRST_DINNER,
+} from "./meal-slots";
 
 export async function getWeekPlan(weekStart: Date, householdId: string) {
   return prisma.plannedMeal.findMany({

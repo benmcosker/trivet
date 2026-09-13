@@ -16,10 +16,11 @@ async function planDinner(
   householdId: string,
   createdById: string,
   ingredients: string[],
+  slot: "DINNER" | "DINNER_2" | "DINNER_3" = "DINNER",
 ) {
   const recipe = await prisma.recipe.create({
     data: {
-      title: "Roast Chicken",
+      title: `Roast Chicken ${slot}`,
       servings: 4,
       instructions: ["Roast it."],
       householdId,
@@ -37,7 +38,7 @@ async function planDinner(
   await prisma.plannedMeal.create({
     data: {
       date: WEEK,
-      slot: "DINNER",
+      slot,
       servings: 4,
       recipeId: recipe.id,
       householdId,
@@ -114,6 +115,36 @@ describe.skipIf(!hasDb)("the week's shopping list", () => {
     const lines = await weekShoppingList(WEEK, householdId);
     expect(names(lines)).toEqual(["Kitchen roll", "chicken"]);
     expect(lines.find((l) => l.extraId)?.amountLabel).toBe("2");
+  });
+
+  /*
+   * An evening can hold three mains. The failure this guards is a dish planned
+   * into a slot the shopping list never queries - it shows on the planner and
+   * is quietly missing from the list you shop from.
+   */
+  it("shops for every dinner on an evening, not just the first", async () => {
+    const { householdId, userId } = await makeHousehold();
+    await planDinner(householdId, userId, ["chicken"], "DINNER");
+    await planDinner(householdId, userId, ["lamb"], "DINNER_2");
+    await planDinner(householdId, userId, ["lentils"], "DINNER_3");
+
+    expect(names(await weekShoppingList(WEEK, householdId))).toEqual([
+      "chicken",
+      "lamb",
+      "lentils",
+    ]);
+  });
+
+  it("merges an ingredient two of the evening's dinners both need", async () => {
+    const { householdId, userId } = await makeHousehold();
+    await planDinner(householdId, userId, ["butter"], "DINNER");
+    await planDinner(householdId, userId, ["butter"], "DINNER_2");
+
+    const lines = await weekShoppingList(WEEK, householdId);
+    expect(lines).toHaveLength(1);
+    // One line, both dishes named under it, and the quantities added up.
+    expect(lines[0].fromRecipes).toHaveLength(2);
+    expect(lines[0].quantity).toBe(2);
   });
 
   it("is empty for a week with nothing planned and nothing added", async () => {
