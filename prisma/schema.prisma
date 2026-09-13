@@ -413,6 +413,15 @@ enum MealSlot {
   BREAKFAST
   LUNCH
   DINNER
+  /// A second and third main on the same evening, peers of DINNER rather than
+  /// subordinate to it.
+  ///
+  /// Values rather than a position column: adding one is ALTER TYPE ADD VALUE
+  /// with no table rewrite, and it leaves (householdId, date, slot) alone -
+  /// which acceptSideAction's upsert and every planner query lean on. A fourth
+  /// dinner is a two-line migration if it is ever wanted.
+  DINNER_2
+  DINNER_3
   /// Something alongside the dinner, rather than a meal of its own.
   ///
   /// A slot rather than a flag on the meal, because the unique constraint is

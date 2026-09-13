@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { MealSlot, ShoppingProvider } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/db";
 import { weekStartOf } from "@/lib/grocery";
+import { FIRST_DINNER } from "@/lib/meal-slots";
 import { visibleRecipes } from "@/lib/recipe-visibility";
 import { weekShoppingList } from "@/lib/week-list";
 import { getProvider, type HandoffResult } from "@/lib/shopping";
@@ -276,7 +277,13 @@ export async function suggestSidesForDayAction(
 
   const [dinner, pantry] = await Promise.all([
     prisma.plannedMeal.findUnique({
-      where: { householdId_date_slot: { householdId, date, slot: "DINNER" } },
+      // Anchored on the first dinner even when the evening holds three.
+      // Sides belong to the day rather than to a dinner, so there is no single
+      // right answer to "which one is this for"; suggesting against the dish
+      // the tile leads with is the one a person would have picked.
+      where: {
+        householdId_date_slot: { householdId, date, slot: FIRST_DINNER },
+      },
       select: {
         recipe: {
           select: {

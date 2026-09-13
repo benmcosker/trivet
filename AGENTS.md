@@ -10,7 +10,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project notes
 
-See `CLAUDE.md` for the traps specific to this repo, and for the one change
-that is agreed but not built - a second and third dinner on a day. `README.md`
-is the long form; its **Notes and limitations** section is where the reasoning
-lives.
+See `CLAUDE.md` for the traps specific to this repo, and for the decisions
+behind the meal slots on a day. `README.md` is the long form; its **Notes and
+limitations** section is where the reasoning lives.

@@ -28,6 +28,7 @@ import {
 } from "@/app/plan/actions";
 import type { MealSlot, ShoppingProvider } from "@/generated/prisma/enums";
 import { groupBySection } from "@/lib/grocery-sections";
+import { DINNER_SLOTS, FIRST_DINNER, SIDE_SLOTS } from "@/lib/meal-slots";
 import type { GroceryLine, WeeklySkipRecord } from "@/lib/grocery";
 import type { HandoffResult, ProviderInfo } from "@/lib/shopping";
 
@@ -45,15 +46,18 @@ import { AddExtraItem } from "./AddExtraItem";
 import { ExcludedIngredients } from "./ExcludedIngredients";
 
 /**
- * One meal a day.
+ * An evening holds up to three mains and a side.
  *
- * It is dinner, and that is what gets stored, but the plan only ever holds one
- * meal per day so labelling it adds a word without adding information. MealSlot
- * keeps its other values: the column is there if a second meal is ever wanted,
- * and unused enum values cost nothing.
+ * Driven by the ordered lists in meal-slots.ts rather than named constants, so
+ * a fourth dinner is an enum value and a line in that file - not another edit
+ * to this component.
+ *
+ * The first dinner gets the photo tile; the rest render as compact rows. At
+ * `xs` a day tile is about 180px wide, and three equal photo tiles in that
+ * space is unreadable - they are peers in the data and in the shopping list,
+ * but one of them is the one you see from across the room.
  */
-const MEAL_SLOT: MealSlot = "DINNER";
-const SIDE_SLOT: MealSlot = "SIDE";
+const SIDE_SLOT = SIDE_SLOTS[0];
 const DAY_NAMES = [
   "Monday",
   "Tuesday",
@@ -108,9 +112,11 @@ export function WeekPlanner({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [picking, setPicking] = useState<{ date: string; day: string } | null>(
-    null,
-  );
+  const [picking, setPicking] = useState<{
+    date: string;
+    day: string;
+    slot: MealSlot;
+  } | null>(null);
   const [handoff, setHandoff] = useState<HandoffResult | null>(null);
   const [sendingTo, setSendingTo] = useState<ShoppingProvider | null>(null);
   const [sidePicking, setSidePicking] = useState<{
@@ -130,10 +136,6 @@ export function WeekPlanner({
   }
 
   const byKey = new Map(meals.map((m) => [`${m.date}|${m.slot}`, m]));
-
-  function assign(date: string, recipeId: string | null) {
-    assignSlot(date, MEAL_SLOT, recipeId);
-  }
 
   function assignSlot(date: string, slot: MealSlot, recipeId: string | null) {
     const recipe = recipes.find((r) => r.id === recipeId);
@@ -177,6 +179,56 @@ export function WeekPlanner({
     setSendingTo(null);
   }
 
+  /**
+   * The second and third dinners on an evening.
+   *
+   * Compact rather than a second photo tile: a day tile is about 180px at
+   * `xs`, and three of those stacked is a page nobody scrolls. They are peers
+   * of the first dinner everywhere it matters - the shopping list scales and
+   * merges all three the same way, and each has its own servings - but one
+   * dish is the one you recognise from across the room and the others are a
+   * line of text.
+   */
+  function ExtraDinners({ date, day }: { date: string; day: string }) {
+    const filled = DINNER_SLOTS.slice(1).filter((slot) =>
+      byKey.get(`${date}|${slot}`),
+    );
+
+    return (
+      <>
+        {filled.map((slot) => {
+          const meal = byKey.get(`${date}|${slot}`)!;
+          const title =
+            recipes.find((r) => r.id === meal.recipeId)?.title ?? meal.title;
+          if (!title) return null;
+
+          return (
+            <Stack
+              key={slot}
+              direction="row"
+              sx={{ alignItems: "center", gap: 0.5, mt: 0.75, minWidth: 0 }}
+            >
+              <Typography variant="caption" color="text.secondary" noWrap>
+                and {title}
+              </Typography>
+              <Tooltip title={`Remove ${title}`}>
+                <IconButton
+                  size="small"
+                  aria-label={`Remove ${title} from ${day}`}
+                  disabled={pending}
+                  onClick={() => assignSlot(date, slot, null)}
+                  sx={{ ml: "auto", p: 0.25, flexShrink: 0 }}
+                >
+                  <CloseIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          );
+        })}
+      </>
+    );
+  }
+
   function SideRow({ date, day }: { date: string; day: string }) {
     const side = byKey.get(`${date}|${SIDE_SLOT}`);
     const sideTitle = side
@@ -207,15 +259,59 @@ export function WeekPlanner({
       );
     }
 
+    return null;
+  }
+
+  /**
+   * Everything you can still add to an evening, in one place.
+   *
+   * Two buttons, one under the other, because a day tile is never wide enough
+   * for them side by side - about 180px at `xs` and still only about 200px on
+   * a desktop, where seven of them share the row. So the labels do the work
+   * instead: "Dinner" and "Side" name what you get, and read as a pair of
+   * alternatives rather than two identical plus icons you have to guess
+   * between. "Another dish" did not, which is why it is gone.
+   *
+   * A dinner is offered one empty slot at a time - three dashed invitations on
+   * a Tuesday is a week nobody is cooking - and a side only while the evening
+   * has no side yet. When neither is on offer this renders nothing, so a full
+   * evening is just its dishes.
+   */
+  function AddMore({ date, day }: { date: string; day: string }) {
+    const nextDinner = DINNER_SLOTS.slice(1).find(
+      (slot) => !byKey.get(`${date}|${slot}`),
+    );
+    const hasSide = Boolean(byKey.get(`${date}|${SIDE_SLOT}`));
+
+    if (!nextDinner && hasSide) return null;
+
+    const sx = { px: 0.5, minWidth: 0, fontSize: "0.7rem", mt: 0.5 };
+
     return (
-      <Button
-        size="small"
-        startIcon={<AddIcon sx={{ fontSize: 14 }} />}
-        onClick={() => setSidePicking({ date, day })}
-        sx={{ mt: 0.5, px: 0.5, minWidth: 0, fontSize: "0.7rem" }}
-      >
-        Side
-      </Button>
+      <Stack sx={{ alignItems: "flex-start" }}>
+        {nextDinner ? (
+          <Button
+            size="small"
+            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+            disabled={pending}
+            onClick={() => setPicking({ date, day, slot: nextDinner })}
+            sx={sx}
+          >
+            Dinner
+          </Button>
+        ) : null}
+
+        {hasSide ? null : (
+          <Button
+            size="small"
+            startIcon={<AddIcon sx={{ fontSize: 14 }} />}
+            onClick={() => setSidePicking({ date, day })}
+            sx={sx}
+          >
+            Side
+          </Button>
+        )}
+      </Stack>
     );
   }
 
@@ -254,7 +350,8 @@ export function WeekPlanner({
       <Grid container spacing={2}>
         {DAY_NAMES.map((day, index) => {
           const date = addDaysIso(weekStartIso, index);
-          const plannedId = byKey.get(`${date}|${MEAL_SLOT}`)?.recipeId ?? null;
+          const plannedId =
+            byKey.get(`${date}|${FIRST_DINNER}`)?.recipeId ?? null;
           const planned = recipes.find((r) => r.id === plannedId) ?? null;
           return (
             <Grid key={date} size={{ xs: 6, sm: 4, md: 3, lg: 12 / 7 }}>
@@ -337,7 +434,7 @@ export function WeekPlanner({
                             size="small"
                             aria-label={`Remove ${planned.title} from ${day}`}
                             disabled={pending}
-                            onClick={() => assign(date, null)}
+                            onClick={() => assignSlot(date, FIRST_DINNER, null)}
                             sx={{ p: 0.5 }}
                           >
                             <CloseIcon fontSize="small" />
@@ -348,7 +445,9 @@ export function WeekPlanner({
                   </Stack>
 
                   <CardActionArea
-                    onClick={() => setPicking({ date, day })}
+                    onClick={() =>
+                      setPicking({ date, day, slot: FIRST_DINNER })
+                    }
                     disabled={pending}
                     sx={{ borderRadius: 1.5, p: 0.5 }}
                   >
@@ -377,12 +476,23 @@ export function WeekPlanner({
                   </CardActionArea>
 
                   {/*
-                   * The side sits under the main it goes with, rather than in
-                   * a slot of its own on the grid: it is a second dish on the
-                   * same evening, and giving it equal billing would read as
-                   * two dinners.
+                   * The rest of the evening sits under the dish it belongs to,
+                   * rather than in slots of its own on the grid: these are all
+                   * dishes on the same evening, and giving them equal billing
+                   * would read as separate days. Everything already planned
+                   * first, then what you can still add - so the tile answers
+                   * "what are we eating" before it asks anything.
+                   *
+                   * Only once the evening has a first dinner: there is nothing
+                   * to be a second dinner or a side to until then.
                    */}
-                  {planned ? <SideRow date={date} day={day} /> : null}
+                  {planned ? (
+                    <>
+                      <ExtraDinners date={date} day={day} />
+                      <SideRow date={date} day={day} />
+                      <AddMore date={date} day={day} />
+                    </>
+                  ) : null}
                 </CardContent>
               </Card>
             </Grid>
@@ -403,15 +513,21 @@ export function WeekPlanner({
 
       <RecipePickerDialog
         open={picking !== null}
-        dayLabel={picking ? `What are we eating on ${picking.day}?` : ""}
+        dayLabel={
+          picking
+            ? picking.slot === FIRST_DINNER
+              ? `What are we eating on ${picking.day}?`
+              : `What else are we eating on ${picking.day}?`
+            : ""
+        }
         recipes={recipes}
         selectedId={
           picking
-            ? (byKey.get(`${picking.date}|${MEAL_SLOT}`)?.recipeId ?? null)
+            ? (byKey.get(`${picking.date}|${picking.slot}`)?.recipeId ?? null)
             : null
         }
         onPick={(recipeId) => {
-          if (picking) assign(picking.date, recipeId);
+          if (picking) assignSlot(picking.date, picking.slot, recipeId);
         }}
         onClose={() => setPicking(null)}
       />

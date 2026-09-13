@@ -39,40 +39,42 @@ Read it before proposing work on sharing, admin access, or texting.
 - **Nobody types anybody else's phone number.** `saveOwnPhone` writes the
   caller's own row and nothing else.
 
-### Not built yet: a second and third dinner
+### Three dinners and a side on one evening
 
-Agreed in shape, not started. A day holds one dinner and one side; the ask is
-for two or three mains on an evening, sides unchanged.
+Built. A day holds up to three dinners and one side. What was decided, so it
+does not get relitigated:
 
-Settled, so don't relitigate:
-
-- **`DINNER_2` and `DINNER_3` as enum values**, not a `position` column. Adding
-  a value is `ALTER TYPE ... ADD VALUE` - no table rewrite, no backfill, and
-  the `(householdId, date, slot)` unique key stays, which `acceptSideAction`'s
-  upsert and every planner query lean on. A position column means changing that
-  key, and a fourth dinner is a two-line migration if it is ever wanted.
+- **`DINNER_2` and `DINNER_3` are enum values**, not a `position` column.
+  Adding a value is `ALTER TYPE ... ADD VALUE` - no table rewrite, no backfill,
+  and the `(householdId, date, slot)` unique key stays, which
+  `acceptSideAction`'s upsert and every planner query lean on. A fourth dinner
+  is now a two-line migration and nothing else.
 - **Sides belong to the day, not to a dinner.** One set of sides for the
-  evening whichever mains are on it. Sides per dinner is what would force the
-  position column, so it was ruled out deliberately rather than missed.
-- **`SIDE_2`/`SIDE_3` deferred.** Only one side per day fits today - a dinner
-  party does not - but live with it first and add them if they are missed. Two
-  more enum values, no UI work, once the tile below is right.
+  evening whichever mains are on it. `suggestSidesAction` anchors on
+  `FIRST_DINNER` for that reason, and it says so at the call site. Sides per
+  dinner is what would have forced the position column.
+- **`SIDE_2`/`SIDE_3` still deferred.** Two more enum values and no UI work
+  when they are missed. `SIDE_SLOTS` already exists to hold them.
 
-**Do the tile once, generically.** `MEAL_SLOT` is a hardcoded `"DINNER"` in
-four places in `WeekPlanner.tsx` with `SideRow` bolted alongside. Rewrite the
-day tile to render an ordered list of slots - mains as peers, sides as "with A
-and B" - and every future slot becomes a migration and nothing else. Skip that
-and each one is another edit to a 600-line client component.
+`src/lib/meal-slots.ts` is the list, and it is deliberately import-free so both
+server and client can read it - `grocery.ts` imports Prisma on line one, so a
+client component importing a value from it would bundle the database client.
+`grocery.ts` re-exports the slots for the server callers that already import
+from there. Order matters: `DINNER_SLOTS[0]` is the dinner with the photo, the
+rest are the "and Lamb Tagine" lines under it.
 
-Free already: the shopping list, the text message, servings scaling and
-`setPlannedMealAction` are all slot-agnostic. Only `SHOPPING_SLOTS` in
-`src/lib/grocery.ts` needs the new values.
+The tile is slot-driven now rather than four hardcoded `"DINNER"` strings:
+`picking` carries the slot it is filling, `ExtraDinners` lists what is planned,
+`AddMore` owns both add buttons. A fourth dinner needs no component work.
 
-The real cost is the phone, not the data: the day tile is half-width at `xs`,
-about 180px, already carrying a day name, date, two icon buttons, a photo,
-title, rating and a side row. Three dinners plus sides may want day tiles to
-become full-width rows there. Expect to iterate on that; it is most of the
-work. Roughly half a session all in.
+What the phone actually turned out to need: the half-width tile holds three
+dinners and a side fine - the extra mains are one compact line each, not a
+second photo - so day tiles did **not** need to become full-width rows. The one
+thing that did need changing was the buttons. Two small plus-icon buttons
+stacked with no labels to tell them apart is a guess; a tile is never wide
+enough to put them side by side (about 180px at `xs`, still only about 200px on
+a desktop where seven share the row), so the labels carry it: "Dinner" and
+"Side", a pair of named alternatives. "Another dish" did not work and is gone.
 
 ### Agents
 

@@ -54,8 +54,10 @@ striped placeholders are what the app draws when a recipe has none.
 - **Duplicate detection.** A re-uploaded card - PDF or photograph - is
   recognised by its bytes and refused before the model is called; a
   familiar-looking title warns rather than blocks.
-- **Weekly planner.** One dinner a night, picked from tiles showing the dish
-  photo, title and its rating.
+- **Weekly planner.** A dinner a night, picked from tiles showing the dish
+  photo, title and its rating. An evening can take up to three dinners and a
+  side: the first is the photo, the rest are a line each under it, and every
+  one of them scales into the shopping list the same way.
 - **Pantry.** The staples you always have in, managed as a list of their own.
   Nothing in it ever reaches a shopping list, however many recipes call for it.
 - **Grocery list.** Ingredients roll up across the week's meals, scaled to the
@@ -277,6 +279,26 @@ keeps the dish and still gets its ingredients on the shopping list. Pulling
 dinner out of somebody's Thursday, days later, because another family changed
 its mind is worse than the recipe staying readable to the few who had committed
 to cooking it.
+
+**An evening is a fixed list of slots, not a count.** Three dinners and a side
+are four enum values on `MealSlot`, which keeps the
+`(householdId, date, slot)` unique key that every planner query and the side
+upsert rely on. The alternative — a `position` column and as many rows as you
+like — means changing that key, and the only thing it buys is a fourth dinner
+that nobody has asked for. As values, a fourth is two lines of SQL and no
+application change at all: `ALTER TYPE ... ADD VALUE` rewrites no table.
+
+Sides hang off the day rather than off a dinner, which is the decision that
+made the slots work. One set of sides for the evening, whichever mains are on
+it; sides per dinner is what would have forced the position column. The side
+suggestion reads the day's first dinner to have something to suggest against,
+and says so where it does it.
+
+The extra dinners are a line of text under the first one, not a second photo
+tile. A day tile is about 180px on a phone, and three photo tiles stacked is a
+page nobody scrolls; one dish is the one you recognise across the room and the
+others are "and Lamb Tagine". All of them scale and merge into the shopping
+list identically — that part never knew how many dinners a day had.
 
 **Two kinds of rot, and only one of them is CI's.** `ci.yml` runs on every
 push and answers "did this commit break anything". Nothing in it answers "did
