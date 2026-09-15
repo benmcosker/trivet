@@ -1,4 +1,5 @@
 import EditIcon from "@mui/icons-material/Edit";
+import SoupKitchenIcon from "@mui/icons-material/SoupKitchen";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -10,7 +11,7 @@ import Typography from "@mui/material/Typography";
 import { notFound } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
-import { formatQuantity } from "@/lib/quantity";
+import { formatAmount } from "@/lib/quantity";
 import { DeleteRecipeButton } from "@/components/DeleteRecipeButton";
 import { ShareRecipeToggle } from "@/components/ShareRecipeToggle";
 import { IconChip } from "@/components/IconChip";
@@ -24,15 +25,6 @@ import { getMyReview, listReviews } from "@/lib/reviews";
 import { formatMinutes, formatOvenTemp } from "@/lib/temperature";
 import { getRecipe } from "@/lib/recipes";
 import { requireHousehold } from "@/lib/session";
-
-function formatAmount(quantity: number | null, unit: string | null): string {
-  // No rounding: String already gives "2" for 2.0 and keeps 0.25 intact.
-  if (quantity == null) return unit ?? "";
-  // Shown as it was typed: a half stays "1/2" rather than becoming "0.5",
-  // which is the same number and not how a recipe reads.
-  const amount = formatQuantity(quantity);
-  return unit ? `${amount} ${unit}` : amount;
-}
 
 export default async function RecipePage({
   params,
@@ -75,27 +67,40 @@ export default async function RecipePage({
         <Typography variant="h1" sx={{ overflowWrap: "break-word" }}>
           {recipe.title}
         </Typography>
-        {/*
-         * Everyone reads the library; only the household that added a recipe
-         * can change it. The server enforces that either way.
-         *
-         * Absent rather than disabled for the other households. A greyed-out
-         * Delete says only "not you", where the line at the foot of the page
-         * names the family it does belong to - which is the actual answer, and
-         * worth reading whether or not you were reaching for the button.
-         */}
-        {mine ? (
-          <Stack direction="row" spacing={1}>
-            <LinkButton
-              href={`/recipes/${recipe.id}/edit`}
-              startIcon={<EditIcon />}
-              variant="outlined"
-            >
-              Edit
-            </LinkButton>
-            <DeleteRecipeButton id={recipe.id} title={recipe.title} />
-          </Stack>
-        ) : null}
+        <Stack direction="row" spacing={1}>
+          {/*
+           * Cooking is not editing: anyone who can read a recipe can stand at
+           * a hob and follow it, so this one is outside the ownership check.
+           */}
+          <LinkButton
+            href={`/recipes/${recipe.id}/cook`}
+            startIcon={<SoupKitchenIcon />}
+            variant="contained"
+          >
+            Cook
+          </LinkButton>
+          {/*
+           * Everyone reads the library; only the household that added a recipe
+           * can change it. The server enforces that either way.
+           *
+           * Absent rather than disabled for the other households. A greyed-out
+           * Delete says only "not you", where the line at the foot of the page
+           * names the family it does belong to - which is the actual answer,
+           * and worth reading whether or not you were reaching for the button.
+           */}
+          {mine ? (
+            <>
+              <LinkButton
+                href={`/recipes/${recipe.id}/edit`}
+                startIcon={<EditIcon />}
+                variant="outlined"
+              >
+                Edit
+              </LinkButton>
+              <DeleteRecipeButton id={recipe.id} title={recipe.title} />
+            </>
+          ) : null}
+        </Stack>
       </Stack>
 
       {recipe.description ? (

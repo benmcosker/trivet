@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatQuantity, parseQuantity } from "@/lib/quantity";
+import { formatAmount, formatQuantity, parseQuantity } from "@/lib/quantity";
 
 const read = (input: string) => {
   const result = parseQuantity(input);
@@ -128,5 +128,30 @@ describe("formatQuantity", () => {
       const shown = formatQuantity(parsed.value);
       expect(parseQuantity(shown)).toEqual(parsed);
     }
+  });
+});
+
+describe("an ingredient's amount as one phrase", () => {
+  it("joins a quantity to its unit", () => {
+    expect(formatAmount(2, "cups")).toBe("2 cups");
+  });
+
+  /* The whole reason it is not `String(quantity)`. */
+  it("keeps a half a half", () => {
+    expect(formatAmount(0.5, "cup")).toBe("1/2 cup");
+    expect(formatAmount(1.5, "tsp")).toBe("1 1/2 tsp");
+  });
+
+  it("gives the bare number when there is no unit", () => {
+    expect(formatAmount(3, null)).toBe("3");
+  });
+
+  /* "a pinch", "to taste" - the unit field carrying the whole answer. */
+  it("gives the bare unit when there is no number", () => {
+    expect(formatAmount(null, "to taste")).toBe("to taste");
+  });
+
+  it("gives nothing when there is neither", () => {
+    expect(formatAmount(null, null)).toBe("");
   });
 });
