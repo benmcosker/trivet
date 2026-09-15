@@ -165,3 +165,23 @@ export function formatQuantity(value: number | null): string {
 
   return String(Number(value.toFixed(4)));
 }
+
+/**
+ * An ingredient's amount as one readable phrase: "2 cups", "1/2", "a pinch".
+ *
+ * Lives here rather than in the page that shows it because two pages show it
+ * now - the recipe and the cooking view - and the rule they have to agree on
+ * is not obvious. No rounding, because `formatQuantity` has already decided
+ * how the number reads, and a half that survived storage as "1/2" should not
+ * become "0.5" on the way to the screen. A quantity with no unit is just the
+ * number; a unit with no quantity is just the unit, which is how "a pinch"
+ * and "to taste" get written.
+ */
+export function formatAmount(
+  quantity: number | null,
+  unit: string | null,
+): string {
+  if (quantity == null) return unit ?? "";
+  const amount = formatQuantity(quantity);
+  return unit ? `${amount} ${unit}` : amount;
+}

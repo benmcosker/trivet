@@ -58,6 +58,10 @@ striped placeholders are what the app draws when a recipe has none.
   photo, title and its rating. An evening can take up to three dinners and a
   side: the first is the photo, the rest are a line each under it, and every
   one of them scales into the shopping list the same way.
+- **A cooking view.** `/recipes/<id>/cook` is the recipe as something you are
+  in the middle of: one step at a time in large type, ingredients a tap away
+  without losing your place, and the screen held awake so a propped-up phone
+  does not sleep between steps. Where you got to survives a reload.
 - **Pantry.** The staples you always have in, managed as a list of their own.
   Nothing in it ever reaches a shopping list, however many recipes call for it.
 - **Grocery list.** Ingredients roll up across the week's meals, scaled to the

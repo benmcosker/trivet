@@ -38,6 +38,28 @@ Read it before proposing work on sharing, admin access, or texting.
   it. Two rejections are written up in the README. Don't reword it casually.
 - **Nobody types anybody else's phone number.** `saveOwnPhone` writes the
   caller's own row and nothing else.
+- **Do not mirror state into `sessionStorage` with an effect.** The tidy shape
+  - state, plus an effect writing it on every change - fires on mount with the
+    initial value and overwrites what was stored before the restoring effect
+    can read it. React's development double-mount then reads the overwritten
+    value back, so it fails every time rather than occasionally. Read the
+    stored value during render (`useSyncExternalStore`, with a server snapshot,
+    since the server has no storage) and write only from the handler that moved
+    something. `CookingView` does both.
+
+### Things checked, so they need not be checked again
+
+Each carries a date, because what they record can change and a confident
+undated note is one nobody thinks to re-test.
+
+- **Instacart: applications closed** (re-checked September 2026, unchanged
+  since August). The Developer Platform opened to everyone in March 2024 and
+  has since stopped taking new applicants, with no waitlist - "check back in
+  the future" is the whole of it. The provider in `src/lib/shopping/instacart.ts`
+  is written and tested and stays hidden behind the missing key. Note for
+  whenever it reopens: a key is not the end of it, their own docs describe an
+  access request, then a demo, then a production key, averaging 30-40 days. So
+  this is a date to re-check, not a switch to flip.
 
 ### Three dinners and a side on one evening
 
