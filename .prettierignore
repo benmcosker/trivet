@@ -6,4 +6,6 @@ package-lock.json
 
 # Design references, not source. The .dc.html is the design's source of truth
 # and reformatting it would edit the artefact we are implementing against.
-design_handoff_meal_magic_identity/
+# Globbed rather than listed: this is the second such folder and the pass
+# after this one will bring a third.
+design_handoff_*/

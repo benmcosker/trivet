@@ -22,6 +22,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design handoffs are artefacts to implement against, not source to hold
+    // to this project's rules. The first such folder was HTML and Markdown so
+    // it never reached ESLint; this one ships the canvas runtime as `.js`,
+    // which does - and lands five findings about somebody else's bundle.
+    // Mirrors the entry in `.prettierignore`, for the same reason.
+    "design_handoff_*/**",
   ]),
 ]);
 

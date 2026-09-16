@@ -35,6 +35,50 @@ const chromeText = {
  * function as a prop, which a server component cannot send across the RSC
  * boundary. Only the serialisable parts of the user are handed in.
  */
+/**
+ * The mark: a ring on three legs, holding a dish.
+ *
+ * Inline rather than an <img> to `icon.svg`, for the same reason the
+ * placeholder was two CSS circles: it inherits the palette, so the dark
+ * scheme needs no second asset. `currentColor` carries the ring and legs;
+ * the hub is explicit because it is the one part that does not follow the
+ * text colour.
+ *
+ * Round caps on the legs are the only soft ends in the identity. They
+ * describe feet; everything else here is square by rule.
+ */
+function TrivetMark({ size = 26 }: { size?: number }) {
+  return (
+    <Box
+      component="svg"
+      viewBox="0 0 100 100"
+      aria-hidden
+      sx={{
+        width: size,
+        height: size,
+        flexShrink: 0,
+        fill: "none",
+        color: "primary.main",
+      }}
+    >
+      <circle cx="50" cy="50" r="30" stroke="currentColor" strokeWidth="10" />
+      <path
+        d="M50 80V95 M24 35 11 27.5 M76 35 89 27.5"
+        stroke="currentColor"
+        strokeWidth="10"
+        strokeLinecap="round"
+      />
+      <Box
+        component="circle"
+        cx="50"
+        cy="50"
+        r="11"
+        sx={{ fill: "secondary.main" }}
+      />
+    </Box>
+  );
+}
+
 export function TopBar({
   userName,
   isAdmin = false,
@@ -92,38 +136,14 @@ export function TopBar({
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "11px",
             mr: { xs: 0, md: "14px" },
             flexShrink: 0,
             textDecoration: "none",
             order: 1,
           }}
         >
-          {/* A placeholder device, not a finished logo: a clay dot in a green
-            field. Drawn in CSS rather than shipped as an asset because two
-            circles are two circles, and it inherits the palette for free. */}
-          <Box
-            aria-hidden
-            sx={{
-              width: 24,
-              height: 24,
-              borderRadius: "50%",
-              bgcolor: "primary.main",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Box
-              sx={{
-                width: 9,
-                height: 9,
-                borderRadius: "50%",
-                bgcolor: "secondary.main",
-              }}
-            />
-          </Box>
+          <TrivetMark />
           <Box
             component="span"
             sx={{

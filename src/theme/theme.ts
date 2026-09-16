@@ -13,10 +13,13 @@ import { createTheme, type ThemeOptions } from "@mui/material/styles";
  *
  * One theme, both colour schemes. MUI resolves light/dark from the user's
  * system preference via CSS variables, so there is no flash of the wrong theme
- * on first paint and no client-side toggle to hydrate. The identity pass is a
- * light-scheme design; dark keeps its existing greens and gets the new tokens
- * mapped to sensible equivalents so nothing renders undefined, but it has not
- * been designed and is due a pass of its own.
+ * on first paint and no client-side toggle to hydrate.
+ *
+ * Dark is the light scheme inverted rather than a neutral charcoal. The browns
+ * are what make the light scheme read as paper instead of as a white page, and
+ * a true-grey dark mode loses that and reads like a different product - so
+ * every value there is warm, the darks carrying a brown cast and the lights a
+ * cream one.
  */
 
 declare module "@mui/material/styles" {
@@ -79,7 +82,7 @@ const base = createTheme({
     light: {
       palette: {
         primary: { main: "#2f6f4e" },
-        secondary: { main: "#b4552d" },
+        secondary: { main: "#a44a24" },
         // Deliberately the same as `default`. Nothing in this design is a
         // raised surface, so a card that quietly paints itself white would
         // be the one thing on the page breaking the paper.
@@ -95,8 +98,8 @@ const base = createTheme({
           soft: "#2c2820",
           muted: "#4a453c",
           mutedLight: "#6f6a5e",
-          secondary: "#8a8272",
-          disabled: "#a19684",
+          secondary: "#746c5c",
+          disabled: "#847a69",
         },
         // `light`/`dark` are spelled out rather than left to MUI: custom
         // palette keys skip augmentColor, and Button's contained hover reads
@@ -113,31 +116,39 @@ const base = createTheme({
     },
     dark: {
       palette: {
-        primary: { main: "#7fc4a0" },
-        secondary: { main: "#e08a5f" },
+        // Lighter green and deeper clay than the pair this replaces. On this
+        // ground the old #7fc4a0 and #e08a5f measured 9.8 and 8.6, brighter
+        // than the light scheme's own accents, and they glowed.
+        primary: { main: "#5fae86" },
+        secondary: { main: "#e08f63" },
+        // `paper` equals `default` here for the same reason it does in light:
+        // nothing in this design is a raised surface.
         background: {
-          default: "#12140f",
-          paper: "#1b1e18",
-          raised: "#22261e",
-          stripeA: "#1e221a",
-          stripeB: "#242820",
+          default: "#14110d",
+          paper: "#14110d",
+          raised: "#1f1a13",
+          stripeA: "#1b1710",
+          stripeB: "#221d15",
         },
         text: {
-          primary: "#f2eee3",
-          soft: "#e7e2d6",
-          muted: "#cfc8b8",
-          mutedLight: "#b0a996",
-          secondary: "#8f8878",
-          disabled: "#6f6a5e",
+          primary: "#f4efe4",
+          soft: "#e9e3d6",
+          muted: "#cfc7b6",
+          mutedLight: "#b3aa99",
+          secondary: "#a09788",
+          disabled: "#857c6d",
         },
+        // `light` and `dark` are not in the handoff table, which gives only
+        // `main` and `contrastText`. They follow the light scheme's pattern:
+        // one step toward `text.primary` and one toward `text.muted`.
         ink: {
-          main: "#e7e2d6",
+          main: "#e9e3d6",
           light: "#f4efe4",
-          dark: "#cfc8b8",
-          contrastText: "#12140f",
+          dark: "#cfc7b6",
+          contrastText: "#14110d",
         },
-        divider: "#2b2f27",
-        dividerDashed: "#3a3f34",
+        divider: "#2e2820",
+        dividerDashed: "#403830",
       },
     },
   },
