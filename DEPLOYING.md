@@ -94,14 +94,26 @@ immediately does not, because the visitor is redirected to one host while the
 callback and the session cookie belong to the other. `www` is kept as a redirect
 rather than deleted so that typing it still arrives somewhere.
 
-**Do not leave a second live hostname serving the app.** Renaming the Vercel
-project did not re-alias `mcmullen-meal-magic.vercel.app`, so for a while the
-app answered on it directly - a second copy, under the old brand, which sign-in
-then refuses: Better Auth trusts only the origin `BETTER_AUTH_URL` names, so a
-request from any other host comes back `Invalid origin`. That is correct
-behaviour and a good reason to have exactly one way in. Remove such an alias, or
-point it at the apex the way `www` is pointed; do not add it to
-`trustedOrigins`, which would only preserve the problem.
+**Do not leave a second live hostname serving the app, and redirect it rather
+than deleting it.** Renaming the Vercel project did not re-alias
+`mcmullen-meal-magic.vercel.app`, so for a while the app answered on it
+directly - a second copy, under the old brand, which sign-in then refuses:
+Better Auth trusts only the origin `BETTER_AUTH_URL` names, so a request from
+any other host comes back `Invalid origin`. That is correct behaviour and a good
+reason to have exactly one way in.
+
+The fix is a 308 to the canonical host, not removal. A rename almost always
+happens to an app somebody is already using, and the people using it have the
+old address saved - on a phone home screen, in a bookmark bar, in a text message
+somebody sent months ago. Deleting the hostname turns all of that into a bare
+404 with no clue where the app went, and the person who has to explain it is
+you. A redirect lands them in the right place and quietly updates what they have
+saved. Deleting is only the right call when nothing points at the old name.
+
+Do not reach for `trustedOrigins` here. Accepting requests from the old host
+would stop the error while keeping the retired brand serving the app, which is
+preserving the problem rather than fixing it. `trustedOrigins` is for hostnames
+the app genuinely intends to answer on.
 
 Changing the domain means changing `BETTER_AUTH_URL` to match and redeploying -
 Vercel snapshots environment variables at build time, so editing the value alone
