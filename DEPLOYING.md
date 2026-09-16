@@ -94,11 +94,14 @@ immediately does not, because the visitor is redirected to one host while the
 callback and the session cookie belong to the other. `www` is kept as a redirect
 rather than deleted so that typing it still arrives somewhere.
 
-The project also still answers on `mcmullen-meal-magic.vercel.app` - renaming
-the Vercel project did not re-alias it, and it was left alone rather than removed
-because removing a working production alias buys nothing. It is not the
-production origin, and the same cookie scoping applies: reaching the app that way
-will look like being signed out.
+**Do not leave a second live hostname serving the app.** Renaming the Vercel
+project did not re-alias `mcmullen-meal-magic.vercel.app`, so for a while the
+app answered on it directly - a second copy, under the old brand, which sign-in
+then refuses: Better Auth trusts only the origin `BETTER_AUTH_URL` names, so a
+request from any other host comes back `Invalid origin`. That is correct
+behaviour and a good reason to have exactly one way in. Remove such an alias, or
+point it at the apex the way `www` is pointed; do not add it to
+`trustedOrigins`, which would only preserve the problem.
 
 Changing the domain means changing `BETTER_AUTH_URL` to match and redeploying -
 Vercel snapshots environment variables at build time, so editing the value alone
