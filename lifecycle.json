@@ -29,10 +29,10 @@
   "credentials": [
     {
       "name": "BLOB_READ_WRITE_TOKEN",
-      "where": "Vercel → Storage → Blob",
-      "rotatedOn": null,
+      "where": "Vercel → Storage → the Blob store → Settings → Rotate Credentials",
+      "rotatedOn": "2026-09-16",
       "everyDays": 365,
-      "note": "Two of these were pasted into a chat transcript and should be treated as burned. Rotate and record the date."
+      "note": "Rotate; never create a new store. Rotating regenerates credentials on the same store, so the photo URLs already saved in recipe.imageUrl keep resolving - a new store means a new store id and every one of them 404s. Vercel updates the variables it manages and offers to delay the old secret's expiry: take the shortest delay, because the point of rotating is that the old one stops working. Check that the variable the app actually reads was among the ones updated, then redeploy - the new value does not reach the running deployment until you do."
     },
     {
       "name": "TWILIO_AUTH_TOKEN",
