@@ -84,10 +84,21 @@ preview is actually pointed at.
 ## 3b. The production domain
 
 `trivetbox.com`, bought through Vercel so the DNS is configured by Vercel and
-there is nothing to maintain elsewhere. The project also answers on a
-`*.vercel.app` address, but that one is not the production origin and should not
-be used: cookies are scoped to whatever `BETTER_AUTH_URL` names, so visiting the
-other address will look like being signed out.
+there is nothing to maintain elsewhere.
+
+**The bare apex is the production domain; `www` redirects into it.** Vercel sets
+this up the other way round by default, and it was deliberately flipped. Do not
+flip it back without also changing `BETTER_AUTH_URL` in the same breath: if the
+canonical host and that variable disagree, signing in appears to work and then
+immediately does not, because the visitor is redirected to one host while the
+callback and the session cookie belong to the other. `www` is kept as a redirect
+rather than deleted so that typing it still arrives somewhere.
+
+The project also still answers on `mcmullen-meal-magic.vercel.app` - renaming
+the Vercel project did not re-alias it, and it was left alone rather than removed
+because removing a working production alias buys nothing. It is not the
+production origin, and the same cookie scoping applies: reaching the app that way
+will look like being signed out.
 
 Changing the domain means changing `BETTER_AUTH_URL` to match and redeploying -
 Vercel snapshots environment variables at build time, so editing the value alone
