@@ -28,6 +28,33 @@ Read it before proposing work on sharing, admin access, or texting.
   page: each one typechecks, builds cleanly and serves `200`, then dies at
   hydration. A green `npm run build` proves nothing about this — open the page
   in a browser before believing it works.
+- **Name the role in the local database URL, and expect the CLI to disagree
+  with the app.** `.env.example` ships
+  `postgresql://postgres@127.0.0.1:5432/mealmagic`, which assumes the cluster
+  trusts loopback. A container whose Postgres came back on `scram-sha-256`
+  refuses that, and every database-backed test fails with `client password must
+be a string`. The way through is the Unix socket and peer auth, with a role
+  the OS user maps to (`create role root login superuser;` if none exists).
+  Both of these work at runtime:
+
+  ```
+  postgresql://root@%2Fvar%2Frun%2Fpostgresql/mealmagic
+  postgresql://root@/mealmagic?host=/var/run/postgresql
+  ```
+
+  **The `root@` is the load-bearing part, not the URL shape.** Drop it and both
+  forms fail identically with "User was denied access on the database
+  `(not available)`", which reads like a permissions problem and is really a
+  missing username. That is the hour, and it is worth an hour twice because
+  `psql -h /var/run/postgresql` succeeding tells you nothing - psql supplies
+  your OS user, a connection string does not.
+
+  Prisma's CLI parses the URL itself and accepts neither: `?host=` gives P1013
+  "empty host", percent-encoding gives P1001 "can't reach
+  `%2Fvar%2Frun%2Fpostgresql:5432`". So `migrate deploy` cannot use the socket
+  at all. Verify migration SQL with `psql` in a `BEGIN`/`ROLLBACK` instead, and
+  let CI apply it for real - `ci.yml` provisions its own Postgres over TCP.
+
 - **Restart the dev server after a schema change.** `src/lib/db.ts` caches the
   Prisma client on `globalThis` and that cache survives HMR. The symptom is
   `Cannot read properties of undefined (reading 'findMany')` on a model plainly
@@ -66,6 +93,45 @@ undated note is one nobody thinks to re-test.
   whenever it reopens: a key is not the end of it, their own docs describe an
   access request, then a demo, then a production key, averaging 30-40 days. So
   this is a date to re-check, not a switch to flip.
+
+- **Two of the weekly health check's eight advisories are false** (checked
+  September 2026). `mysql2` is an optional driver that `better-auth` and
+  `prisma` both carry for people on MySQL; nothing in this codebase imports it
+  and the app is Postgres, so it should not drive a major upgrade. The checker
+  counts a package as "reachable from a request" by its presence in the tree
+  rather than by whether anything imports it, so treat that label as a prompt
+  to run `npm ls <pkg>` rather than as a finding. `deepmerge-ts` is the other
+  one to check the same way before accepting its major.
+
+- **`@types/node` should track the runtime, not the registry** (September
+  2026). The check reports `20 → 26` as a pending major. We run Node 22, so the
+  target is the latest **22.x**: types for Node 26 on a Node 22 runtime
+  describe APIs that do not exist when the code runs, which is worse than being
+  behind. `prisma 8.0.0-rc.15` is likewise not an upgrade — it is a release
+  candidate, and taking one to close a high on a family app trades a known risk
+  for an unknown one. Wait for stable.
+
+### Not built yet: autocomplete when adding tags
+
+Scoped, not started. Roughly half a session.
+
+`slugifyTag` already collapses case, spacing and punctuation - "Sheet Pan",
+"sheet pan" and "Sheet-Pan" are one row - so the duplicates that survive are
+semantic: "Soup" beside "Soups", "Veggie" beside "Vegetarian". Only showing
+somebody the existing vocabulary fixes that, which is what autocomplete is for.
+
+Two things decided in advance:
+
+- **The extractor is the bigger source, not the typing.** `extract-recipe.ts`
+  asks the model for "3-6 short labels" per upload with no knowledge of what
+  the library already uses, so every card mints fresh tags. Seeding that prompt
+  with the existing vocabulary is the higher-leverage half; the `Autocomplete`
+  in `RecipeForm` is the visible half.
+- **Suggestions must come from `listTagsWithCounts`, not the `Tag` table.**
+  Tags are global with no `householdId`, but that function deliberately counts
+  over visible recipes and drops zero-count tags - a naive `findMany` would
+  suggest tags that exist only on another household's private recipes, which is
+  the existence-versus-visibility leak `REVIEW.md` asks reviewers to watch for.
 
 ### Three dinners and a side on one evening
 
