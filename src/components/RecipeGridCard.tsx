@@ -134,7 +134,7 @@ export function RecipeGridCard({ recipe }: { recipe: RecipeWithRelations }) {
                   fontSize: "0.6875rem",
                   letterSpacing: "0.13em",
                   textTransform: "uppercase",
-                  color: "text.disabled",
+                  color: "text.secondary",
                   lineHeight: 1.5,
                 }}
               >

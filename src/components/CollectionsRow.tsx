@@ -94,7 +94,7 @@ export function CollectionsRow({ collections }: { collections: TagCount[] }) {
                 fontFamily: (theme) => theme.typography.body2.fontFamily,
                 fontSize: "0.6875rem",
                 letterSpacing: "0.06em",
-                color: "text.disabled",
+                color: "text.secondary",
               }}
             >
               {collection.count}
