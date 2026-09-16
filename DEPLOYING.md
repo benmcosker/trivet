@@ -81,6 +81,44 @@ because it is a fact about how the databases are wired, and it belongs in the
 same place as the connection strings — set by whoever knows which database a
 preview is actually pointed at.
 
+## 3b. The production domain
+
+`trivetbox.com`, bought through Vercel so the DNS is configured by Vercel and
+there is nothing to maintain elsewhere.
+
+**The bare apex is the production domain; `www` redirects into it.** Vercel sets
+this up the other way round by default, and it was deliberately flipped. Do not
+flip it back without also changing `BETTER_AUTH_URL` in the same breath: if the
+canonical host and that variable disagree, signing in appears to work and then
+immediately does not, because the visitor is redirected to one host while the
+callback and the session cookie belong to the other. `www` is kept as a redirect
+rather than deleted so that typing it still arrives somewhere.
+
+**Do not leave a second live hostname serving the app, and redirect it rather
+than deleting it.** Renaming the Vercel project did not re-alias
+`mcmullen-meal-magic.vercel.app`, so for a while the app answered on it
+directly - a second copy, under the old brand, which sign-in then refuses:
+Better Auth trusts only the origin `BETTER_AUTH_URL` names, so a request from
+any other host comes back `Invalid origin`. That is correct behaviour and a good
+reason to have exactly one way in.
+
+The fix is a 308 to the canonical host, not removal. A rename almost always
+happens to an app somebody is already using, and the people using it have the
+old address saved - on a phone home screen, in a bookmark bar, in a text message
+somebody sent months ago. Deleting the hostname turns all of that into a bare
+404 with no clue where the app went, and the person who has to explain it is
+you. A redirect lands them in the right place and quietly updates what they have
+saved. Deleting is only the right call when nothing points at the old name.
+
+Do not reach for `trustedOrigins` here. Accepting requests from the old host
+would stop the error while keeping the retired brand serving the app, which is
+preserving the problem rather than fixing it. `trustedOrigins` is for hostnames
+the app genuinely intends to answer on.
+
+Changing the domain means changing `BETTER_AUTH_URL` to match and redeploying -
+Vercel snapshots environment variables at build time, so editing the value alone
+changes nothing about the running deployment.
+
 ## 4. Environment variables
 
 Set these in **Settings → Environment Variables**, for Production and Preview:
@@ -90,7 +128,7 @@ Set these in **Settings → Environment Variables**, for Production and Preview:
 | `DATABASE_URL`          | yes      | Neon **pooled** string                                                                                                                        |
 | `DIRECT_DATABASE_URL`   | yes      | Neon **direct** string                                                                                                                        |
 | `BETTER_AUTH_SECRET`    | yes      | `openssl rand -base64 32` — a fresh one, not the dev value                                                                                    |
-| `BETTER_AUTH_URL`       | yes      | The deployed origin, e.g. `https://meal-magic.vercel.app`                                                                                     |
+| `BETTER_AUTH_URL`       | yes†     | The production origin, scheme and no trailing slash: `https://trivetbox.com`                                                                  |
 | `ANTHROPIC_API_KEY`     | no       | Enables PDF extraction                                                                                                                        |
 | `INSTACART_API_KEY`     | no       | **Not obtainable.** Instacart has closed new developer applications with no waitlist. Leave unset; the provider is hidden until a key exists. |
 | `INSTACART_API_BASE`    | no       | Only meaningful once a key exists: `https://connect.dev.instacart.tools` for development, `https://connect.instacart.com` for production      |
@@ -100,14 +138,26 @@ The app refuses to start if a required variable is missing, and names all of
 them at once rather than failing on the first. Optional ones are logged at boot
 with what each costs.
 
-**Preview deployments get a different origin per branch**, so `BETTER_AUTH_URL`
-set to the production domain will break sign-in on previews. Either set it per
-environment, or accept that previews cannot authenticate.
+**† `BETTER_AUTH_URL` is the exception, and it is worth knowing why.** It is
+required for sign-in to work, but it is _not_ in `REQUIRED` in `src/lib/env.ts`
+
+- only `DATABASE_URL` and `BETTER_AUTH_SECRET` are. So if it is missing, stale
+  or wrong, the app boots cleanly, every page renders, and **sign-in fails with
+  no startup error and nothing in the logs**. Better Auth uses it to build
+  callback URLs and to scope the session cookie, so the symptoms are a redirect
+  to the wrong origin, or a cookie that will not stick. If authentication ever
+  breaks after a domain change, check this first: it is the cause almost every
+  time.
+
+**Previews cannot authenticate**, because they get a different origin per
+branch and this is set to the production one. That is accepted rather than
+worked around - previews are switched off for this project (Ignored Build Step),
+so nothing is waiting on it.
 
 ## 5. Check the deploy
 
 ```bash
-curl https://your-app.vercel.app/api/health
+curl https://trivetbox.com/api/health
 ```
 
 Healthy:
@@ -148,7 +198,7 @@ VALUES ('bootstrap-invite', 'PICKSOMETHINGRANDOM',
         now() + interval '7 days', now(), 'bootstrap');
 ```
 
-Then open `https://your-app.vercel.app/sign-up?code=PICKSOMETHINGRANDOM`.
+Then open `https://trivetbox.com/sign-up?code=PICKSOMETHINGRANDOM`.
 
 That row is a placeholder, not a login — it has no password and cannot sign in.
 Delete it once your real account exists:
