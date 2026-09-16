@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #e8e0d0; }
+  a { color: #2f6f4e; text-decoration: none; }
+  a:hover { color: #a44a24; }
+</style>
+</helmet>
+
+<div style="width: 1440px; background: #f7f4ed; font-family: Karla, system-ui, sans-serif; color: #1a1815; -webkit-font-smoothing: antialiased;">
+
+  <div style="border-bottom: 1px solid #ded7c8; display: flex; align-items: center; gap: 34px; padding: 20px 56px;">
+    <div style="display: flex; align-items: center; gap: 11px; margin-right: 14px;">
+      <svg viewBox="0 0 100 100" width="26" height="26" fill="none" aria-hidden="true">
+        <circle cx="50" cy="50" r="30" stroke="#2f6f4e" stroke-width="10"></circle>
+        <path d="M50 80V95 M24 35 11 27.5 M76 35 89 27.5" stroke="#2f6f4e" stroke-width="10" stroke-linecap="round"></path>
+        <circle cx="50" cy="50" r="11" fill="#a44a24"></circle>
+      </svg>
+      <span style="font-family: Newsreader, Georgia, serif; font-size: 23px; letter-spacing: -0.015em;">Trivet</span>
+    </div>
+    <div style="display: flex; gap: 28px; flex: 1;">
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c;">Recipes</span>
+      <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding-bottom: 3px; border-bottom: 2px solid #a44a24;">This week</span>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c;">Pantry</span>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c;">Upload</span>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c;">Household</span>
+    </div>
+    <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-size: 16px; color: #4a453c;">Ben</span>
+    <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c;">Sign out</span>
+  </div>
+
+  <div style="padding: 56px 56px 0;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px;">
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; margin-bottom: 16px;">The McMullens &middot; 21&ndash;27 September</div>
+        <h1 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 76px; line-height: 0.95; letter-spacing: -0.03em; margin: 0;">This week</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 30px; padding-bottom: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 22px;">
+          <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding-bottom: 4px; border-bottom: 2px solid #a44a24;">This week</span>
+          <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; padding-bottom: 4px; border-bottom: 2px solid transparent;">Next week</span>
+        </div>
+        <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; border-bottom: 1px solid #ded7c8; padding-bottom: 3px;">Print</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin: 40px 0 0; padding-bottom: 14px; border-bottom: 1px solid #1a1815;">
+      <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 24px; color: #746c5c;">Five dinners planned, two evenings open.</span>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c;">Clear the week</span>
+    </div>
+  </div>
+
+  <div style="padding: 36px 56px 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 20px;">
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid #ded7c8;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Mon</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #746c5c;">21</span>
+      </div>
+      <div style="height: 126px; background: repeating-linear-gradient(135deg, #e8e0d0 0 9px, #e1d8c5 9px 18px); display: flex; align-items: center; justify-content: center;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 20px; color: #a1978a;">CP</span>
+      </div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; text-wrap: pretty;">Cacio e Pepe</div>
+      <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Serves 2 &middot; 25 min</div>
+      <div style="display: flex; align-items: center; gap: 18px; padding-top: 4px; border-top: 1px solid #ded7c8;">
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Dinner</span>
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Side</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 2px solid #a44a24;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Tue</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #a44a24;">22</span>
+      </div>
+      <div style="height: 126px; background: repeating-linear-gradient(135deg, #e8e0d0 0 9px, #e1d8c5 9px 18px); display: flex; align-items: center; justify-content: center;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 20px; color: #a1978a;">ZC</span>
+      </div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; text-wrap: pretty;">Zuni Chicken <span style="font-style: italic; font-weight: 300;">with Bread Salad</span></div>
+      <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Serves 4 &middot; 1 hr 30</div>
+      <div style="display: flex; align-items: center; gap: 18px; padding-top: 4px; border-top: 1px solid #ded7c8;">
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Dinner</span>
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Side</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid #ded7c8;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Wed</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #746c5c;">23</span>
+      </div>
+      <div style="height: 126px; background: repeating-linear-gradient(135deg, #e8e0d0 0 9px, #e1d8c5 9px 18px); display: flex; align-items: center; justify-content: center;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 20px; color: #a1978a;">GB</span>
+      </div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; text-wrap: pretty;">Grilled Whole Branzino</div>
+      <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Serves 2 &middot; 40 min</div>
+      <div style="padding-left: 14px; border-left: 1px solid #ded7c8; display: flex; flex-direction: column; gap: 5px;">
+        <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #4a453c;">with Charred Lemon Potatoes</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 18px; padding-top: 4px; border-top: 1px solid #ded7c8;">
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Dinner</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid #ded7c8;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Thu</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #746c5c;">24</span>
+      </div>
+      <div style="height: 126px; border: 1px solid #ded7c8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+        <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 17px; color: #746c5c;">Nothing planned.</span>
+        <span style="font-weight: 700; font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase; color: #2f6f4e; border-bottom: 1px solid #2f6f4e; padding-bottom: 2px;">Pick a recipe</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid #ded7c8;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Fri</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #746c5c;">25</span>
+      </div>
+      <div style="height: 126px; background: repeating-linear-gradient(135deg, #e8e0d0 0 9px, #e1d8c5 9px 18px); display: flex; align-items: center; justify-content: center;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 20px; color: #a1978a;">PR</span>
+      </div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; text-wrap: pretty;">Pork Ragù</div>
+      <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Serves 6 &middot; 3 hr</div>
+      <div style="padding-left: 14px; border-left: 1px solid #ded7c8; display: flex; flex-direction: column; gap: 5px;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 16px; color: #2c2820;">and Focaccia</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #4a453c;">with Chopped Salad</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 18px; padding-top: 4px; border-top: 1px solid #ded7c8;">
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Dinner</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid #ded7c8;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Sat</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #746c5c;">26</span>
+      </div>
+      <div style="height: 126px; border: 1px solid #ded7c8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+        <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 17px; color: #746c5c;">Nothing planned.</span>
+        <span style="font-weight: 700; font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase; color: #2f6f4e; border-bottom: 1px solid #2f6f4e; padding-bottom: 2px;">Pick a recipe</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid #ded7c8;">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Sun</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 15px; color: #746c5c;">27</span>
+      </div>
+      <div style="height: 126px; background: repeating-linear-gradient(135deg, #e8e0d0 0 9px, #e1d8c5 9px 18px); display: flex; align-items: center; justify-content: center;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 20px; color: #a1978a;">RC</span>
+      </div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; text-wrap: pretty;">Roast Chicken <span style="font-style: italic; font-weight: 300;">and Gravy</span></div>
+      <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Serves 6 &middot; 2 hr</div>
+      <div style="padding-left: 14px; border-left: 1px solid #ded7c8; display: flex; flex-direction: column; gap: 5px;">
+        <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #4a453c;">with Braised Greens</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 18px; padding-top: 4px; border-top: 1px solid #ded7c8;">
+        <span style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">+ Dinner</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 80px 56px 0;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding-bottom: 18px; border-bottom: 1px solid #1a1815;">
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; margin-bottom: 14px;">From five dinners and three sides</div>
+        <h2 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 44px; line-height: 1.05; letter-spacing: -0.025em; margin: 0;">Shopping list</h2>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; padding-bottom: 6px;">
+        <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #f7f4ed; background: #1a1815; padding: 14px 22px;">Send to Instacart</span>
+        <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #4a453c; border: 1px solid #ded7c8; padding: 13px 20px;">Text the list</span>
+        <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #4a453c; border: 1px solid #ded7c8; padding: 13px 20px;">Amazon</span>
+      </div>
+    </div>
+
+    <div style="margin: 28px 0 0; padding: 18px 0; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8;">
+      <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; margin-bottom: 8px;">A note on Amazon</div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; max-width: 76ch; text-wrap: pretty;">Amazon has no public ordering API, so this cannot fill a basket for you. Each ingredient opens a search in the store; add what you want.</div>
+    </div>
+
+    <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 19px; color: #746c5c; margin-top: 18px;">Texts Ben and Kate. Nobody else has a number saved.</div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 56px; margin-top: 52px; align-items: start;">
+
+      <div style="display: flex; flex-direction: column; gap: 22px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c; padding-bottom: 10px; border-bottom: 1px solid #1a1815;">Produce</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: baseline; gap: 10px; padding-bottom: 13px; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">2 heads</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Romaine lettuce</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Chopped Salad</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 bunch</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Lacinato kale</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Braised Greens</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">6</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Lemons</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Zuni Chicken, Charred Lemon Potatoes, Branzino</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">2 lb</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Yukon gold potatoes</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Charred Lemon Potatoes</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 head</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Garlic</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Pork Ragù, Braised Greens, Focaccia</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 22px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c; padding-bottom: 10px; border-bottom: 1px solid #1a1815;">Meat &amp; fish</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: baseline; gap: 10px; padding-bottom: 13px; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 (4 lb)</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Whole chicken</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Zuni Chicken</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 (5 lb)</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Whole chicken</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Roast Chicken and Gravy</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">3 lb</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Pork shoulder</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Pork Ragù</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">2</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Branzino, whole</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Grilled Whole Branzino</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 22px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c; padding-bottom: 10px; border-bottom: 1px solid #1a1815;">Dairy &amp; pantry</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: baseline; gap: 10px; padding-bottom: 13px; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">8 oz</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Pecorino Romano</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Cacio e Pepe, Pork Ragù</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 lb</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Tonnarelli</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Cacio e Pepe</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 loaf</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Day-old country bread</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Bread Salad</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0; border-bottom: 1px solid #ded7c8;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">1 can</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">San Marzano tomatoes</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Pork Ragù</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 10px; padding: 13px 0;">
+            <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.02em; color: #1a1815; min-width: 62px;">2 boxes</span>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.3;">Currants</div>
+              <div style="font-size: 11px; letter-spacing: 0.06em; color: #746c5c; margin-top: 2px;">Added by hand</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin: 56px 0 0; padding: 22px 0 0; border-top: 1px solid #ded7c8; display: flex; align-items: baseline; gap: 14px;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c; flex-shrink: 0;">Add something</span>
+      <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 21px; color: #847a69; flex: 1; border-bottom: 1px solid #ded7c8; padding-bottom: 8px;">Foil, paper towels, whatever else&hellip;</span>
+    </div>
+
+    <div style="margin: 34px 0 0; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c;">Left off</span>
+      <span style="font-family: Newsreader, Georgia, serif; font-size: 18px; color: #4a453c;">Olive oil, salt, black pepper, flour, butter</span>
+      <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 18px; color: #746c5c;">&mdash; always in the pantry</span>
+    </div>
+  </div>
+
+  <div style="padding: 88px 56px 96px;">
+    <div style="display: flex; align-items: baseline; gap: 16px; padding-bottom: 16px; border-bottom: 2px solid #1a1815;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24;">Print</span>
+      <span style="font-family: Newsreader, Georgia, serif; font-size: 32px; letter-spacing: -0.02em;">Two pages, black on white</span>
+    </div>
+    <p style="font-family: Newsreader, Georgia, serif; font-size: 19px; line-height: 1.55; color: #4a453c; margin: 22px 0 44px; max-width: 70ch; text-wrap: pretty;">The paper ground prints as a full page of beige ink, so the print stylesheet drops it. Serif throughout, as on screen. No mark in the header &mdash; a shopping list does not need branding, and the ink is better spent on the list.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 44px; align-items: start;">
+
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; margin-bottom: 18px;">Page 1 &mdash; the list, grouped by aisle</div>
+        <div style="background: #ffffff; border: 1px solid #ded7c8; padding: 52px 56px; font-family: Newsreader, Georgia, serif; color: #000000;">
+          <div style="font-size: 30px; letter-spacing: -0.02em; padding-bottom: 12px; border-bottom: 1.5px solid #000000;">Shopping list</div>
+          <div style="font-family: Karla, sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 12px;">21&ndash;27 September &middot; 5 dinners, 3 sides</div>
+
+          <div style="margin-top: 32px;">
+            <div style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding-bottom: 7px; border-bottom: 1px solid #000000;">Produce</div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 13px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">2 heads</span> Romaine lettuce</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 bunch</span> Lacinato kale</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">6</span> Lemons</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">2 lb</span> Yukon gold potatoes</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 head</span> Garlic</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 28px;">
+            <div style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding-bottom: 7px; border-bottom: 1px solid #000000;">Meat &amp; fish</div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 13px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 (4 lb)</span> Whole chicken</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 (5 lb)</span> Whole chicken</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">3 lb</span> Pork shoulder</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">2</span> Branzino, whole</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 28px;">
+            <div style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; padding-bottom: 7px; border-bottom: 1px solid #000000;">Dairy &amp; pantry</div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 13px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">8 oz</span> Pecorino Romano</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 lb</span> Tonnarelli</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 loaf</span> Day-old country bread</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">1 can</span> San Marzano tomatoes</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 11px;">
+              <span style="width: 12px; height: 12px; border: 1.2px solid #000000; flex-shrink: 0;"></span>
+              <span style="font-size: 17px;"><span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 13px;">2 boxes</span> Currants</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 34px; padding-top: 12px; border-top: 1px solid #000000; font-size: 15px; font-style: italic;">Not listed: olive oil, salt, black pepper, flour, butter.</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; margin-bottom: 18px;">Page 2 &mdash; the week</div>
+        <div style="background: #ffffff; border: 1px solid #ded7c8; padding: 52px 56px; font-family: Newsreader, Georgia, serif; color: #000000;">
+          <div style="font-size: 30px; letter-spacing: -0.02em; padding-bottom: 12px; border-bottom: 1.5px solid #000000;">This week</div>
+          <div style="font-family: Karla, sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; margin-top: 12px;">21&ndash;27 September</div>
+
+          <div style="margin-top: 30px; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-bottom: 1px solid #000000;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Mon 21</span>
+              <span style="font-size: 18px;">Cacio e Pepe</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-bottom: 1px solid #000000;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Tue 22</span>
+              <span style="font-size: 18px;">Zuni Chicken <span style="font-style: italic;">with Bread Salad</span></span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-bottom: 1px solid #000000;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Wed 23</span>
+              <span style="font-size: 18px;">Grilled Whole Branzino<br><span style="font-style: italic; font-size: 16px;">with Charred Lemon Potatoes</span></span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-bottom: 1px solid #000000;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Thu 24</span>
+              <span style="font-size: 18px; font-style: italic;">&mdash;</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-bottom: 1px solid #000000;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Fri 25</span>
+              <span style="font-size: 18px;">Pork Ragù<br><span style="font-size: 16px;">and Focaccia</span><br><span style="font-style: italic; font-size: 16px;">with Chopped Salad</span></span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0; border-bottom: 1px solid #000000;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Sat 26</span>
+              <span style="font-size: 18px; font-style: italic;">&mdash;</span>
+            </div>
+            <div style="display: flex; align-items: baseline; gap: 18px; padding: 14px 0;">
+              <span style="font-family: Karla, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; width: 80px; flex-shrink: 0;">Sun 27</span>
+              <span style="font-size: 18px;">Roast Chicken <span style="font-style: italic;">and Gravy</span><br><span style="font-style: italic; font-size: 16px;">with Braised Greens</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 26px; padding: 20px 0 0; border-top: 1px solid #ded7c8;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #a44a24; margin-bottom: 10px;">Print rules</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 17px; line-height: 1.55; color: #4a453c; text-wrap: pretty;">Black on white, both pages. Tick boxes on the list, none on the week. An unplanned day prints as an em dash rather than being omitted, so the week reads as seven days with two open rather than as a five-day week. No photos: they are the most expensive thing on the page and identify nothing you don't already know by the time you are holding it.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</x-dc>
+</body>
+</html>
