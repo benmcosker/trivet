@@ -96,7 +96,7 @@ export function AuthForm({
                 sx={{ mt: 0.5 }}
               >
                 {isSignUp
-                  ? "Meal Magic is invite-only. You will need a code from someone already using it."
+                  ? "Trivet is invite-only. You will need a code from someone already using it."
                   : "Sign in to see the family recipe box."}
               </Typography>
             </Box>

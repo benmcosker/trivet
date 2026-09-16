@@ -13,7 +13,25 @@
  * `theme/page.ts`.
  */
 
-/** The name on the campaign registration. These have to match. */
+/**
+ * The name on the A2P 10DLC campaign registration. These have to match.
+ *
+ * **This is deliberately still the old name.** The app was renamed to Trivet;
+ * this was not, and changing it here is not a tidy-up - it is a promise to a
+ * carrier. The registered campaign says "McMullen Meal Magic", every message
+ * body carries it, and vetting compares the two. Rename this before the
+ * campaign is re-registered and messages stop being delivered: not bounced,
+ * silently dropped, which is the failure mode that already cost a day once.
+ *
+ * Getting the campaign approved took two rejections, both for wording rather
+ * than substance, and both are written up in the README. Re-registering under
+ * a new brand name means going through that again.
+ *
+ * So the order is: register "Trivet" with the carrier, wait for approval, and
+ * only then change this line - along with the two tests that pin it,
+ * `test/sms-consent.test.ts` and `test/sms-message.test.ts`. Those tests
+ * failing is the tripwire, and it is there on purpose.
+ */
 export const BRAND = "McMullen Meal Magic";
 
 /** Where HELP and privacy questions go. Must be an address somebody reads. */

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import type { MealSlot, ShoppingProvider } from "@/generated/prisma/enums";
+import { sideMarker } from "@/lib/side-marker";
 import { prisma } from "@/lib/db";
 import { weekStartOf } from "@/lib/grocery";
 import { FIRST_DINNER } from "@/lib/meal-slots";
@@ -201,7 +202,7 @@ export async function acceptSideAction(
   const side = findSide(sideId);
   if (!side) return { ok: false, error: "That side is no longer offered." };
 
-  const marker = `Meal Magic side: ${side.id}`;
+  const marker = sideMarker(side.id);
   const date = new Date(`${dateIso}T00:00:00.000Z`);
 
   try {

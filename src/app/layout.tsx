@@ -25,9 +25,9 @@ const karla = Karla({
 });
 
 export const metadata: Metadata = {
-  title: "Meal Magic",
+  title: "Trivet",
   description:
-    "Recipe box, weekly meal planner and grocery list for the McMullen household.",
+    "Recipe box, weekly meal planner and grocery list for one household.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

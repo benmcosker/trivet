@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   try {
     return await handle(request);
   } catch (error) {
-    console.error("[meal-magic] recipe image upload failed", error);
+    console.error("[trivet] recipe image upload failed", error);
 
     if (error instanceof BlobError) {
       return NextResponse.json(

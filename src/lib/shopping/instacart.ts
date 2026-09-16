@@ -104,7 +104,7 @@ export const instacartProvider: ShoppingProviderAdapter = {
 
     const label = weekStart.toISOString().slice(0, 10);
     const result = await createShoppingListPage(
-      buildShoppingListPayload(lines, `Meal Magic \u2014 week of ${label}`),
+      buildShoppingListPayload(lines, `Trivet \u2014 week of ${label}`),
     );
 
     if (!result.ok) return result;
