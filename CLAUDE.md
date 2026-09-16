@@ -32,6 +32,12 @@ Read it before proposing work on sharing, admin access, or texting.
   Prisma client on `globalThis` and that cache survives HMR. The symptom is
   `Cannot read properties of undefined (reading 'findMany')` on a model plainly
   in the schema, while `npm test` and `npm run typecheck` pass.
+- **The app is Trivet; `BRAND` is not.** `src/lib/legal.ts` still reads
+  "McMullen Meal Magic" on purpose — it is the name on the approved A2P
+  campaign and appears in every SMS body. Changing it before the campaign is
+  re-registered gets messages silently dropped, not merely mislabelled.
+  `test/sms-consent.test.ts` and `test/sms-message.test.ts` pin it; those
+  failing is the tripwire.
 - **The legal wording is load-bearing.** It lives in `src/lib/legal.ts` so the
   consent checkbox, the public pages and the A2P campaign submission cannot
   drift apart, and carrier vetting pattern-matches phrasing rather than reading

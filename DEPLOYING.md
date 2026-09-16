@@ -1,4 +1,4 @@
-# Deploying Meal Magic
+# Deploying Trivet
 
 Target: Vercel for hosting, Neon for Postgres, Vercel Blob for uploaded PDFs and
 photos. Everything below needs accounts you control; nothing here can be done

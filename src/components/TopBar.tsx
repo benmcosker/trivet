@@ -88,7 +88,7 @@ export function TopBar({
         <Box
           component={Link}
           href="/"
-          aria-label="Meal Magic, home"
+          aria-label="Trivet, home"
           sx={{
             display: "flex",
             alignItems: "center",
@@ -134,10 +134,13 @@ export function TopBar({
               whiteSpace: "nowrap",
             }}
           >
-            Meal{" "}
-            <Box component="em" sx={{ fontWeight: 300 }}>
-              Magic
-            </Box>
+            {/*
+              Set plainly: "Meal Magic" was two words and took a roman/italic
+              split, and one word has nothing to split. The mark itself - this
+              and the placeholder device above it - is a design job of its own
+              rather than something to improvise during a rename.
+            */}
+            Trivet
           </Box>
         </Box>
 
@@ -209,9 +212,7 @@ export function TopBar({
               );
             })}
           </Box>
-        ) : (
-          <Box sx={{ flexGrow: 1 }} />
-        )}
+        ) : null}
 
         {userName ? (
           <Stack
@@ -252,12 +253,20 @@ export function TopBar({
             </Button>
           </Stack>
         ) : (
+          /*
+           * Ordered and pushed right explicitly, mirroring the signed-in
+           * controls above. Before this it had neither, and neither did the
+           * flexGrow spacer that used to stand in for the nav - so both
+           * defaulted to `order: 0` and sorted ahead of the wordmark's
+           * `order: 1`. The spacer then grew, and the signed-out header read
+           * "Sign in | Trivet", right-aligned, with the wordmark second.
+           */
           <Button
             component={Link}
             href="/sign-in"
             variant="contained"
             color="ink"
-            sx={{ flexShrink: 0 }}
+            sx={{ flexShrink: 0, order: 2, ml: "auto" }}
           >
             Sign in
           </Button>

@@ -64,7 +64,7 @@ export function checkEnv(
 /** A single message naming everything that is wrong, rather than one per boot. */
 export function formatMissingRequired(missing: string[]): string {
   return [
-    `Meal Magic cannot start: ${missing.length} required environment ` +
+    `Trivet cannot start: ${missing.length} required environment ` +
       `variable${missing.length === 1 ? "" : "s"} missing.`,
     ...missing.map((key) => `  - ${key}`),
     "",

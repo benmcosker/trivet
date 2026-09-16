@@ -1,6 +1,6 @@
-# Meal Magic
+# Trivet
 
-Recipe box, weekly meal planner and grocery list for the McMullen household.
+Recipe box, weekly meal planner and grocery list for one household.
 Upload a recipe card - a PDF, or a photograph of a printed or handwritten one -
 plan a dinner for each night from your library, and take the resulting shopping
 list to the shop.
@@ -196,6 +196,15 @@ Two rejections were worth writing down, because neither is about the code:
   disclosure of data sharing and contradicts the promise above it. "Twilio, our
   messaging service provider, acting only to transmit messages on our behalf"
   is doing real work in that sentence.
+
+**The app is called Trivet; the text messages still say McMullen Meal Magic.**
+That is not an oversight. `BRAND` in `src/lib/legal.ts` is the name on the
+approved A2P campaign, it appears in every message body, and carrier vetting
+compares the two. Renaming it before the campaign is re-registered would not
+produce a branding inconsistency — it would produce silently undelivered
+messages, which is the same failure as being unregistered. The order is:
+register the new name, wait for approval, then change that one constant and the
+two tests that pin it. Those tests failing is the tripwire, and it is deliberate.
 
 The registration is a sole-proprietor Brand, which carries low daily throughput
 caps. A household and a weekly list is nowhere near them.

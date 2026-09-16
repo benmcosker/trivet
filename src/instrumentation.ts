@@ -17,7 +17,7 @@ export async function register() {
 
   for (const { feature, missing, consequence } of disabledFeatures) {
     console.warn(
-      `[meal-magic] ${feature} is off (${missing} unset). ${consequence}`,
+      `[trivet] ${feature} is off (${missing} unset). ${consequence}`,
     );
   }
 }

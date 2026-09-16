@@ -58,14 +58,14 @@ export async function POST(request: Request) {
   try {
     return await handleUpload(request);
   } catch (error) {
-    console.error("[meal-magic] upload failed", error);
+    console.error("[trivet] upload failed", error);
 
     if (error instanceof BlobError) {
       // Name the store, so a token pasted from the wrong one is obvious. The
       // error text talks about the store's configuration, which sends you to
       // the store's settings when the mistake is actually in the variable.
       console.error(
-        `[meal-magic] blob store in use: ${blobStoreId() ?? "unknown"}`,
+        `[trivet] blob store in use: ${blobStoreId() ?? "unknown"}`,
       );
       return NextResponse.json(
         {

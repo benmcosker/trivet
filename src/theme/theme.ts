@@ -3,7 +3,7 @@
 import { createTheme, type ThemeOptions } from "@mui/material/styles";
 
 /**
- * The Meal Magic identity: a modern cookbook rather than a dashboard.
+ * The Trivet identity: a modern cookbook rather than a dashboard.
  *
  * Three rules do most of the work, and all three live here rather than in the
  * pages: warm paper instead of white, hairline rules instead of borders and
