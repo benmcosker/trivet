@@ -36,7 +36,16 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
     // planned from a list it is not in.
     prisma.recipe.findMany({
       where: visibleRecipes(householdId),
-      select: { id: true, title: true, servings: true, imageUrl: true },
+      // The times are here for the planner's meta line, "Serves 4 / 1 hr 30";
+      // the picker tiles ignore them.
+      select: {
+        id: true,
+        title: true,
+        servings: true,
+        imageUrl: true,
+        prepMinutes: true,
+        cookMinutes: true,
+      },
       orderBy: { title: "asc" },
     }),
     getWeeklySkips(weekStart, householdId),
@@ -64,6 +73,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
         weekStartIso={weekStart.toISOString().slice(0, 10)}
         prevWeekIso={addDays(weekStart, -7).toISOString().slice(0, 10)}
         nextWeekIso={addDays(weekStart, 7).toISOString().slice(0, 10)}
+        // Today by the same UTC clock the week itself was chosen with, so the
+        // marked cell and the seven days on screen cannot disagree - and so
+        // that the server and the browser render the same thing.
+        todayIso={new Date().toISOString().slice(0, 10)}
         recipes={recipes.map((recipe) => ({
           ...recipe,
           reviews: summaries.get(recipe.id) ?? NO_REVIEWS,

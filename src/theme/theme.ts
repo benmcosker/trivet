@@ -264,25 +264,41 @@ const identity: ThemeOptions = {
   },
 
   components: {
+    /*
+     * Every colour below is read off `theme.vars`, never `theme.palette`.
+     *
+     * This theme emits CSS variables and resolves the scheme with a media
+     * query, which means a component override runs once, at build time, with
+     * no way of knowing which scheme it will be painted in. `theme.palette`
+     * there is the *light* palette, already resolved to a hex, so
+     * `color: theme.palette.text.secondary` compiles to `color: #746c5c` and
+     * stays that colour in the dark. `theme.vars.palette` gives the variable
+     * instead - `var(--mui-palette-text-secondary)` - which the media query
+     * redefines, so the rule follows the scheme.
+     *
+     * It fails quietly, which is why it is worth the paragraph: the light
+     * scheme looks right, the build is clean, and only a contrast reading in
+     * dark shows outlined buttons at 1.9:1 and text buttons at 3.6:1.
+     */
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
         contained: { padding: "14px 22px" },
         outlined: ({ theme }) => ({
           padding: "13px 20px",
-          borderColor: theme.palette.divider,
-          color: theme.palette.text.muted,
+          borderColor: theme.vars.palette.divider,
+          color: theme.vars.palette.text.muted,
           "&:hover": {
-            borderColor: theme.palette.text.primary,
-            color: theme.palette.text.primary,
+            borderColor: theme.vars.palette.text.primary,
+            color: theme.vars.palette.text.primary,
             backgroundColor: "transparent",
           },
         }),
         text: ({ theme }) => ({
           padding: "6px 2px",
-          color: theme.palette.text.secondary,
+          color: theme.vars.palette.text.secondary,
           "&:hover": {
-            color: theme.palette.text.primary,
+            color: theme.vars.palette.text.primary,
             backgroundColor: "transparent",
           },
         }),
@@ -307,12 +323,12 @@ const identity: ThemeOptions = {
         // unless it is overridden here.
         root: { borderRadius: 0, fontFamily: sans, letterSpacing: "0.06em" },
         outlined: ({ theme }) => ({
-          borderColor: theme.palette.divider,
-          color: theme.palette.text.mutedLight,
+          borderColor: theme.vars.palette.divider,
+          color: theme.vars.palette.text.mutedLight,
         }),
         filled: ({ theme }) => ({
-          backgroundColor: theme.palette.background.raised,
-          color: theme.palette.text.primary,
+          backgroundColor: theme.vars.palette.background.raised,
+          color: theme.vars.palette.text.primary,
         }),
       },
     },
@@ -330,8 +346,8 @@ const identity: ThemeOptions = {
       defaultProps: { underline: "none" },
       styleOverrides: {
         root: ({ theme }) => ({
-          color: theme.palette.primary.main,
-          "&:hover": { color: theme.palette.secondary.main },
+          color: theme.vars.palette.primary.main,
+          "&:hover": { color: theme.vars.palette.secondary.main },
         }),
       },
     },
@@ -345,11 +361,11 @@ const identity: ThemeOptions = {
     // loudest thing on a page made of paper and hairlines. Element selector,
     // so any component that sets its own colour still wins.
     MuiCssBaseline: {
-      styleOverrides: ({ palette }) => ({
+      styleOverrides: ({ vars }) => ({
         a: {
-          color: palette.primary.main,
+          color: vars.palette.primary.main,
           textDecoration: "none",
-          "&:hover": { color: palette.secondary.main },
+          "&:hover": { color: vars.palette.secondary.main },
         },
       }),
     },
