@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { APP_NAME, BRAND } from "@/lib/legal";
+
 import {
   MAX_MESSAGE_CHARS,
   shoppingListMessage,
@@ -110,6 +112,21 @@ describe("shoppingListMessage", () => {
       "McMullen Meal Magic - shopping for week of 24 Aug\n\n" +
         "Produce:\n2 lemons\n\nReply STOP to unsubscribe.",
     );
+  });
+
+  /*
+   * The tripwire for the split between APP_NAME and BRAND.
+   *
+   * The site chrome says "Trivet" and the message bodies say the registered
+   * campaign name, and the obvious tidy-up - making them agree - is the one
+   * change that must not happen here without a re-registration first. A
+   * carrier does not bounce a mismatched sender name, it drops the message,
+   * so nothing else in this codebase would notice.
+   */
+  it("carries the registered campaign name, not the app's display name", () => {
+    const message = shoppingListMessage("week of 24 Aug", "Produce:\n2 lemons");
+    expect(message).toContain(BRAND);
+    expect(message).not.toContain(APP_NAME);
   });
 
   it("carries no character that would force the message into UCS-2", () => {

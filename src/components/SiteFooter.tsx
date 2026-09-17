@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
 
-import { BRAND } from "@/lib/legal";
+import { APP_NAME } from "@/lib/legal";
 import { PAGE_MAX_WIDTH, PAGE_PADDING_X } from "@/theme/page";
 
 /**
@@ -48,7 +48,7 @@ export function SiteFooter() {
         }}
       >
         <Typography variant="body2" color="text.secondary">
-          {BRAND}
+          {APP_NAME}
         </Typography>
         <Link href="/privacy" variant="body2">
           Privacy Policy
