@@ -25,8 +25,24 @@ functions open far more connections than Postgres will accept directly.
 ## 2. Blob storage (Vercel)
 
 In the Vercel dashboard: **Storage → Create → Blob**, then connect it to the
-project. Vercel injects `BLOB_READ_WRITE_TOKEN` automatically — you do not copy
-it by hand.
+project. Connecting the store seeds `BLOB_READ_WRITE_TOKEN` on the project for
+you, so there is nothing to copy on the first setup.
+
+**It is an ordinary stored variable from that moment on, and this is the part
+that catches people.** Rotating the token in the Blob store does not update the
+project's copy — the store issues a new one and the project keeps serving the
+old, which fails as `403` on the next upload and nowhere else. A rotation is
+three steps, all of them by hand:
+
+1. Rotate in **Storage → your Blob store → Tokens**.
+2. Paste the new value over the project's `BLOB_READ_WRITE_TOKEN` in
+   **Settings → Environment Variables**.
+3. **Redeploy.** Environment variables are read into the build, so a running
+   deployment goes on using the value it was built with however many times you
+   save the new one.
+
+Record the date in `lifecycle.json` when you do; the weekly health check reads
+it, and no API can tell it when a token was last rotated.
 
 Skipping this step is worse than it looks. Uploads fall back to
 `./public/uploads`, which on serverless hosting is a fresh empty directory on
@@ -132,7 +148,7 @@ Set these in **Settings → Environment Variables**, for Production and Preview:
 | `ANTHROPIC_API_KEY`     | no       | Enables PDF extraction                                                                                                                        |
 | `INSTACART_API_KEY`     | no       | **Not obtainable.** Instacart has closed new developer applications with no waitlist. Leave unset; the provider is hidden until a key exists. |
 | `INSTACART_API_BASE`    | no       | Only meaningful once a key exists: `https://connect.dev.instacart.tools` for development, `https://connect.instacart.com` for production      |
-| `BLOB_READ_WRITE_TOKEN` | —        | Injected by Vercel when the Blob store is connected                                                                                           |
+| `BLOB_READ_WRITE_TOKEN` | —        | Seeded by Vercel when the Blob store is connected, then stored like any other — a rotation is pasted in by hand and needs a redeploy (§2)     |
 
 The app refuses to start if a required variable is missing, and names all of
 them at once rather than failing on the first. Optional ones are logged at boot
