@@ -42,11 +42,11 @@ const OPTIONAL = [
   },
   {
     feature: "Password resets",
-    missing: "RESEND_API_KEY",
+    missing: "TWILIO_EMAIL_API_KEY",
     consequence:
       "The forgotten-password page says so rather than taking an address and " +
-      "sending nothing. Needs EMAIL_FROM alongside it, at a domain verified " +
-      "with the provider.",
+      "sending nothing. Needs EMAIL_FROM alongside it, at a domain " +
+      "authenticated under Twilio's Email section.",
   },
   {
     feature: "Cloud file storage",
