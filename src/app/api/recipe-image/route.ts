@@ -1,6 +1,6 @@
-import { BlobError } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
+import { blobFailure } from "@/lib/blob-failure";
 import { inspectImage } from "@/lib/image-inspect";
 import { clearRecipeImage, setRecipeImage } from "@/lib/recipe-image";
 import { getCurrentHousehold } from "@/lib/session";
@@ -17,16 +17,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[trivet] recipe image upload failed", error);
 
-    if (error instanceof BlobError) {
-      return NextResponse.json(
-        {
-          error:
-            "File storage rejected the image. Nothing was changed - this is " +
-            "a configuration problem, not a problem with your photo.",
-        },
-        { status: 500 },
-      );
-    }
+    const refused = blobFailure(error, "photo");
+    if (refused) return refused;
 
     return NextResponse.json(
       { error: "Something went wrong saving that image." },
