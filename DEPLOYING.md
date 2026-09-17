@@ -148,7 +148,13 @@ Set these in **Settings → Environment Variables**, for Production and Preview:
 | `ANTHROPIC_API_KEY`     | no       | Enables PDF extraction                                                                                                                        |
 | `INSTACART_API_KEY`     | no       | **Not obtainable.** Instacart has closed new developer applications with no waitlist. Leave unset; the provider is hidden until a key exists. |
 | `INSTACART_API_BASE`    | no       | Only meaningful once a key exists: `https://connect.dev.instacart.tools` for development, `https://connect.instacart.com` for production      |
+| `RESEND_API_KEY`        | no       | Enables password resets. Without it `/forgot-password` says so rather than sending nothing                                                    |
+| `EMAIL_FROM`            | no       | The sender address, at a domain verified with Resend. An unverified sender is accepted by the API and then not delivered                      |
 | `BLOB_READ_WRITE_TOKEN` | —        | Seeded by Vercel when the Blob store is connected, then stored like any other — a rotation is pasted in by hand and needs a redeploy (§2)     |
+
+`BETTER_AUTH_URL` earns its dagger twice over now: reset links are built from
+it, so a wrong value produces links pointing at an origin nobody is serving,
+and the only symptom is people reporting that the link is broken.
 
 The app refuses to start if a required variable is missing, and names all of
 them at once rather than failing on the first. Optional ones are logged at boot

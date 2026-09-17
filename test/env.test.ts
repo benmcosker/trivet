@@ -7,6 +7,7 @@ const full = {
   BETTER_AUTH_SECRET: "secret",
   ANTHROPIC_API_KEY: "k",
   TWILIO_ACCOUNT_SID: "k",
+  RESEND_API_KEY: "k",
   BLOB_READ_WRITE_TOKEN: "k",
 };
 
@@ -41,6 +42,7 @@ describe("checkEnv", () => {
     expect(report.disabledFeatures.map((f) => f.missing)).toEqual([
       "ANTHROPIC_API_KEY",
       "TWILIO_ACCOUNT_SID",
+      "RESEND_API_KEY",
       "BLOB_READ_WRITE_TOKEN",
     ]);
   });
@@ -70,6 +72,15 @@ describe("checkEnv", () => {
     }).disabledFeatures;
     expect(blob.feature).toBe("Cloud file storage");
     expect(blob.consequence).toMatch(/vanish between deploys/);
+
+    const [reset] = checkEnv({
+      ...full,
+      RESEND_API_KEY: "",
+    }).disabledFeatures;
+    expect(reset.feature).toBe("Password resets");
+    // The half-configuration that looks fine and is not: a key with no
+    // verified sender address behind it.
+    expect(reset.consequence).toMatch(/EMAIL_FROM/);
 
     const [sms] = checkEnv({
       ...full,

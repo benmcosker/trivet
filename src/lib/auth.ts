@@ -4,7 +4,13 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 
 import { prisma } from "./db";
+import { emailAvailable, getEmailSender } from "./email";
+import {
+  RESET_TOKEN_TTL_SECONDS,
+  resetPasswordEmail,
+} from "./email/reset-password";
 import { checkInvite, inviteRejectionMessage, redeemInvite } from "./invites";
+import { APP_NAME } from "./legal";
 import { parsePhone } from "./phone";
 
 const SIGN_UP_PATH = "/sign-up/email";
@@ -40,6 +46,61 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 10,
+    resetPasswordTokenExpiresIn: RESET_TOKEN_TTL_SECONDS,
+
+    /*
+     * Every other session ends when the password does.
+     *
+     * Sessions here last thirty days, so without this a reset leaves whoever
+     * prompted it still signed in for a month - which is the one case the
+     * feature exists for. The cost is that the person resetting is signed out
+     * on their other devices, which is the correct surprise.
+     */
+    revokeSessionsOnPasswordReset: true,
+
+    /**
+     * How a reset link reaches the person who asked for one.
+     *
+     * Better Auth owns everything hard about this - issuing the token, storing
+     * it, expiring it, and refusing to say whether an address has an account
+     * at all. It hands over a finished URL and asks only that it be delivered.
+     *
+     * Two things are worth knowing here.
+     *
+     * The URL is built from `BETTER_AUTH_URL`. That variable is not in env.ts's
+     * REQUIRED list, so a wrong value does not fail at startup - it produces
+     * reset links pointing at an origin nobody is serving, and the only symptom
+     * is people saying the link is broken. DEPLOYING.md says the same thing
+     * about sign-in; this is the second thing it silently breaks.
+     *
+     * A send that fails is logged and swallowed rather than thrown. Throwing
+     * here turns the endpoint's deliberately uninformative answer into a 500
+     * for real addresses and a 200 for made-up ones, which hands back exactly
+     * the account-enumeration oracle better-auth went to the trouble of
+     * closing. The person is told to check their mail either way; the log is
+     * where the truth lives.
+     */
+    sendResetPassword: async ({ user, url }) => {
+      if (!emailAvailable()) {
+        console.error(
+          "[reset] no email provider configured, so a reset link was " +
+            "requested and could not be delivered. Set RESEND_API_KEY and " +
+            "EMAIL_FROM.",
+        );
+        return;
+      }
+
+      const { subject, text } = resetPasswordEmail({ url, brand: APP_NAME });
+      const result = await getEmailSender().send({
+        to: user.email,
+        subject,
+        text,
+      });
+
+      if (!result.ok) {
+        console.error("[reset] could not send the link:", result.error);
+      }
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 30,
