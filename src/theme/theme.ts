@@ -367,6 +367,35 @@ const identity: ThemeOptions = {
           textDecoration: "none",
           "&:hover": { color: vars.palette.secondary.main },
         },
+
+        /*
+         * What a page looks like on paper.
+         *
+         * `data-print` marks the two halves: "hide" is on screen and not on
+         * paper, "only" is the reverse. Data attributes rather than class
+         * names to match `data-ingredient` - a class on a MUI component is one
+         * `className` prop away from being overwritten, and these have to
+         * survive.
+         *
+         * The ground goes white and the ink black because this design is
+         * built on warm paper, and warm paper prints as a full page of beige
+         * at the cost of a cartridge. The scheme is pinned to light for the
+         * same reason: printing at night from a dark-mode browser should not
+         * produce a black page.
+         */
+        "[data-print='only']": { display: "none" },
+
+        "@media print": {
+          ":root": { colorScheme: "light" },
+          body: { background: "#fff", color: "#000" },
+          // The site chrome. A shopping list does not need branding, and the
+          // ink is better spent on the list.
+          "header, footer": { display: "none !important" },
+          // The page's own margins are the printer's job from here.
+          main: { padding: "0 !important", maxWidth: "none !important" },
+          "[data-print='hide']": { display: "none !important" },
+          "[data-print='only']": { display: "block !important" },
+        },
       }),
     },
   },

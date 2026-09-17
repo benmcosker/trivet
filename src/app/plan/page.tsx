@@ -1,5 +1,3 @@
-import Typography from "@mui/material/Typography";
-
 import { AppShell } from "@/components/AppShell";
 import { WeekPlanner } from "@/components/WeekPlanner";
 import { prisma } from "@/lib/db";
@@ -21,7 +19,7 @@ import { smsAvailable } from "@/lib/sms";
 import { shoppingListAudience } from "@/lib/sms/shopping-list";
 
 export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
-  const { householdId } = await requireHousehold();
+  const { householdId, householdName } = await requireHousehold();
 
   const params = await searchParams;
   const weekParam = typeof params.week === "string" ? params.week : null;
@@ -66,9 +64,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
 
   return (
     <AppShell>
-      <Typography variant="h1" sx={{ mb: 3 }}>
-        This week
-      </Typography>
+      {/*
+       * No h1 here: the title is the second line of a block that opens with
+       * the household and the date range, so the planner owns both.
+       */}
       <WeekPlanner
         weekStartIso={weekStart.toISOString().slice(0, 10)}
         prevWeekIso={addDays(weekStart, -7).toISOString().slice(0, 10)}
@@ -77,6 +76,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
         // marked cell and the seven days on screen cannot disagree - and so
         // that the server and the browser render the same thing.
         todayIso={new Date().toISOString().slice(0, 10)}
+        // Which Monday counts as "this week", so the nav can mark itself.
+        // Read here rather than in the browser for the same reason todayIso is.
+        thisWeekIso={weekStartOf(new Date()).toISOString().slice(0, 10)}
+        householdName={householdName}
         recipes={recipes.map((recipe) => ({
           ...recipe,
           reviews: summaries.get(recipe.id) ?? NO_REVIEWS,

@@ -1,13 +1,9 @@
 "use client";
 
 import CloseIcon from "@mui/icons-material/Close";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import SmsIcon from "@mui/icons-material/Sms";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import CardActionArea from "@mui/material/CardActionArea";
@@ -86,6 +82,395 @@ type PlannedMeal = {
  * different things rather than as one week.
  */
 const DAY_PHOTO_HEIGHT = 126;
+
+/**
+ * Month names spelled out here rather than read from `toLocaleDateString`.
+ *
+ * The page is rendered twice, once on the server and once in the browser, and
+ * the two only agree about `Intl` if they were built against the same ICU
+ * data. A header that says "September" on one pass and "Sept" on the other is
+ * a hydration mismatch, and this app has exactly one locale.
+ */
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/** "14-20 September", or "28 September - 4 October" when it straddles one. */
+function formatWeekRange(startIso: string): string {
+  const endIso = addDaysIso(startIso, 6);
+  const [, startMonth, startDay] = startIso.split("-").map(Number);
+  const [, endMonth, endDay] = endIso.split("-").map(Number);
+
+  // The year is left off on purpose: the page is about the week you are in,
+  // and "2026" in an eyebrow is the sort of precision nobody asked for.
+  return startMonth === endMonth
+    ? `${startDay}–${endDay} ${MONTHS[endMonth - 1]}`
+    : `${startDay} ${MONTHS[startMonth - 1]} – ${endDay} ${MONTHS[endMonth - 1]}`;
+}
+
+/**
+ * Small counts as words, because the summary line is a sentence.
+ *
+ * Only as far as a week goes; past that nothing in this app counts anything
+ * and the digits are honest.
+ */
+const NUMBER_WORDS = [
+  "no",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+];
+
+function inWords(n: number): string {
+  return NUMBER_WORDS[n] ?? String(n);
+}
+
+function sentenceCase(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+/**
+ * The week in one sentence: "Six dinners planned, two evenings open."
+ *
+ * The one thing a seven-column grid cannot say at a glance is how much of it
+ * is full - you have to read all seven cells to find out, which is exactly
+ * the work a summary is for.
+ *
+ * Dinners are counted across every dinner slot, so an evening cooking two
+ * dishes contributes two; evenings are counted as evenings. The two numbers
+ * therefore need not add to seven, and both are true.
+ */
+function summariseWeek(dinners: number, openEvenings: number): string {
+  if (dinners === 0) return "Nothing planned yet.";
+
+  const meals = `${sentenceCase(inWords(dinners))} ${
+    dinners === 1 ? "dinner" : "dinners"
+  } planned`;
+
+  if (openEvenings === 0) return `${meals}, every evening full.`;
+
+  return `${meals}, ${inWords(openEvenings)} ${
+    openEvenings === 1 ? "evening" : "evenings"
+  } open.`;
+}
+
+/**
+ * One of the two week labels, underlined in clay when it is the week you are
+ * looking at.
+ *
+ * The same device as the active item in the top bar and the rule under
+ * today's date, which is the whole vocabulary this design has for "you are
+ * here". The inactive label carries a transparent border of the same weight
+ * so that nothing moves when you switch between them.
+ */
+function WeekLink({
+  href,
+  label,
+  active,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Box
+      component={Link}
+      href={href}
+      aria-current={active ? "page" : undefined}
+      sx={{
+        fontFamily: fonts.sans,
+        fontWeight: active ? 700 : 600,
+        fontSize: "12px",
+        letterSpacing: "0.14em",
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+        color: active ? "text.primary" : "text.secondary",
+        pb: "4px",
+        borderBottom: 2,
+        borderColor: active ? "secondary.main" : "transparent",
+        "&:hover": { color: "text.primary" },
+      }}
+    >
+      {label}
+    </Box>
+  );
+}
+
+/**
+ * The week and its list, on paper.
+ *
+ * A second, simpler DOM rather than a print stylesheet over the first one.
+ * The screen page is a seven-column grid of photographs with hover controls
+ * in it, and every one of those is either invisible on paper or a waste of
+ * ink; trying to reason it down to two sheets with `@media print` would
+ * mean a rule for each, and a new one every time the page changes.
+ *
+ * Hidden on screen by `[data-print='only']` in the baseline; the screen half
+ * of the page carries `data-print="hide"` and is gone here.
+ */
+function PrintSheets({
+  weekStartIso,
+  dinnerCount,
+  sideCount,
+  groceries,
+  pantry,
+  byKey,
+  recipes,
+}: {
+  weekStartIso: string;
+  dinnerCount: number;
+  sideCount: number;
+  groceries: GroceryLine[];
+  pantry: PantryItemRecord[];
+  byKey: Map<string, PlannedMeal>;
+  recipes: { id: string; title: string }[];
+}) {
+  const sections = groupBySection(groceries);
+
+  return (
+    <Box
+      data-print="only"
+      sx={{ color: "#000", fontFamily: fonts.serif, lineHeight: 1.3 }}
+    >
+      <Box sx={{ breakAfter: "page" }}>
+        <PrintHeading
+          title="Shopping list"
+          // The counts belong on the page you take to the shop: they say how
+          // much of the week this is, which is the question you have when
+          // the list looks shorter than you expected.
+          subtitle={[
+            formatWeekRange(weekStartIso),
+            dinnerCount > 0
+              ? `${dinnerCount} ${dinnerCount === 1 ? "dinner" : "dinners"}`
+              : null,
+            sideCount > 0
+              ? `${sideCount} ${sideCount === 1 ? "side" : "sides"}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
+
+        {sections.map((section) => (
+          // Kept whole where a page will take it, so a section head does not
+          // print as the last line of a sheet.
+          <Box key={section.id} sx={{ mt: "28px", breakInside: "avoid" }}>
+            <Box
+              sx={{
+                fontFamily: fonts.sans,
+                fontWeight: 700,
+                fontSize: "11px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                pb: "7px",
+                borderBottom: "1px solid #000",
+              }}
+            >
+              {section.label}
+            </Box>
+
+            {section.items.map((line) => (
+              <Box
+                key={`${line.name}-${line.unit ?? ""}-${line.quantity ?? "x"}`}
+                sx={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "12px",
+                  mt: "11px",
+                }}
+              >
+                <Box
+                  component="span"
+                  aria-hidden
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    border: "1.2px solid #000",
+                    flexShrink: 0,
+                  }}
+                />
+                {/*
+                 * No source line here. Standing in the shop you do not care
+                 * which recipe wanted the lemons, and it doubles the length
+                 * of the page that has to fit on one sheet.
+                 */}
+                <Box component="span" sx={{ fontSize: "17px" }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      fontFamily: fonts.sans,
+                      fontWeight: 700,
+                      fontSize: "13px",
+                    }}
+                  >
+                    {formatAmount(line)}
+                  </Box>{" "}
+                  {line.name}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        ))}
+
+        {pantry.length > 0 ? (
+          <Box
+            sx={{
+              mt: "34px",
+              pt: "12px",
+              borderTop: "1px solid #000",
+              fontSize: "15px",
+              fontStyle: "italic",
+            }}
+          >
+            Not listed: {pantry.map((item) => item.name).join(", ")}.
+          </Box>
+        ) : null}
+      </Box>
+
+      <Box>
+        <PrintHeading
+          title="This week"
+          subtitle={formatWeekRange(weekStartIso)}
+        />
+
+        <Box sx={{ mt: "30px" }}>
+          {DAY_NAMES.map((day, index) => {
+            const date = addDaysIso(weekStartIso, index);
+            const titleOf = (slot: MealSlot) => {
+              const meal = byKey.get(`${date}|${slot}`);
+              if (!meal) return null;
+              return (
+                recipes.find((r) => r.id === meal.recipeId)?.title ?? meal.title
+              );
+            };
+
+            const first = titleOf(FIRST_DINNER);
+            const { head, tail } = splitTitle(first ?? "");
+            const extras = DINNER_SLOTS.slice(1)
+              .map(titleOf)
+              .filter((t): t is string => Boolean(t));
+            const side = titleOf(SIDE_SLOT);
+
+            return (
+              <Box
+                key={date}
+                sx={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "18px",
+                  py: "14px",
+                  borderBottom: "1px solid #000",
+                  "&:last-of-type": { borderBottom: 0 },
+                  breakInside: "avoid",
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    fontFamily: fonts.sans,
+                    fontWeight: 700,
+                    fontSize: "11px",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    width: 80,
+                    flexShrink: 0,
+                  }}
+                >
+                  {day.slice(0, 3)} {dayOfMonth(date)}
+                </Box>
+
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  {first ? (
+                    <>
+                      <Box sx={{ fontSize: "18px" }}>
+                        {head}
+                        {tail ? (
+                          <Box component="span" sx={{ fontStyle: "italic" }}>
+                            {" "}
+                            {tail}
+                          </Box>
+                        ) : null}
+                      </Box>
+                      {extras.map((title) => (
+                        <Box key={title} sx={{ fontSize: "16px" }}>
+                          and {title}
+                        </Box>
+                      ))}
+                      {side ? (
+                        <Box sx={{ fontSize: "16px", fontStyle: "italic" }}>
+                          with {side}
+                        </Box>
+                      ) : null}
+                    </>
+                  ) : (
+                    /*
+                     * An em dash rather than nothing. A five-day week with
+                     * two rows missing reads as a five-day week; seven rows
+                     * with two of them open reads as what it is.
+                     */
+                    <Box sx={{ fontSize: "18px", fontStyle: "italic" }}>
+                      &mdash;
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/** The rule-and-sub-line both printed sheets open with. */
+function PrintHeading({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <>
+      <Box
+        sx={{
+          fontSize: "30px",
+          letterSpacing: "-0.02em",
+          pb: "12px",
+          borderBottom: "1.5px solid #000",
+        }}
+      >
+        {title}
+      </Box>
+      <Box
+        sx={{
+          fontFamily: fonts.sans,
+          fontSize: "11px",
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          mt: "12px",
+        }}
+      >
+        {subtitle}
+      </Box>
+    </>
+  );
+}
 
 /** The day header's number: "21", not "09-21" and not "05". */
 function dayOfMonth(iso: string): string {
@@ -173,14 +558,15 @@ function DishMeta({ parts }: { parts: string[] }) {
 }
 
 /**
- * The small uppercase text that has replaced every button in a day cell.
+ * The small uppercase text that has replaced every button on this page.
  *
- * Shared by "+ Dinner", "Open" and "Remove" so that the footer row reads as
- * one row of labels rather than three components that happen to look alike.
- * The vertical padding is not decoration: at 10.5px the label alone is a
- * fourteen-pixel tap target, and this brings the row back to twenty-four.
+ * Shared by "+ Dinner" and the day actions in the grid and by "Got it" and
+ * "Always have" in the list, so the page reads as one set of labels rather
+ * than several components that happen to look alike. The vertical padding is
+ * not decoration: at 10.5px the label alone is a fourteen-pixel tap target,
+ * and this brings the row back to twenty-four.
  */
-const DAY_ACTION_SX = {
+const TEXT_ACTION_SX = {
   px: 0,
   py: "5px",
   minWidth: 0,
@@ -199,9 +585,9 @@ function addDaysIso(iso: string, days: number): string {
 
 export function WeekPlanner({
   weekStartIso,
-  prevWeekIso,
-  nextWeekIso,
   todayIso,
+  thisWeekIso,
+  householdName,
   recipes,
   meals,
   groceries,
@@ -211,6 +597,14 @@ export function WeekPlanner({
   smsAudience,
 }: {
   weekStartIso: string;
+  /**
+   * Kept in the props though nothing reads them any more.
+   *
+   * The week nav is two labels rather than a pair of arrows, so there is no
+   * control that steps backwards - but `?week=` still accepts any Monday, and
+   * these are what a "previous week" link would be built from on the day one
+   * is wanted.
+   */
   prevWeekIso: string;
   nextWeekIso: string;
   /**
@@ -224,6 +618,10 @@ export function WeekPlanner({
    * which seven days are on screen.
    */
   todayIso: string;
+  /** The Monday of the week containing today, so the nav knows which label is live. */
+  thisWeekIso: string;
+  /** "The McMullens" - the eyebrow says whose week this is. */
+  householdName: string;
   recipes: (TileRecipe & {
     servings: number;
     prepMinutes: number | null;
@@ -267,6 +665,41 @@ export function WeekPlanner({
   }
 
   const byKey = new Map(meals.map((m) => [`${m.date}|${m.slot}`, m]));
+
+  /*
+   * How full the week is, counted once for the summary line and the shopping
+   * list's eyebrow. Dinners are counted per dish and evenings per evening, so
+   * a Friday cooking two things contributes two dinners and no open evening.
+   */
+  const dinnerCount = meals.filter((meal) =>
+    DINNER_SLOTS.some((slot) => slot === meal.slot),
+  ).length;
+  const sideCount = meals.filter((meal) =>
+    SIDE_SLOTS.some((slot) => slot === meal.slot),
+  ).length;
+  const openEvenings = DAY_NAMES.filter((_, index) => {
+    const date = addDaysIso(weekStartIso, index);
+    return !DINNER_SLOTS.some((slot) => byKey.get(`${date}|${slot}`));
+  }).length;
+
+  /*
+   * "From six dinners and three sides" - what the list below was built out
+   * of. Null when the week is empty, because "from no dinners" is a sentence
+   * nobody needs above a list that is also empty.
+   */
+  const listEyebrow =
+    dinnerCount === 0 && sideCount === 0
+      ? null
+      : `From ${[
+          dinnerCount > 0
+            ? `${inWords(dinnerCount)} ${dinnerCount === 1 ? "dinner" : "dinners"}`
+            : null,
+          sideCount > 0
+            ? `${inWords(sideCount)} ${sideCount === 1 ? "side" : "sides"}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" and ")}`;
 
   function assignSlot(date: string, slot: MealSlot, recipeId: string | null) {
     const recipe = recipes.find((r) => r.id === recipeId);
@@ -508,7 +941,7 @@ export function WeekPlanner({
             size="small"
             disabled={pending}
             onClick={() => setPicking({ date, day, slot: nextDinner })}
-            sx={DAY_ACTION_SX}
+            sx={TEXT_ACTION_SX}
           >
             + Dinner
           </Button>
@@ -518,7 +951,7 @@ export function WeekPlanner({
           <Button
             size="small"
             onClick={() => setSidePicking({ date, day })}
-            sx={DAY_ACTION_SX}
+            sx={TEXT_ACTION_SX}
           >
             + Side
           </Button>
@@ -529,42 +962,116 @@ export function WeekPlanner({
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-        }}
-      >
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Button
-            component={Link}
-            href={`/plan?week=${prevWeekIso}`}
-            size="small"
+      {/*
+       * The page header. "Week of 2026-09-14" between two arrows was the old
+       * version of all of this, and it said the least useful part out loud.
+       */}
+      <Box data-print="hide">
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          sx={{
+            alignItems: { xs: "flex-start", md: "flex-end" },
+            justifyContent: "space-between",
+            gap: { xs: 2, md: 5 },
+          }}
+        >
+          <Box>
+            <Typography
+              variant="overline"
+              component="p"
+              sx={{ color: "secondary.main", mb: { xs: 1, md: 2 } }}
+            >
+              {householdName} &middot; {formatWeekRange(weekStartIso)}
+            </Typography>
+            {/*
+             * The page's h1 lives here rather than in the page, because it is
+             * the second line of a two-line unit and the eyebrow above it has
+             * to be part of the same block.
+             */}
+            <Typography variant="h1" component="h1">
+              This week
+            </Typography>
+          </Box>
+
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: "baseline",
+              flexWrap: "wrap",
+              gap: { xs: 2.75, md: 3.75 },
+              pb: { md: 1.5 },
+            }}
           >
-            ← Previous
-          </Button>
-          <Typography variant="body2" color="text.secondary">
-            Week of {weekStartIso}
-          </Typography>
-          <Button
-            component={Link}
-            href={`/plan?week=${nextWeekIso}`}
-            size="small"
-          >
-            Next →
-          </Button>
+            {/*
+             * Two labels rather than a pair of arrows. Stepping one week at a
+             * time is how you get to a week you did not mean to be on; these
+             * name the two weeks anybody plans. Deep history is still a URL -
+             * `?week=` takes any Monday - which is the right shape for
+             * something wanted once a year.
+             */}
+            <Stack
+              direction="row"
+              sx={{ alignItems: "baseline", gap: { xs: 2, md: 2.75 } }}
+            >
+              <WeekLink
+                href="/plan"
+                label="This week"
+                active={weekStartIso === thisWeekIso}
+              />
+              <WeekLink
+                href={`/plan?week=${addDaysIso(thisWeekIso, 7)}`}
+                label="Next week"
+                active={weekStartIso === addDaysIso(thisWeekIso, 7)}
+              />
+            </Stack>
+
+            <Button
+              onClick={() => window.print()}
+              sx={{
+                ...TEXT_ACTION_SX,
+                fontSize: "12px",
+                letterSpacing: "0.14em",
+                borderBottom: 1,
+                borderColor: "divider",
+                borderRadius: 0,
+                pb: "3px",
+              }}
+            >
+              Print
+            </Button>
+          </Stack>
         </Stack>
-      </Stack>
+
+        {/*
+         * The summary, under a rule that runs the width of the page. Counting
+         * the week in words is the one thing the grid below cannot do at a
+         * glance.
+         */}
+        <Typography
+          component="p"
+          sx={{
+            mt: { xs: 2.5, md: 4 },
+            pt: { xs: 1.5, md: 2.25 },
+            borderTop: 1,
+            borderColor: "text.primary",
+            fontFamily: fonts.serif,
+            fontStyle: "italic",
+            fontWeight: 300,
+            fontSize: { xs: "19px", md: "24px" },
+            lineHeight: 1.4,
+            color: "text.secondary",
+          }}
+        >
+          {summariseWeek(dinnerCount, openEvenings)}
+        </Typography>
+      </Box>
 
       {/*
        * Twenty pixels between cells, and nothing else between them. A day is a
        * column on the page rather than a card on a surface: the gutter is the
        * separation, as it is in the recipe grid.
        */}
-      <Grid container spacing={2.5}>
+      <Grid container spacing={2.5} data-print="hide">
         {DAY_NAMES.map((day, index) => {
           const date = addDaysIso(weekStartIso, index);
           const dinner = byKey.get(`${date}|${FIRST_DINNER}`);
@@ -818,7 +1325,7 @@ export function WeekPlanner({
                           component={Link}
                           href={`/recipes/${planned.id}`}
                           aria-label={`Open the recipe for ${planned.title}`}
-                          sx={DAY_ACTION_SX}
+                          sx={TEXT_ACTION_SX}
                         >
                           Open
                         </Button>
@@ -827,7 +1334,7 @@ export function WeekPlanner({
                           aria-label={`Remove ${planned.title} from ${day}`}
                           disabled={pending}
                           onClick={() => assignSlot(date, FIRST_DINNER, null)}
-                          sx={DAY_ACTION_SX}
+                          sx={TEXT_ACTION_SX}
                         >
                           Remove
                         </Button>
@@ -873,18 +1380,60 @@ export function WeekPlanner({
         onClose={() => setPicking(null)}
       />
 
-      <Card>
-        <CardContent>
-          <Typography variant="h2" sx={{ mb: 2 }}>
-            Grocery list
-          </Typography>
+      {/*
+       * The list is a section of the page now, not a card sitting on it. The
+       * old <Card> wrapped everything below the grid in a second surface -
+       * which on a ground that is already paper reads as a panel bolted to
+       * the page rather than as the next thing on it.
+       */}
+      <Box component="section" data-print="hide" sx={{ pt: { xs: 5, md: 8 } }}>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          sx={{
+            alignItems: { xs: "flex-start", md: "flex-end" },
+            justifyContent: "space-between",
+            gap: { xs: 2.5, md: 5 },
+            pb: { xs: 1.75, md: 2.25 },
+            borderBottom: 1,
+            borderColor: "text.primary",
+          }}
+        >
+          <Box>
+            {listEyebrow ? (
+              <Typography
+                variant="overline"
+                component="p"
+                sx={{ color: "secondary.main", mb: { xs: 1, md: 1.75 } }}
+              >
+                {listEyebrow}
+              </Typography>
+            ) : null}
+            <Typography
+              variant="h2"
+              sx={{
+                fontSize: { xs: "1.75rem", md: "44px" },
+                lineHeight: 1.05,
+                letterSpacing: "-0.025em",
+              }}
+            >
+              Shopping list
+            </Typography>
+          </Box>
 
-          <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1, mb: 1.5 }}>
+          {/*
+           * On the baseline beside the heading. The icons are gone: three
+           * buttons that all carried a shopping trolley said nothing about
+           * which one does what, and the labels already do.
+           */}
+          <Stack
+            direction="row"
+            sx={{ flexWrap: "wrap", gap: 1.75, pb: { md: 0.75 } }}
+          >
             {providers.map((provider) => (
               <Button
                 key={provider.id}
                 variant={provider.kind === "cart" ? "contained" : "outlined"}
-                startIcon={<ShoppingCartIcon />}
+                color={provider.kind === "cart" ? "ink" : "primary"}
                 // `available` was computed but never used, so a provider
                 // that cannot possibly succeed still invited a click and
                 // answered with an error.
@@ -895,14 +1444,13 @@ export function WeekPlanner({
                 }
                 onClick={() => sendTo(provider.id)}
               >
-                {sendingTo === provider.id ? "Working\u2026" : provider.label}
+                {sendingTo === provider.id ? "Working…" : provider.label}
               </Button>
             ))}
 
             {smsAudience ? (
               <Button
                 variant="outlined"
-                startIcon={<SmsIcon />}
                 disabled={
                   texting ||
                   groceries.length === 0 ||
@@ -910,178 +1458,266 @@ export function WeekPlanner({
                 }
                 onClick={textList}
               >
-                {texting ? "Sending\u2026" : "Text the list"}
+                {texting ? "Sending…" : "Text the list"}
               </Button>
             ) : null}
           </Stack>
+        </Stack>
 
-          {smsAudience ? (
+        {smsAudience ? (
+          <Typography
+            component="p"
+            sx={{
+              mt: 2.25,
+              fontFamily: fonts.serif,
+              fontStyle: "italic",
+              fontWeight: 300,
+              fontSize: "19px",
+              lineHeight: 1.45,
+              color: "text.secondary",
+            }}
+          >
+            {smsAudience.names.length === 0
+              ? "Nobody has agreed to be texted yet — add a number and tick the box on the household page."
+              : `Texts ${smsAudience.names.join(" and ")}.`}
+            {smsAudience.withoutNumbers.length > 0
+              ? ` ${smsAudience.withoutNumbers.join(" and ")} has no number saved.`
+              : ""}
+            {/*
+             * Said separately from the missing numbers: this person has
+             * typed theirs, and telling them to add it again is the one
+             * instruction that will not help.
+             */}
+            {smsAudience.withoutConsent.length > 0
+              ? ` ${smsAudience.withoutConsent.join(" and ")} has not agreed to be texted.`
+              : ""}
+          </Typography>
+        ) : null}
+
+        {textResult ? (
+          <Alert
+            severity={textResult.ok ? "success" : "error"}
+            sx={{ mt: 2 }}
+            onClose={() => setTextResult(null)}
+          >
+            {textResult.ok ? textResult.message : textResult.error}
+          </Alert>
+        ) : null}
+
+        {/*
+         * Spelled out per provider, because the two kinds behave very
+         * differently and a row of similar buttons would imply otherwise.
+         */}
+        <Stack spacing={0.5} sx={{ mt: 2 }}>
+          {providers.map((provider) => (
             <Typography
+              key={provider.id}
               variant="caption"
               color="text.secondary"
-              sx={{ display: "block", mb: 1.5 }}
             >
-              {smsAudience.names.length === 0
-                ? "Nobody has agreed to be texted yet — add a number and tick the box on the household page."
-                : `Texts ${smsAudience.names.join(" and ")}.`}
-              {smsAudience.withoutNumbers.length > 0
-                ? ` ${smsAudience.withoutNumbers.join(" and ")} has no number saved.`
-                : ""}
-              {/*
-               * Said separately from the missing numbers: this person has
-               * typed theirs, and telling them to add it again is the one
-               * instruction that will not help.
-               */}
-              {smsAudience.withoutConsent.length > 0
-                ? ` ${smsAudience.withoutConsent.join(" and ")} has not agreed to be texted.`
-                : ""}
+              <Box component="span" sx={{ fontWeight: 600 }}>
+                {provider.label}:
+              </Box>{" "}
+              {provider.description}
+              {provider.available ? "" : ` ${provider.unavailableReason}`}
             </Typography>
-          ) : null}
+          ))}
+        </Stack>
 
-          {textResult ? (
-            <Alert
-              severity={textResult.ok ? "success" : "error"}
-              sx={{ mb: 2 }}
-              onClose={() => setTextResult(null)}
-            >
-              {textResult.ok ? textResult.message : textResult.error}
-            </Alert>
-          ) : null}
+        {handoff ? <ShoppingHandoffPanel result={handoff} /> : null}
 
-          {/*
-           * Spelled out per provider, because the two kinds behave very
-           * differently and a row of similar buttons would imply otherwise.
-           */}
-          <Stack spacing={0.5} sx={{ mb: 2 }}>
-            {providers.map((provider) => (
-              <Typography
-                key={provider.id}
-                variant="caption"
-                color="text.secondary"
-              >
-                <Box component="span" sx={{ fontWeight: 600 }}>
-                  {provider.label}:
-                </Box>{" "}
-                {provider.description}
-                {provider.available ? "" : ` ${provider.unavailableReason}`}
-              </Typography>
-            ))}
-          </Stack>
-
-          {handoff ? <ShoppingHandoffPanel result={handoff} /> : null}
-
+        {/*
+         * Spaced off the notes above it rather than restyled: the underlined
+         * serif field this becomes is step 9, and until then its own overline
+         * sat directly under the last provider line and read as part of it.
+         */}
+        <Box sx={{ mt: 3.5 }}>
           <AddExtraItem weekStartIso={weekStartIso} />
+        </Box>
 
-          {groceries.length === 0 ? (
-            <Typography color="text.secondary">
-              Plan some meals and the ingredients will collect here. Anything
-              else you need goes in the box above.
-            </Typography>
-          ) : (
-            <Stack spacing={2.5}>
-              {groupBySection(groceries).map((section) => (
-                <Box key={section.id}>
-                  <Typography
-                    variant="overline"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5 }}
-                  >
-                    {section.label}
-                  </Typography>
+        {groceries.length === 0 ? (
+          <Typography color="text.secondary" sx={{ mt: 3 }}>
+            Plan some meals and the ingredients will collect here. Anything else
+            you need goes in the box above.
+          </Typography>
+        ) : (
+          /*
+           * Three columns from `md` up, one below. A shopping list is read
+           * down rather than across, and on a wide screen a single column of
+           * forty rows is two screens of scrolling beside an empty half-page.
+           *
+           * `groupBySection` and its store order are untouched - the sections
+           * are laid out in the order it returns them, which is the order you
+           * walk the shop in.
+           */
+          <Box
+            sx={{
+              mt: { xs: 4, md: 6.5 },
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(3, minmax(0, 1fr))",
+              },
+              columnGap: "56px",
+              rowGap: { xs: 4, md: 6 },
+              alignItems: "start",
+            }}
+          >
+            {groupBySection(groceries).map((section) => (
+              <Box key={section.id}>
+                <Typography
+                  component="h3"
+                  sx={{
+                    fontFamily: fonts.sans,
+                    fontWeight: 700,
+                    fontSize: "11px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: "text.secondary",
+                    pb: "10px",
+                    borderBottom: 1,
+                    borderColor: "text.primary",
+                  }}
+                >
+                  {section.label}
+                </Typography>
 
-                  <Stack
-                    spacing={1}
-                    sx={{
-                      "& > :not(:last-child)": {
+                <Box sx={{ mt: "22px" }}>
+                  {section.items.map((line) => (
+                    <Box
+                      key={`${line.name}-${line.unit ?? ""}-${line.quantity ?? "x"}`}
+                      // Stable handle for the row. MUI's generated class names and
+                      // nesting shift between versions, and tests that walk that
+                      // structure silently target the wrong row rather than fail.
+                      data-ingredient={line.name.trim().toLowerCase()}
+                      sx={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: "10px",
+                        py: "13px",
+                        "&:first-of-type": { pt: 0 },
                         borderBottom: 1,
                         borderColor: "divider",
-                        pb: 1,
-                      },
-                    }}
-                  >
-                    {section.items.map((line) => (
+                        "&:last-of-type": { borderBottom: 0 },
+                        // Controls stay out of the way until the row is
+                        // approached. Forty rows each showing two buttons is
+                        // harder to read than the list being trimmed - but on
+                        // touch there is no hover, so they are always visible
+                        // below md.
+                        "&:hover .row-actions, & .row-actions:focus-within": {
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      {/*
+                       * A fixed column, so the quantities line up down the
+                       * list instead of starting wherever the name before
+                       * them ended. That column is what makes a list
+                       * scannable while you are holding a basket.
+                       */}
                       <Box
-                        key={`${line.name}-${line.unit ?? ""}-${line.quantity ?? "x"}`}
-                        // Stable handle for the row. MUI's generated class names and
-                        // nesting shift between versions, and tests that walk that
-                        // structure silently target the wrong row rather than fail.
-                        data-ingredient={line.name.trim().toLowerCase()}
+                        component="span"
                         sx={{
-                          display: "flex",
-                          alignItems: "flex-start",
-                          gap: 1,
-                          // Controls stay out of the way until the row is
-                          // approached. Forty rows each showing two buttons is
-                          // harder to read than the list being trimmed - but on
-                          // touch there is no hover, so they are always visible
-                          // below md.
-                          "&:hover .row-actions, & .row-actions:focus-within": {
-                            opacity: 1,
-                          },
+                          fontFamily: fonts.sans,
+                          fontWeight: 700,
+                          fontSize: "13px",
+                          letterSpacing: "0.02em",
+                          color: "text.primary",
+                          minWidth: 62,
+                          flexShrink: 0,
                         }}
                       >
-                        <Box sx={{ flexGrow: 1 }}>
-                          <Typography variant="body2">
-                            <Box component="span" sx={{ fontWeight: 600 }}>
-                              {formatAmount(line)}
-                            </Box>{" "}
-                            {line.name}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {line.extraId
-                              ? "Added by hand"
-                              : line.fromRecipes.join(", ")}
-                          </Typography>
-                        </Box>
+                        {formatAmount(line)}
+                      </Box>
 
-                        <Stack
-                          direction="row"
-                          spacing={0.5}
-                          className="row-actions"
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box
                           sx={{
-                            opacity: { xs: 1, md: 0 },
-                            transition: "opacity 120ms",
-                            flexShrink: 0,
+                            fontFamily: fonts.serif,
+                            fontSize: "18px",
+                            lineHeight: 1.3,
+                            color: "text.primary",
+                            overflowWrap: "break-word",
                           }}
                         >
-                          {line.extraId ? (
+                          {line.name}
+                        </Box>
+                        <Box
+                          sx={{
+                            fontFamily: fonts.sans,
+                            fontSize: "11px",
+                            lineHeight: 1.4,
+                            letterSpacing: "0.06em",
+                            color: "text.secondary",
+                            mt: "2px",
+                          }}
+                        >
+                          {line.extraId
+                            ? "Added by hand"
+                            : line.fromRecipes.join(", ")}
+                        </Box>
+                      </Box>
+
+                      <Stack
+                        direction="row"
+                        className="row-actions"
+                        sx={{
+                          columnGap: "14px",
+                          opacity: { xs: 1, md: 0 },
+                          transition: "opacity 120ms",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {line.extraId ? (
+                          <Button
+                            size="small"
+                            disabled={pending}
+                            onClick={() => removeExtra(line.extraId!)}
+                            sx={TEXT_ACTION_SX}
+                          >
+                            Remove
+                          </Button>
+                        ) : (
+                          <>
                             <Button
                               size="small"
                               disabled={pending}
-                              onClick={() => removeExtra(line.extraId!)}
+                              onClick={() => gotItThisWeek(line.name)}
+                              sx={TEXT_ACTION_SX}
                             >
-                              Remove
+                              Got it
                             </Button>
-                          ) : (
-                            <>
-                              <Button
-                                size="small"
-                                disabled={pending}
-                                onClick={() => gotItThisWeek(line.name)}
-                              >
-                                Got it
-                              </Button>
-                              <Button
-                                size="small"
-                                disabled={pending}
-                                onClick={() => alwaysHave(line.name)}
-                              >
-                                Always have
-                              </Button>
-                            </>
-                          )}
-                        </Stack>
-                      </Box>
-                    ))}
-                  </Stack>
+                            <Button
+                              size="small"
+                              disabled={pending}
+                              onClick={() => alwaysHave(line.name)}
+                              sx={TEXT_ACTION_SX}
+                            >
+                              Always have
+                            </Button>
+                          </>
+                        )}
+                      </Stack>
+                    </Box>
+                  ))}
                 </Box>
-              ))}
-            </Stack>
-          )}
+              </Box>
+            ))}
+          </Box>
+        )}
 
-          <ExcludedIngredients pantry={pantry} skips={skips} />
-        </CardContent>
-      </Card>
+        <ExcludedIngredients pantry={pantry} skips={skips} />
+      </Box>
+
+      <PrintSheets
+        weekStartIso={weekStartIso}
+        dinnerCount={dinnerCount}
+        sideCount={sideCount}
+        groceries={groceries}
+        pantry={pantry}
+        byKey={byKey}
+        recipes={recipes}
+      />
     </Stack>
   );
 }
