@@ -7,7 +7,7 @@ const full = {
   BETTER_AUTH_SECRET: "secret",
   ANTHROPIC_API_KEY: "k",
   TWILIO_ACCOUNT_SID: "k",
-  TWILIO_EMAIL_API_KEY: "k",
+  RESEND_API_KEY: "k",
   BLOB_READ_WRITE_TOKEN: "k",
 };
 
@@ -42,7 +42,7 @@ describe("checkEnv", () => {
     expect(report.disabledFeatures.map((f) => f.missing)).toEqual([
       "ANTHROPIC_API_KEY",
       "TWILIO_ACCOUNT_SID",
-      "TWILIO_EMAIL_API_KEY",
+      "RESEND_API_KEY",
       "BLOB_READ_WRITE_TOKEN",
     ]);
   });
@@ -75,7 +75,7 @@ describe("checkEnv", () => {
 
     const [reset] = checkEnv({
       ...full,
-      TWILIO_EMAIL_API_KEY: "",
+      RESEND_API_KEY: "",
     }).disabledFeatures;
     expect(reset.feature).toBe("Password resets");
     // The half-configuration that looks fine and is not: a key with no

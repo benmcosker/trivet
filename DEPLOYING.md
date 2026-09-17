@@ -139,30 +139,41 @@ changes nothing about the running deployment.
 
 Set these in **Settings → Environment Variables**, for Production and Preview:
 
-| Variable                | Required | Value                                                                                                                                                                              |
-| ----------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`          | yes      | Neon **pooled** string                                                                                                                                                             |
-| `DIRECT_DATABASE_URL`   | yes      | Neon **direct** string                                                                                                                                                             |
-| `BETTER_AUTH_SECRET`    | yes      | `openssl rand -base64 32` — a fresh one, not the dev value                                                                                                                         |
-| `BETTER_AUTH_URL`       | yes†     | The production origin, scheme and no trailing slash: `https://trivetbox.com`                                                                                                       |
-| `ANTHROPIC_API_KEY`     | no       | Enables PDF extraction                                                                                                                                                             |
-| `INSTACART_API_KEY`     | no       | **Not obtainable.** Instacart has closed new developer applications with no waitlist. Leave unset; the provider is hidden until a key exists.                                      |
-| `INSTACART_API_BASE`    | no       | Only meaningful once a key exists: `https://connect.dev.instacart.tools` for development, `https://connect.instacart.com` for production                                           |
-| `TWILIO_EMAIL_API_KEY`  | no       | Enables password resets. Twilio Email → Settings → API Keys, needs only Mail Send. **Not** the auth token above. Without it `/forgot-password` says so rather than sending nothing |
-| `EMAIL_FROM`            | no       | The sender address — `info@trivetbox.com`. Its domain must be authenticated under Twilio Email → Domains; an unauthenticated sender is accepted by the API and then not delivered  |
-| `BLOB_READ_WRITE_TOKEN` | —        | Seeded by Vercel when the Blob store is connected, then stored like any other — a rotation is pasted in by hand and needs a redeploy (§2)                                          |
+| Variable                | Required | Value                                                                                                                                                             |
+| ----------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | yes      | Neon **pooled** string                                                                                                                                            |
+| `DIRECT_DATABASE_URL`   | yes      | Neon **direct** string                                                                                                                                            |
+| `BETTER_AUTH_SECRET`    | yes      | `openssl rand -base64 32` — a fresh one, not the dev value                                                                                                        |
+| `BETTER_AUTH_URL`       | yes†     | The production origin, scheme and no trailing slash: `https://trivetbox.com`                                                                                      |
+| `ANTHROPIC_API_KEY`     | no       | Enables PDF extraction                                                                                                                                            |
+| `INSTACART_API_KEY`     | no       | **Not obtainable.** Instacart has closed new developer applications with no waitlist. Leave unset; the provider is hidden until a key exists.                     |
+| `INSTACART_API_BASE`    | no       | Only meaningful once a key exists: `https://connect.dev.instacart.tools` for development, `https://connect.instacart.com` for production                          |
+| `RESEND_API_KEY`        | no       | Enables password resets. Needs Sending access only. Without it `/forgot-password` says so rather than sending nothing                                             |
+| `EMAIL_FROM`            | no       | The sender address — `info@trivetbox.com`. Its domain must be verified under Resend → Domains; an unverified sender is accepted by the API and then not delivered |
+| `BLOB_READ_WRITE_TOKEN` | —        | Seeded by Vercel when the Blob store is connected, then stored like any other — a rotation is pasted in by hand and needs a redeploy (§2)                         |
 
-Authenticating the sender domain means adding the CNAME records Twilio hands
-you — DKIM signing keys and a mail subdomain, three of them in the usual case.
-They go in **Vercel**, under the domain's DNS records: trivetbox.com was bought
-through Vercel, so there is no registrar to visit.
+Mail goes through Resend rather than Twilio, and that is the one place this
+deployment keeps a second vendor. Twilio sells email — it owns SendGrid, and it
+sits in the same console — which would have meant one account, one bill and one
+credential to rotate. It is a thirty-day trial and then a monthly plan, against
+a dozen password resets a year. A free tier elsewhere was the cheaper trade.
+
+Verifying the sender domain means adding the records Resend gives you. They go
+in **Vercel**, under the domain's DNS records: trivetbox.com was bought through
+Vercel, so there is no registrar to visit.
 
 Two things to watch there. Vercel's `Name` field takes the subdomain part only,
-not the whole hostname — Twilio prints `s1._domainkey.trivetbox.com` and what
-goes in the box is `s1._domainkey`. And until the records resolve, Twilio
-accepts mail from `info@trivetbox.com` and quietly fails to deliver it, which
-is the same shape of silent failure as unregistered A2P traffic: nothing
-bounces, nothing errors, nothing arrives.
+not the whole hostname — a host of `resend._domainkey.trivetbox.com` is entered
+as `resend._domainkey`, and pasting the whole thing yields
+`...trivetbox.com.trivetbox.com`, which never resolves and reports nothing
+useful. And until the records resolve, Resend accepts mail from
+`info@trivetbox.com` and quietly fails to deliver it — the same shape of silent
+failure as unregistered A2P traffic: nothing bounces, nothing errors, nothing
+arrives.
+
+This sets up sending only. There are no MX records, so `info@trivetbox.com` is
+not a mailbox and replies to it bounce; the legal pages point people at a real
+address instead.
 
 `BETTER_AUTH_URL` earns its dagger twice over now: reset links are built from
 it, so a wrong value produces links pointing at an origin nobody is serving,
