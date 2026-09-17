@@ -41,6 +41,14 @@ const OPTIONAL = [
       "need A2P 10DLC registration or carriers filter the messages silently.",
   },
   {
+    feature: "Password resets",
+    missing: "RESEND_API_KEY",
+    consequence:
+      "The forgotten-password page says so rather than taking an address and " +
+      "sending nothing. Needs EMAIL_FROM alongside it, at a domain verified " +
+      "with the provider.",
+  },
+  {
     feature: "Cloud file storage",
     missing: "BLOB_READ_WRITE_TOKEN",
     consequence:

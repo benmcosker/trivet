@@ -190,6 +190,22 @@ export function AuthForm({
                 </>
               )}
             </Typography>
+
+            {/*
+             * Only on the way in. Offering a password reset to somebody part
+             * way through choosing a password is an invitation to abandon a
+             * form they were two fields from finishing.
+             *
+             * Always shown rather than gated on a provider existing: finding
+             * out is one click, and the page it leads to says so plainly. The
+             * alternative is a sign-in page that silently offers no way back
+             * in, which is worse for exactly the person who needs it.
+             */}
+            {isSignUp ? null : (
+              <Typography variant="body2" color="text.secondary" align="center">
+                <Link href="/forgot-password">Forgotten your password?</Link>
+              </Typography>
+            )}
           </Stack>
         </CardContent>
       </Card>
