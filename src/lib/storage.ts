@@ -17,16 +17,35 @@ export type StoredFile = { url: string; pathname: string };
 
 const LOCAL_DIR = join(process.cwd(), "public", "uploads");
 
+/**
+ * The one place the blob credential is read.
+ *
+ * Every question this module answers - which driver is in use, which store is
+ * being written to, and which token the SDK is handed - has to be answered
+ * from the same value, or they disagree about where a file went. That used to
+ * be four separate reads of `process.env` held together by comments saying so;
+ * now it is true by construction, and a second source (a store created under a
+ * custom environment-variable prefix, say) is one line here rather than four
+ * edits and a missed one.
+ *
+ * Read per call rather than captured at module load: the tests set and clear
+ * it between cases, and a constant would freeze whatever the first import saw.
+ */
+function blobToken(): string | undefined {
+  return process.env.BLOB_READ_WRITE_TOKEN;
+}
+
 export function usingBlobStorage(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(blobToken());
 }
 
 /**
  * Which blob store the app writes to.
  *
- * Authoritative now that the token is passed explicitly at every call site -
- * before that, this reported the token's store while the SDK was quietly using
- * whatever BLOB_STORE_ID named.
+ * Authoritative because it reads `blobToken()`, the same value handed to the
+ * SDK at every call site - before the token was passed explicitly, this
+ * reported the token's store while the SDK was quietly using whatever
+ * BLOB_STORE_ID named.
  *
  * Vercel's tokens are shaped `vercel_blob_rw_<storeId>_<secret>`, so the store
  * is identifiable without revealing the credential - the secret tail is never
@@ -36,7 +55,7 @@ export function usingBlobStorage(): boolean {
  * dashboard page.
  */
 export function blobStoreId(): string | null {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  const token = blobToken();
   if (!token) return null;
 
   const parts = token.split("_");
@@ -65,7 +84,7 @@ export async function storeFile(
       // behind by a disconnected store therefore silently redirects every
       // upload, and the error names the wrong store's configuration. Passing
       // the token short-circuits that: whatever the token says, wins.
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      token: blobToken(),
     });
     return { url: blob.url, pathname: blob.pathname };
   }
@@ -93,7 +112,7 @@ export async function deleteFile(urlOrPathname: string): Promise<void> {
     if (usingBlobStorage()) {
       // Same reasoning as storeFile: name the store via the token, so a delete
       // cannot go to a different store than the write did.
-      await del(urlOrPathname, { token: process.env.BLOB_READ_WRITE_TOKEN });
+      await del(urlOrPathname, { token: blobToken() });
       return;
     }
 
