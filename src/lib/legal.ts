@@ -14,6 +14,15 @@
  */
 
 /**
+ * What the app calls itself on screen.
+ *
+ * Split from `BRAND` below, which is a different fact about the world. This
+ * one is a display string with no promise attached to it: nothing outside the
+ * app reads it, so it follows the rename freely.
+ */
+export const APP_NAME = "Trivet";
+
+/**
  * The name on the A2P 10DLC campaign registration. These have to match.
  *
  * **This is deliberately still the old name.** The app was renamed to Trivet;
@@ -31,6 +40,12 @@
  * only then change this line - along with the two tests that pin it,
  * `test/sms-consent.test.ts` and `test/sms-message.test.ts`. Those tests
  * failing is the tripwire, and it is there on purpose.
+ *
+ * Everything reading this constant is something a carrier looks at: the
+ * message bodies, and the three legal pages vetting compares them against.
+ * The site chrome reads `APP_NAME` instead - so if you are here because a
+ * heading somewhere still says the old name, that heading is on a legal page
+ * and it is supposed to.
  */
 export const BRAND = "McMullen Meal Magic";
 
