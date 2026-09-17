@@ -1,5 +1,5 @@
 import { consoleEmailSender } from "./console";
-import { resendSender } from "./resend";
+import { twilioEmailSender } from "./twilio";
 import type { EmailSender } from "./types";
 
 /**
@@ -7,7 +7,7 @@ import type { EmailSender } from "./types";
  *
  * Without this the console sender is unreachable, which makes it useless: the
  * reset flow is gated on being able to send, so in development - where nobody
- * has a Resend account - the link never appears and the flow cannot be
+ * has a Twilio Email key - the link never appears and the flow cannot be
  * exercised at all. Same reasoning, and same shape, as SMS_LOG_ONLY.
  *
  * Refused outright in production, whatever the variable says. The failure this
@@ -29,13 +29,15 @@ function logOnlyEnabled(): boolean {
  * wrong one.
  */
 export function getEmailSender(): EmailSender {
-  return resendSender.info().available ? resendSender : consoleEmailSender;
+  return twilioEmailSender.info().available
+    ? twilioEmailSender
+    : consoleEmailSender;
 }
 
 /** Whether this deployment can deliver a mail anywhere worth calling sent. */
 export function emailAvailable(): boolean {
-  return resendSender.info().available || logOnlyEnabled();
+  return twilioEmailSender.info().available || logOnlyEnabled();
 }
 
 export * from "./types";
-export { resendSender, consoleEmailSender };
+export { twilioEmailSender, consoleEmailSender };

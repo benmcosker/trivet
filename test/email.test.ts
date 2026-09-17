@@ -5,7 +5,7 @@ import {
   emailAvailable,
   getEmailSender,
 } from "@/lib/email";
-import { resendSender } from "@/lib/email/resend";
+import { twilioEmailSender } from "@/lib/email/twilio";
 import {
   RESET_TOKEN_TTL_SECONDS,
   resetPasswordEmail,
@@ -72,20 +72,39 @@ describe("the reset email", () => {
 
 describe("which sender a deployment gets", () => {
   it("needs both a key and a from address before it will claim to work", () => {
-    withEnv({ RESEND_API_KEY: "re_x", EMAIL_FROM: undefined });
-    expect(resendSender.info().available).toBe(false);
-    expect(resendSender.info().unavailableReason).toContain("EMAIL_FROM");
+    withEnv({ TWILIO_EMAIL_API_KEY: "SG.x", EMAIL_FROM: undefined });
+    expect(twilioEmailSender.info().available).toBe(false);
+    expect(twilioEmailSender.info().unavailableReason).toContain("EMAIL_FROM");
 
-    withEnv({ RESEND_API_KEY: undefined, EMAIL_FROM: "hi@trivetbox.com" });
-    expect(resendSender.info().available).toBe(false);
-    expect(resendSender.info().unavailableReason).toContain("RESEND_API_KEY");
+    withEnv({
+      TWILIO_EMAIL_API_KEY: undefined,
+      EMAIL_FROM: "hi@trivetbox.com",
+    });
+    expect(twilioEmailSender.info().available).toBe(false);
+    expect(twilioEmailSender.info().unavailableReason).toContain(
+      "TWILIO_EMAIL_API_KEY",
+    );
 
-    withEnv({ RESEND_API_KEY: "re_x", EMAIL_FROM: "hi@trivetbox.com" });
-    expect(resendSender.info().available).toBe(true);
+    withEnv({ TWILIO_EMAIL_API_KEY: "SG.x", EMAIL_FROM: "hi@trivetbox.com" });
+    expect(twilioEmailSender.info().available).toBe(true);
+  });
+
+  /*
+   * The key is not the Twilio auth token, and reaching for the one already in
+   * the environment is the obvious mistake. Nothing here can stop that, but
+   * the variable is named so the two cannot be confused by accident.
+   */
+  it("reads its own key, not the one the texting uses", () => {
+    withEnv({
+      TWILIO_AUTH_TOKEN: "the-sms-one",
+      TWILIO_EMAIL_API_KEY: undefined,
+      EMAIL_FROM: "hi@trivetbox.com",
+    });
+    expect(twilioEmailSender.info().available).toBe(false);
   });
 
   it("falls back to the log in development, and says it is not available", () => {
-    withEnv({ RESEND_API_KEY: undefined, EMAIL_FROM: undefined });
+    withEnv({ TWILIO_EMAIL_API_KEY: undefined, EMAIL_FROM: undefined });
     expect(getEmailSender()).toBe(consoleEmailSender);
     expect(consoleEmailSender.info().available).toBe(false);
   });
@@ -98,7 +117,7 @@ describe("which sender a deployment gets", () => {
    */
   it("refuses the log-only override in production", () => {
     withEnv({
-      RESEND_API_KEY: undefined,
+      TWILIO_EMAIL_API_KEY: undefined,
       EMAIL_FROM: undefined,
       EMAIL_LOG_ONLY: "true",
       NODE_ENV: "development",
@@ -111,7 +130,7 @@ describe("which sender a deployment gets", () => {
 
   it("is available in production only with real credentials", () => {
     withEnv({
-      RESEND_API_KEY: "re_x",
+      TWILIO_EMAIL_API_KEY: "SG.x",
       EMAIL_FROM: "hi@trivetbox.com",
       NODE_ENV: "production",
     });
