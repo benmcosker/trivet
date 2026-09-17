@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #e8e0d0; }
+  a { color: #2f6f4e; text-decoration: none; }
+  a:hover { color: #a44a24; }
+</style>
+</helmet>
+
+<div style="width: 1440px; background: #f7f4ed; font-family: Karla, system-ui, sans-serif; color: #1a1815; -webkit-font-smoothing: antialiased; box-sizing: border-box;">
+
+  <div style="padding: 72px 72px 0;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; padding-bottom: 22px; border-bottom: 2px solid #1a1815;">
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; margin-bottom: 20px;">Recipes &middot; pagination</div>
+        <h1 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 76px; line-height: 0.95; letter-spacing: -0.03em; margin: 0;">Flipping through the box</h1>
+      </div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 19px; line-height: 1.5; color: #4a453c; max-width: 46ch; text-wrap: pretty; padding-bottom: 8px;">A recipe box is a thing you flip through, not a feed you fall down. This specifies numbered pages of 24, held in the URL beside the search, tag and sort parameters that are already there.</div>
+    </div>
+  </div>
+
+  <div style="padding: 44px 72px 0;">
+    <div style="border: 1px solid #a44a24; padding: 28px 32px; display: flex; gap: 32px; align-items: flex-start;">
+      <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; padding-top: 4px; flex-shrink: 0; width: 148px;">Found while reading</div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 20px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">The library is <em>already</em> paginated, by accident. <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">searchRecipeIds</span> defaults to <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">limit: 50</span> and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">RecipesPage</span> passes none, so the 51st dish is invisible and nothing on the page says so &mdash; while the eyebrow directly above the grid counts the whole box from <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">countRecipes</span>. A household with 60 recipes is told it has 60 and shown 50. That makes this a correctness fix with a design attached, and it sets the first requirement: <strong style="font-weight: 600;">the page must never show fewer dishes than it claims without saying so.</strong></div>
+    </div>
+  </div>
+
+  <div style="padding: 64px 72px 0;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 36px;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c;">01</span>
+      <h2 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: -0.02em; margin: 0;">The control, at the foot of the grid</h2>
+    </div>
+
+    <div style="background: #efe9dc; padding: 56px 0;">
+      <div style="width: 1152px; margin: 0 auto;">
+
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 44px 40px;">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 168px; background: repeating-linear-gradient(135deg, #e1d8c5 0 9px, #dad0ba 9px 18px); display: flex; align-items: center; justify-content: center;">
+              <span style="font-family: Newsreader, Georgia, serif; font-size: 22px; color: #a1978a;">PR</span>
+            </div>
+            <div style="font-family: Newsreader, Georgia, serif; font-size: 23px; line-height: 1.2; letter-spacing: -0.015em;">Pork Ragù</div>
+            <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Slow &middot; Italian &middot; Sunday</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 168px; background: repeating-linear-gradient(135deg, #e1d8c5 0 9px, #dad0ba 9px 18px); display: flex; align-items: center; justify-content: center;">
+              <span style="font-family: Newsreader, Georgia, serif; font-size: 22px; color: #a1978a;">CL</span>
+            </div>
+            <div style="font-family: Newsreader, Georgia, serif; font-size: 23px; line-height: 1.2; letter-spacing: -0.015em;">Charred Lemon Potatoes</div>
+            <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Side &middot; Grill</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="height: 168px; background: repeating-linear-gradient(135deg, #e1d8c5 0 9px, #dad0ba 9px 18px); display: flex; align-items: center; justify-content: center;">
+              <span style="font-family: Newsreader, Georgia, serif; font-size: 22px; color: #a1978a;">BG</span>
+            </div>
+            <div style="font-family: Newsreader, Georgia, serif; font-size: 23px; line-height: 1.2; letter-spacing: -0.015em;">Braised Greens</div>
+            <div style="font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #746c5c;">Side &middot; Fast</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 64px; padding-top: 22px; border-top: 1px solid #1a1815; display: flex; align-items: center; justify-content: space-between; gap: 32px;">
+          <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #4a453c; min-width: 200px;">&#8592;&ensp;Previous</div>
+          <div style="display: flex; align-items: baseline; gap: 26px;">
+            <span style="font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: #746c5c;">1</span>
+            <span style="font-weight: 700; font-size: 14px; letter-spacing: 0.06em; color: #1a1815; border-bottom: 2px solid #a44a24; padding-bottom: 4px;">2</span>
+            <span style="font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: #746c5c;">3</span>
+            <span style="font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: #746c5c;">4</span>
+            <span style="font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: #847a69;">&hellip;</span>
+            <span style="font-weight: 600; font-size: 14px; letter-spacing: 0.06em; color: #746c5c;">7</span>
+          </div>
+          <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #1a1815; min-width: 200px; text-align: right;">Next&ensp;&#8594;</div>
+        </div>
+
+        <div style="margin-top: 18px; text-align: center; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 20px; color: #746c5c;">Dishes 25&ndash;48 of 163</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-top: 40px;">
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #a44a24; margin-bottom: 12px;">Why numbers and not a feed</div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">A box has a depth you can feel. Seven pages tells you the size of the thing you are browsing, which an endlessly extending column deliberately hides. It also means "it was about halfway down page three" is a real memory rather than a scroll position lost on reload.</div>
+      </div>
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #a44a24; margin-bottom: 12px;">Why it looks like this</div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">MUI's <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">Pagination</span> is a row of circular buttons, which is a row of eight radiused objects on a page that has none. These are text on paper, and the current page carries the same 2px clay underline as the active nav item and today in the planner. Third use of one device.</div>
+      </div>
+      <div>
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #a44a24; margin-bottom: 12px;">The range line</div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">Serif italic, under the control rather than beside it. It is the sentence that makes the eyebrow's count honest: 163 dishes in the box, these 24 on the page. It is also the only element here that changes when a filter is applied.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 76px 72px 0;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c;">02</span>
+      <h2 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: -0.02em; margin: 0;">Every state of the control</h2>
+    </div>
+    <p style="font-family: Newsreader, Georgia, serif; font-size: 19px; line-height: 1.55; color: #4a453c; margin: 22px 0 40px; max-width: 72ch; text-wrap: pretty;">Drawn at the width they occupy. The window is five numbers plus first and last, which fits a 163-dish box without ever growing the row; beyond 999 pages the window holds and the ellipses do the work.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 1px; background: #ded7c8; border: 1px solid #ded7c8;">
+
+      <div style="background: #f7f4ed; padding: 30px 36px; display: flex; align-items: center; gap: 40px;">
+        <div style="width: 210px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Page 1, browsing</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #746c5c; margin-top: 4px;">Hero plus 23 in the grid</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="padding-top: 18px; border-top: 1px solid #1a1815; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #847a69; min-width: 168px;">&#8592;&ensp;Previous</div>
+            <div style="display: flex; align-items: baseline; gap: 24px;">
+              <span style="font-weight: 700; font-size: 14px; color: #1a1815; border-bottom: 2px solid #a44a24; padding-bottom: 4px;">1</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">2</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">3</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">4</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">5</span>
+              <span style="font-weight: 600; font-size: 14px; color: #847a69;">&hellip;</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">7</span>
+            </div>
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #1a1815; min-width: 168px; text-align: right;">Next&ensp;&#8594;</div>
+          </div>
+          <div style="margin-top: 14px; text-align: center; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 18px; color: #746c5c;">Dishes 1&ndash;24 of 163</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 30px 36px; display: flex; align-items: center; gap: 40px;">
+        <div style="width: 210px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Last page</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #746c5c; margin-top: 4px;">A short final row is normal</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="padding-top: 18px; border-top: 1px solid #1a1815; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #1a1815; min-width: 168px;">&#8592;&ensp;Previous</div>
+            <div style="display: flex; align-items: baseline; gap: 24px;">
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">1</span>
+              <span style="font-weight: 600; font-size: 14px; color: #847a69;">&hellip;</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">4</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">5</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">6</span>
+              <span style="font-weight: 700; font-size: 14px; color: #1a1815; border-bottom: 2px solid #a44a24; padding-bottom: 4px;">7</span>
+            </div>
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #847a69; min-width: 168px; text-align: right;">Next&ensp;&#8594;</div>
+          </div>
+          <div style="margin-top: 14px; text-align: center; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 18px; color: #746c5c;">Dishes 145&ndash;163 of 163</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 30px 36px; display: flex; align-items: center; gap: 40px;">
+        <div style="width: 210px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">Filtered</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #746c5c; margin-top: 4px;">Two pages of a tag</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="padding-top: 18px; border-top: 1px solid #1a1815; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #847a69; min-width: 168px;">&#8592;&ensp;Previous</div>
+            <div style="display: flex; align-items: baseline; gap: 24px;">
+              <span style="font-weight: 700; font-size: 14px; color: #1a1815; border-bottom: 2px solid #a44a24; padding-bottom: 4px;">1</span>
+              <span style="font-weight: 600; font-size: 14px; color: #746c5c;">2</span>
+            </div>
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #1a1815; min-width: 168px; text-align: right;">Next&ensp;&#8594;</div>
+          </div>
+          <div style="margin-top: 14px; text-align: center; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 18px; color: #746c5c;">Dishes 1&ndash;24 of 31 tagged &ldquo;Weeknight&rdquo;</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 30px 36px; display: flex; align-items: center; gap: 40px;">
+        <div style="width: 210px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">A&ndash;Z</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #746c5c; margin-top: 4px;">Numbers carry their letters</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="padding-top: 18px; border-top: 1px solid #1a1815; display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #4a453c; min-width: 168px;">&#8592;&ensp;Previous</div>
+            <div style="display: flex; align-items: baseline; gap: 22px;">
+              <span style="font-weight: 600; font-size: 13px; letter-spacing: 0.1em; color: #746c5c;">A&ndash;B</span>
+              <span style="font-weight: 700; font-size: 13px; letter-spacing: 0.1em; color: #1a1815; border-bottom: 2px solid #a44a24; padding-bottom: 4px;">B&ndash;C</span>
+              <span style="font-weight: 600; font-size: 13px; letter-spacing: 0.1em; color: #746c5c;">C&ndash;F</span>
+              <span style="font-weight: 600; font-size: 13px; letter-spacing: 0.1em; color: #746c5c;">F&ndash;L</span>
+              <span style="font-weight: 600; font-size: 13px; letter-spacing: 0.1em; color: #746c5c;">L&ndash;P</span>
+              <span style="font-weight: 600; font-size: 13px; color: #847a69;">&hellip;</span>
+              <span style="font-weight: 600; font-size: 13px; letter-spacing: 0.1em; color: #746c5c;">S&ndash;Z</span>
+            </div>
+            <div style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #1a1815; min-width: 168px; text-align: right;">Next&ensp;&#8594;</div>
+          </div>
+          <div style="margin-top: 14px; text-align: center; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 18px; color: #746c5c;">Dishes 25&ndash;48 of 163, Bread Salad to Chicken Paprikash</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 30px 36px; display: flex; align-items: center; gap: 40px;">
+        <div style="width: 210px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815;">One page</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #746c5c; margin-top: 4px;">The whole box fits</div>
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; align-items: center; height: 74px; padding-left: 4px;">
+          <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 20px; color: #746c5c;">Nothing. No rule, no range line, no control &mdash; a single page of results has nothing to say about itself.</span>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 30px 36px; display: flex; align-items: center; gap: 40px;">
+        <div style="width: 210px; flex-shrink: 0;">
+          <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #a44a24;">Page out of range</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 16px; color: #746c5c; margin-top: 4px;">A stale link, or a deletion</div>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="padding: 16px 0; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8;">
+            <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; margin-bottom: 6px;">That page is gone</div>
+            <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820;">The box has seven pages now. This is the last one.</div>
+          </div>
+          <div style="margin-top: 12px; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 17px; color: #746c5c;">Serve the last page rather than a 404 or an empty grid &mdash; the dishes are still there, the URL is just stale. A paper note, the same component as the Amazon caveat.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 76px 72px 0;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c;">03</span>
+      <h2 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: -0.02em; margin: 0;">The mechanism</h2>
+    </div>
+    <p style="font-family: Newsreader, Georgia, serif; font-size: 19px; line-height: 1.55; color: #4a453c; margin: 22px 0 40px; max-width: 72ch; text-wrap: pretty;">Offset, not a cursor. The query layer already takes <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">limit</span> and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">offset</span>, so the whole of §3 is wiring rather than new SQL.</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 44px;">
+      <div style="border: 1px solid #ded7c8; padding: 28px 30px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #2f6f4e; margin-bottom: 14px;">Offset &mdash; chosen</div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">Works identically across all four sort orders, including <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">rating</span>, whose ordering is three columns deep with nulls last. Gives a total, which is what makes "page 3 of 7" and the range line possible. Deep offsets are slow on large tables; a shared recipe box is not a large table.</div>
+      </div>
+      <div style="border: 1px solid #ded7c8; padding: 28px 30px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; margin-bottom: 14px;">Keyset &mdash; rejected</div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">A cursor on <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">rating</span> needs a composite of average, review count and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">createdAt</span>, and one on search results needs <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">ts_rank</span> &mdash; a float nobody should be putting in a URL. It also cannot count, so it can only ever offer "more", never "of 163".</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 0.9fr 1fr 1.5fr; border: 1px solid #ded7c8;">
+      <div style="padding: 14px 20px; border-bottom: 1px solid #1a1815; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;">Concern</div>
+      <div style="padding: 14px 20px; border-bottom: 1px solid #1a1815; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #a44a24;">Rule</div>
+      <div style="padding: 14px 20px; border-bottom: 1px solid #1a1815; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;">Reasoning</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">URL</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">?page=3</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">One-indexed, alongside <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">q</span>, <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">tag</span> and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">sort</span>. Omitted entirely on page 1, so the library's canonical URL stays <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">/recipes</span>. Parsed like <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">parseSort</span>: anything unrecognised falls back rather than throwing, because it arrives from a URL where a typo is ordinary.</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">Page size</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">24</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">Divides by 1, 2 and 3, so no breakpoint ends on a widowed card: 24 rows on a phone, 12 at <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">sm</span>, 8 at <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">md</span>. Roughly three screens of scrolling at desktop, which is enough to be worth paginating and short enough to reach the control.</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">The hero</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">Counts as one</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">Page 1 while browsing is hero + 23 grid cards, not hero + 24 &mdash; otherwise page 1 holds 25 dishes and every range after it is off by one. The existing <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">browsing</span> flag already means the hero never appears on a searched, filtered or re-sorted page, so pages 2+ are a plain 24.</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">The total</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">countSearchRecipes</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">New. <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">countRecipes</span> counts the whole box and is right for the eyebrow; the range line needs the count of <em>this</em> search, under the same visibility rule and the same tag and query filters. Same <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">WHERE</span> clause as the search, no <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">ORDER BY</span>, no rating join.</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">Out of range</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">Clamp, and say so</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">Show the last page with a paper note above the grid. Not a 404: the recipes exist and the visitor did nothing wrong. Not a redirect: that rewrites history and breaks the back button. <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">?page=0</span> and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">?page=-4</span> clamp to 1 silently, having no story to tell.</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">Position</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">Top of the grid</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">A page change lands at the first card, not at the control that caused it and not at the top of the header &mdash; the search field and collections row do not need re-reading. Server-rendered navigation does this for free; do not add scroll handling.</div>
+
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">Photos</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">priority on page 1 only</div>
+      <div style="padding: 15px 20px; border-bottom: 1px solid #ded7c8; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">The hero's photo is the only eager one, and the hero only exists on page 1. On pages 2+ the first row is above the fold and should take <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">priority</span> instead &mdash; three cards, not the twenty-four below them.</div>
+
+      <div style="padding: 15px 20px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;">Mobile</div>
+      <div style="padding: 15px 20px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #1a1815;">Prev / Next only</div>
+      <div style="padding: 15px 20px; font-family: Newsreader, Georgia, serif; font-size: 16px; line-height: 1.45; color: #4a453c;">Seven numbers at a 44px touch target do not fit 393px. Below <span style="font-family: ui-monospace, Menlo, monospace; font-size: 13px;">sm</span> the window collapses to two full-width targets with "Page 2 of 7" between them, and the range line stays.</div>
+    </div>
+  </div>
+
+  <div style="padding: 76px 72px 0;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c;">04</span>
+      <h2 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: -0.02em; margin: 0;">Considered and not chosen</h2>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #ded7c8; border: 1px solid #ded7c8; margin-top: 36px;">
+      <div style="background: #f7f4ed; padding: 32px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; margin-bottom: 20px;">Show more, appending</div>
+        <div style="padding: 20px 0; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8; text-align: center; margin-bottom: 20px;">
+          <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #1a1815; border-bottom: 1px solid #1a1815; padding-bottom: 3px;">Show 24 more</span>
+        </div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">The closest runner-up, and the right answer if the box were a feed. Rejected because the state it creates cannot be linked: send someone "the fourth one down after I hit show more twice" and they get page one. It also grows the DOM without bound, and the recipe grid is photographs.</div>
+      </div>
+      <div style="background: #f7f4ed; padding: 32px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; margin-bottom: 20px;">Infinite scroll</div>
+        <div style="padding: 20px 0; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8; text-align: center; margin-bottom: 20px;">
+          <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 19px; color: #746c5c;">&mdash;&ensp;loading&ensp;&mdash;</span>
+        </div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">Wrong for a library you own. Infinite scroll suits material you have not seen before and will not look for again; a recipe box is a fixed set of things you are trying to find one of. It would also put the footer's policy links permanently out of reach, and those are there for a compliance reason.</div>
+      </div>
+      <div style="background: #f7f4ed; padding: 32px;">
+        <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #746c5c; margin-bottom: 20px;">Raise the limit and move on</div>
+        <div style="padding: 20px 0; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8; text-align: center; margin-bottom: 20px;">
+          <span style="font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: #746c5c;">limit: 200</span>
+        </div>
+        <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.55; color: #2c2820; text-wrap: pretty;">Honest about the scale of a private beta, and worth saying out loud: it fixes the truncation bug in one line. Rejected as a destination rather than a stopgap &mdash; 200 hydrated recipes with ingredients, tags and review aggregates is a heavy page, and the cap only moves the same silent cliff further out.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 76px 72px 96px;">
+    <div style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 30px;">
+      <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #746c5c;">05</span>
+      <h2 style="font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 34px; letter-spacing: -0.02em; margin: 0;">Claude Code brief</h2>
+    </div>
+
+    <p style="font-family: Newsreader, Georgia, serif; font-size: 19px; line-height: 1.55; color: #4a453c; margin: 22px 0 40px; max-width: 72ch; text-wrap: pretty;">Step 3 contains the bug fix and can ship on its own. Everything else is the design around it.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 1px; background: #ded7c8; border: 1px solid #ded7c8;">
+
+      <div style="background: #f7f4ed; padding: 26px 32px; display: flex; gap: 28px; align-items: baseline;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 30px; color: #a44a24; width: 34px; flex-shrink: 0;">1</span>
+        <div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #1a1815; margin-bottom: 8px;">src/lib/recipes.ts</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; text-wrap: pretty;">Add <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">countSearchRecipes(options)</span> beside <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">countRecipes</span> &mdash; the search's <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">WHERE</span> clause, no ordering, no rating join. Extract the visibility, query and tag predicates into shared values so the search and the count cannot drift apart; a count that disagrees with the grid is worse than no count.</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 26px 32px; display: flex; gap: 28px; align-items: baseline;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 30px; color: #a44a24; width: 34px; flex-shrink: 0;">2</span>
+        <div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #1a1815; margin-bottom: 8px;">src/lib/recipe-page.ts &mdash; new</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; text-wrap: pretty;">Sibling of <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">recipe-sort.ts</span>, for the reason that file already states: the control is a client component and must not import a module that touches Prisma. Exports <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">PAGE_SIZE = 24</span>, <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">parsePage(value)</span>, and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">pageWindow(current, total)</span> returning the numbers and ellipsis positions &mdash; so the window logic is testable without a DOM.</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 26px 32px; display: flex; gap: 28px; align-items: baseline;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 30px; color: #a44a24; width: 34px; flex-shrink: 0;">3</span>
+        <div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #1a1815; margin-bottom: 8px;">src/app/recipes/page.tsx</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; text-wrap: pretty;">Read <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">page</span> from <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">searchParams</span>; add <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">countSearchRecipes</span> to the existing <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">Promise.all</span>; pass <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">limit</span> and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">offset</span> to <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">searchRecipes</span> &mdash; the absent argument is the bug. Page 1 while <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">browsing</span> takes 24 and spends one on the hero; clamp an over-range page to the last and set a flag for the note.</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 26px 32px; display: flex; gap: 28px; align-items: baseline;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 30px; color: #a44a24; width: 34px; flex-shrink: 0;">4</span>
+        <div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #1a1815; margin-bottom: 8px;">src/components/RecipePagination.tsx &mdash; new</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; text-wrap: pretty;">The control from &sect;1 and &sect;2. Links, not buttons &mdash; every page is a URL, so middle-click and open-in-new-tab work. Preserve <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">q</span>, <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">tag</span> and <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">sort</span>; omit <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">page</span> from the page-1 href. <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">aria-current="page"</span> on the current number, as the nav and week tabs already do. Prev and Next stay in place as inert text at the ends rather than disappearing, so the row never changes width.</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 26px 32px; display: flex; gap: 28px; align-items: baseline;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 30px; color: #a44a24; width: 34px; flex-shrink: 0;">5</span>
+        <div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #1a1815; margin-bottom: 8px;">src/components/RecipeGridCard.tsx</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; text-wrap: pretty;">Accept a <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">priority</span> prop and pass it to <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">RecipePhoto</span>; the page sets it on the first three cards when there is no hero. <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">RecipePhoto</span>'s own comment says everything below the fold stays lazy &mdash; on page 2 the first row is not below the fold.</div>
+        </div>
+      </div>
+
+      <div style="background: #f7f4ed; padding: 26px 32px; display: flex; gap: 28px; align-items: baseline;">
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 30px; color: #a44a24; width: 34px; flex-shrink: 0;">6</span>
+        <div>
+          <div style="font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: #1a1815; margin-bottom: 8px;">src/components/RecipeSearchBar.tsx, RecipeFilters.tsx</div>
+          <div style="font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.5; color: #2c2820; text-wrap: pretty;">Every control that changes what is being searched must drop <span style="font-family: ui-monospace, Menlo, monospace; font-size: 15px;">page</span> from the URL it builds. Landing on page 4 of a new two-page search is the classic bug in this pattern, and these two are the only places it can happen.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 44px; padding: 24px 0 0; border-top: 1px solid #1a1815; display: flex; gap: 32px; align-items: flex-start;">
+      <div style="font-weight: 700; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #a44a24; padding-top: 4px; flex-shrink: 0; width: 148px;">Also true</div>
+      <div style="font-family: Newsreader, Georgia, serif; font-size: 19px; line-height: 1.55; color: #2c2820; max-width: 76ch; text-wrap: pretty;">The same silent ceiling applies to <span style="font-family: ui-monospace, Menlo, monospace; font-size: 16px; background: #efe9dc; padding: 1px 5px;">plan/page.tsx</span>, which fills the planner's recipe picker from the same shared library. It needs a different fix &mdash; a picker wants a search field, not pages &mdash; but it is the same cliff, and past the cap a dish you own becomes unplannable. Worth taking next.</div>
+    </div>
+
+    
+</x-dc>
+</body>
+</html>
