@@ -24,7 +24,21 @@ const MAX_TAGS_ON_CARD = 3;
  * recipe page, which already had one: six red circles per screen, for something
  * nobody does in bulk.
  */
-export function RecipeGridCard({ recipe }: { recipe: RecipeWithRelations }) {
+export function RecipeGridCard({
+  recipe,
+  priority = false,
+}: {
+  recipe: RecipeWithRelations;
+  /**
+   * Load this card's photo eagerly.
+   *
+   * `RecipePhoto` says everything below the fold stays lazy, and on page one
+   * that is every card - the hero above them is the only eager photo. On page
+   * two there is no hero, so the first row *is* the fold, and the page sets
+   * this on those cards and no others.
+   */
+  priority?: boolean;
+}) {
   const meta = recipeMetaParts(recipe);
   const tags = recipe.tags.slice(0, MAX_TAGS_ON_CARD);
 
@@ -66,6 +80,7 @@ export function RecipeGridCard({ recipe }: { recipe: RecipeWithRelations }) {
               height={{ xs: 116, sm: 230 }}
               rounded={0}
               sizes="(max-width: 600px) 116px, (max-width: 900px) 50vw, (max-width: 1440px) 32vw, 430px"
+              priority={priority}
             />
           ) : (
             // Not omitted: a card with no image is shorter than its neighbours,
