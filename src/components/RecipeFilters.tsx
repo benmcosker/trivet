@@ -34,6 +34,8 @@ export function RecipeFilters({ tags }: { tags: TagCount[] }) {
 
   function toggleTag(slug: string) {
     const params = new URLSearchParams(searchParams.toString());
+    // A new filter starts at its beginning; see RecipeSearchBar.
+    params.delete("page");
     const next = activeTags.includes(slug)
       ? activeTags.filter((t) => t !== slug)
       : [...activeTags, slug];
@@ -45,6 +47,8 @@ export function RecipeFilters({ tags }: { tags: TagCount[] }) {
 
   function clearTags() {
     const params = new URLSearchParams(searchParams.toString());
+    // A new filter starts at its beginning; see RecipeSearchBar.
+    params.delete("page");
     params.delete("tag");
     router.replace(`${pathname}?${params.toString()}`);
   }

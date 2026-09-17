@@ -54,6 +54,11 @@ export function RecipeSearchBar() {
 
     const timer = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
+      // A new search starts at its beginning. Without this, changing the
+      // query from page 4 asks for page 4 of a two-page result, and the
+      // grid comes back empty - the classic bug in this pattern, and these
+      // two components are the only places it can happen.
+      params.delete("page");
       if (query) params.set("q", query);
       else params.delete("q");
       router.replace(`${pathname}?${params.toString()}`);
@@ -64,6 +69,11 @@ export function RecipeSearchBar() {
 
   function setSort(next: string) {
     const params = new URLSearchParams(searchParams.toString());
+    // A new search starts at its beginning. Without this, changing the
+    // query from page 4 asks for page 4 of a two-page result, and the
+    // grid comes back empty - the classic bug in this pattern, and these
+    // two components are the only places it can happen.
+    params.delete("page");
     // The default stays out of the URL, so a plain /recipes link is the
     // ordinary view rather than a view someone happened to configure.
     if (next === "newest") params.delete("sort");

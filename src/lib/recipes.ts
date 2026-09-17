@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "./db";
+import { PAGE_SIZE } from "./recipe-page";
 import { DEFAULT_SORT, type RecipeSort } from "./recipe-sort";
 import { NO_REVIEWS, type ReviewSummary } from "./review-schema";
 import { visibleRecipes, visibleRecipesSql } from "./recipe-visibility";
@@ -52,12 +53,86 @@ export type RecipeSearchOptions = {
  * Returned as IDs rather than rows: ranking needs raw SQL, but the caller wants
  * a fully-hydrated Prisma object, so it re-fetches by ID and re-applies order.
  */
+/**
+ * Everything that decides whether a recipe is in these results.
+ *
+ * Built once and handed to both the search and the count, because the range
+ * line ("Dishes 25-48 of 163") is a claim about the same set the grid is
+ * drawn from. Two copies of this clause would agree right up until one of them
+ * was edited, and a count that disagrees with the grid is worse than no count
+ * at all - it is the page lying quietly.
+ *
+ * Ordering, the rating join and LIMIT/OFFSET are deliberately not in here: the
+ * count needs none of them, and paying for a review aggregate to count rows
+ * would be paying for a sort nobody asked for.
+ */
+function searchWhere(options: RecipeSearchOptions): Prisma.Sql {
+  const query = options.query?.trim() ?? "";
+  const tagSlugs = options.tagSlugs?.filter(Boolean) ?? [];
+
+  const visible = visibleRecipesSql(options.householdId);
+
+  const tagFilter =
+    tagSlugs.length > 0
+      ? Prisma.sql`
+          AND (
+            SELECT COUNT(DISTINCT t."slug")
+            FROM "recipe_tag" rt
+            JOIN "tag" t ON t."id" = rt."tagId"
+            WHERE rt."recipeId" = r."id" AND t."slug" IN (${Prisma.join(tagSlugs)})
+          ) = ${tagSlugs.length}
+        `
+      : Prisma.empty;
+
+  if (query === "") return Prisma.sql`${visible} ${tagFilter}`;
+
+  // Escape LIKE wildcards so a user typing "100%" searches for that literally.
+  const like = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+  return Prisma.sql`${visible} AND (
+      r."search_vector" @@ websearch_to_tsquery('english', ${query})
+      OR r."title" ILIKE ${like}
+      OR r."description" ILIKE ${like}
+      OR EXISTS (
+        SELECT 1 FROM "ingredient" i
+        WHERE i."recipeId" = r."id"
+          AND (
+            to_tsvector('english', i."name") @@ websearch_to_tsquery('english', ${query})
+            OR i."name" ILIKE ${like}
+          )
+      )
+      OR EXISTS (
+        SELECT 1 FROM "recipe_tag" rt
+        JOIN "tag" t ON t."id" = rt."tagId"
+        WHERE rt."recipeId" = r."id" AND t."name" ILIKE ${like}
+      )
+    )
+    ${tagFilter}`;
+}
+
+/**
+ * How many recipes this search finds, ignoring the page.
+ *
+ * Distinct from `countRecipes`, which counts the whole box: that is the right
+ * number for the eyebrow above the grid, and the wrong one for a range line
+ * about a filtered search.
+ */
+export async function countSearchRecipes(
+  options: RecipeSearchOptions,
+): Promise<number> {
+  const rows = await prisma.$queryRaw<{ count: number }[]>(Prisma.sql`
+    SELECT COUNT(*)::int AS count
+    FROM "recipe" r
+    WHERE ${searchWhere(options)}
+  `);
+  return rows[0]?.count ?? 0;
+}
+
 export async function searchRecipeIds(
   options: RecipeSearchOptions,
 ): Promise<RecipeSearchHit[]> {
   const query = options.query?.trim() ?? "";
   const sort = options.sort ?? DEFAULT_SORT;
-  const tagSlugs = options.tagSlugs?.filter(Boolean) ?? [];
 
   // Only "highest rated" needs the review aggregate, so the join is paid for
   // only when it is asked for.
@@ -87,32 +162,27 @@ export async function searchRecipeIds(
     // Case-insensitive, or "apple crumble" sorts after "Zabaglione".
     title: Prisma.sql`lower(r."title") ASC`,
   }[sort];
-  const limit = Math.min(options.limit ?? 50, 200);
+
+  /*
+   * The default is a page, not the library.
+   *
+   * It used to be 50 with no caller passing anything, which truncated the
+   * grid at fifty while the eyebrow above it counted the whole box - a page
+   * showing less than it claimed, and saying nothing. Callers pass a real
+   * limit and offset now; the default matches a page so that a caller which
+   * forgets is merely on page one rather than silently wrong.
+   */
+  const limit = Math.min(options.limit ?? PAGE_SIZE, 200);
   const offset = Math.max(options.offset ?? 0, 0);
 
-  // Escape LIKE wildcards so a user typing "100%" searches for that literally.
-  const like = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-
-  const visible = visibleRecipesSql(options.householdId);
-
-  const tagFilter =
-    tagSlugs.length > 0
-      ? Prisma.sql`
-          AND (
-            SELECT COUNT(DISTINCT t."slug")
-            FROM "recipe_tag" rt
-            JOIN "tag" t ON t."id" = rt."tagId"
-            WHERE rt."recipeId" = r."id" AND t."slug" IN (${Prisma.join(tagSlugs)})
-          ) = ${tagSlugs.length}
-        `
-      : Prisma.empty;
+  const where = searchWhere(options);
 
   if (query === "") {
     return prisma.$queryRaw<RecipeSearchHit[]>(Prisma.sql`
       SELECT r."id", 0::float8 AS rank
       FROM "recipe" r
       ${ratingJoin}
-      WHERE ${visible} ${tagFilter}
+      WHERE ${where}
       ORDER BY ${orderBy}
       LIMIT ${limit} OFFSET ${offset}
     `);
@@ -124,25 +194,7 @@ export async function searchRecipeIds(
       ts_rank(r."search_vector", websearch_to_tsquery('english', ${query}))::float8 AS rank
     FROM "recipe" r
     ${ratingJoin}
-    WHERE ${visible} AND (
-      r."search_vector" @@ websearch_to_tsquery('english', ${query})
-      OR r."title" ILIKE ${like}
-      OR r."description" ILIKE ${like}
-      OR EXISTS (
-        SELECT 1 FROM "ingredient" i
-        WHERE i."recipeId" = r."id"
-          AND (
-            to_tsvector('english', i."name") @@ websearch_to_tsquery('english', ${query})
-            OR i."name" ILIKE ${like}
-          )
-      )
-      OR EXISTS (
-        SELECT 1 FROM "recipe_tag" rt
-        JOIN "tag" t ON t."id" = rt."tagId"
-        WHERE rt."recipeId" = r."id" AND t."name" ILIKE ${like}
-      )
-    )
-    ${tagFilter}
+    WHERE ${where}
     ORDER BY ${
       // Relevance leads only for the default order. Someone who has explicitly
       // asked for oldest or A-Z means it, search or no search.
