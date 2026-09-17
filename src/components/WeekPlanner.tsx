@@ -1,7 +1,6 @@
 "use client";
 
 import CloseIcon from "@mui/icons-material/Close";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
@@ -35,6 +34,7 @@ import { fonts } from "@/theme/theme";
 import { RecipePickerDialog } from "./RecipePickerDialog";
 import { SideSuggestionDialog } from "./SideSuggestionDialog";
 import { RecipePhoto } from "./RecipePhoto";
+import { PaperNote } from "./PaperNote";
 import { RecipePlaceholder } from "./RecipePlaceholder";
 import type { TileRecipe } from "./RecipeTile";
 import { ShoppingHandoffPanel } from "./ShoppingHandoffPanel";
@@ -647,6 +647,11 @@ export function WeekPlanner({
     slot: MealSlot;
   } | null>(null);
   const [handoff, setHandoff] = useState<HandoffResult | null>(null);
+  /*
+   * Which button produced the result on screen, so that provider's standing
+   * note can stand down while its own answer is showing.
+   */
+  const [handoffFrom, setHandoffFrom] = useState<ShoppingProvider | null>(null);
   const [sendingTo, setSendingTo] = useState<ShoppingProvider | null>(null);
   const [sidePicking, setSidePicking] = useState<{
     date: string;
@@ -740,6 +745,7 @@ export function WeekPlanner({
     setHandoff(null);
 
     setHandoff(await sendWeekToProviderAction(weekStartIso, providerId));
+    setHandoffFrom(providerId);
     setSendingTo(null);
   }
 
@@ -1494,46 +1500,47 @@ export function WeekPlanner({
           </Typography>
         ) : null}
 
-        {textResult ? (
-          <Alert
-            severity={textResult.ok ? "success" : "error"}
-            sx={{ mt: 2 }}
-            onClose={() => setTextResult(null)}
-          >
-            {textResult.ok ? textResult.message : textResult.error}
-          </Alert>
-        ) : null}
-
         {/*
-         * Spelled out per provider, because the two kinds behave very
-         * differently and a row of similar buttons would imply otherwise.
+         * Notes rather than banners, and one per provider: the two kinds
+         * behave very differently, and a row of similar buttons over a single
+         * paragraph would imply otherwise.
+         *
+         * Stacked with their hairlines pulled together, so a column of notes
+         * reads as ruled paper instead of as a set of boxes.
          */}
-        <Stack spacing={0.5} sx={{ mt: 2 }}>
-          {providers.map((provider) => (
-            <Typography
-              key={provider.id}
-              variant="caption"
-              color="text.secondary"
+        <Box sx={{ mt: 2.5, "& > * + *": { mt: "-1px" } }}>
+          {textResult ? (
+            <PaperNote
+              label={textResult.ok ? "Text sent" : "The text did not send"}
+              tone={textResult.ok ? "good" : "note"}
+              live
+              onDismiss={() => setTextResult(null)}
             >
-              <Box component="span" sx={{ fontWeight: 600 }}>
-                {provider.label}:
-              </Box>{" "}
-              {provider.description}
-              {provider.available ? "" : ` ${provider.unavailableReason}`}
-            </Typography>
-          ))}
-        </Stack>
+              {textResult.ok ? textResult.message : textResult.error}
+            </PaperNote>
+          ) : null}
+
+          {/*
+           * The standing note for a provider steps aside once that provider
+           * has answered for itself. The two say much the same thing - both
+           * are about Amazon having no ordering API - and as banners that
+           * overlap was a caption under an alert. As two full paragraphs of
+           * serif it is the same sentence twice.
+           */}
+          {providers
+            .filter((provider) => !(handoff && provider.id === handoffFrom))
+            .map((provider) => (
+              <PaperNote
+                key={provider.id}
+                label={`A note on ${provider.label}`}
+              >
+                {provider.description}
+                {provider.available ? "" : ` ${provider.unavailableReason}`}
+              </PaperNote>
+            ))}
+        </Box>
 
         {handoff ? <ShoppingHandoffPanel result={handoff} /> : null}
-
-        {/*
-         * Spaced off the notes above it rather than restyled: the underlined
-         * serif field this becomes is step 9, and until then its own overline
-         * sat directly under the last provider line and read as part of it.
-         */}
-        <Box sx={{ mt: 3.5 }}>
-          <AddExtraItem weekStartIso={weekStartIso} />
-        </Box>
 
         {groceries.length === 0 ? (
           <Typography color="text.secondary" sx={{ mt: 3 }}>
@@ -1705,6 +1712,14 @@ export function WeekPlanner({
             ))}
           </Box>
         )}
+
+        {/*
+         * Under the list rather than over it. It was above while it was a
+         * pair of boxed fields that needed to look like a form; as a line to
+         * write on it belongs at the end of the list it adds to, which is
+         * also where you are by the time you notice the foil is missing.
+         */}
+        <AddExtraItem weekStartIso={weekStartIso} />
 
         <ExcludedIngredients pantry={pantry} skips={skips} />
       </Box>

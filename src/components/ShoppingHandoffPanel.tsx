@@ -1,8 +1,5 @@
 "use client";
 
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Link from "@mui/material/Link";
@@ -11,6 +8,8 @@ import Typography from "@mui/material/Typography";
 import { useState } from "react";
 
 import type { HandoffResult } from "@/lib/shopping";
+
+import { PaperNote } from "./PaperNote";
 
 /**
  * Renders the outcome of a hand-off.
@@ -25,22 +24,26 @@ export function ShoppingHandoffPanel({ result }: { result: HandoffResult }) {
 
   if (!result.ok) {
     return (
-      <Alert severity="error" sx={{ mb: 2 }}>
-        {result.error}
-      </Alert>
+      <Box sx={{ mt: 2.5 }}>
+        <PaperNote label="That did not work" live>
+          {result.error}
+        </PaperNote>
+      </Box>
     );
   }
 
   if (result.kind === "cart") {
     return (
-      <Alert severity="success" sx={{ mb: 2 }}>
-        Your cart is ready, with {result.itemCount}{" "}
-        {result.itemCount === 1 ? "item" : "items"}.{" "}
-        <Link href={result.url} target="_blank" rel="noopener noreferrer">
-          Open it to check out
-        </Link>
-        . Payment and delivery are handled there.
-      </Alert>
+      <Box sx={{ mt: 2.5 }}>
+        <PaperNote label="Your cart is ready" tone="good" live>
+          {result.itemCount} {result.itemCount === 1 ? "item" : "items"} are in
+          it.{" "}
+          <Link href={result.url} target="_blank" rel="noopener noreferrer">
+            Open it to check out
+          </Link>
+          . Payment and delivery are handled there.
+        </PaperNote>
+      </Box>
     );
   }
 
@@ -58,19 +61,20 @@ export function ShoppingHandoffPanel({ result }: { result: HandoffResult }) {
   }
 
   return (
-    <Box sx={{ mb: 2 }}>
-      <Alert severity="info" sx={{ mb: 1.5 }}>
+    <Box sx={{ mt: 2.5 }}>
+      <PaperNote label="What happens next" live>
         Amazon has no public ordering API, so this cannot fill a basket for you.
         Each ingredient below opens a search in the store; add what you want.
-      </Alert>
+      </PaperNote>
 
-      <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1, mb: 1.5 }}>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<ContentCopyIcon />}
-          onClick={copyList}
-        >
+      {/*
+       * The icons went with the alerts. A copy icon and an
+       * open-in-new arrow on two adjacent buttons were saying what both
+       * labels already said, in the one visual language this page has
+       * otherwise given up.
+       */}
+      <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1, my: 2 }}>
+        <Button size="small" variant="outlined" onClick={copyList}>
           {copied ? "Copied" : "Copy list as text"}
         </Button>
         <Button
@@ -78,7 +82,6 @@ export function ShoppingHandoffPanel({ result }: { result: HandoffResult }) {
           href={result.storeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          endIcon={<OpenInNewIcon />}
         >
           Open the store
         </Button>
