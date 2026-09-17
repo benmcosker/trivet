@@ -14,7 +14,7 @@
  *
  *   node scripts/browse.mjs /plan
  *   node scripts/browse.mjs /recipes --mobile
- *   node scripts/browse.mjs /plan --shot=/tmp/plan.png
+ *   node scripts/browse.mjs /plan --dark --shot=/tmp/plan.png
  *
  * Credentials come from the environment so nothing is committed:
  *   BROWSE_EMAIL, BROWSE_PASSWORD, BROWSE_BASE_URL (default localhost:3000)
@@ -70,6 +70,12 @@ async function launch() {
 const args = process.argv.slice(2);
 const path = args.find((a) => !a.startsWith("-")) ?? "/recipes";
 const mobile = args.includes("--mobile");
+/*
+ * The theme resolves light and dark from the system preference rather than
+ * from a class, so asking for the dark scheme means telling the browser what
+ * the system prefers - there is no toggle in the app to click.
+ */
+const dark = args.includes("--dark");
 const shot = args.find((a) => a.startsWith("--shot="))?.slice("--shot=".length);
 
 const base = process.env.BROWSE_BASE_URL ?? "http://localhost:3000";
@@ -87,6 +93,7 @@ const context = await browser.newContext({
   deviceScaleFactor: 2,
   isMobile: mobile,
   hasTouch: mobile,
+  colorScheme: dark ? "dark" : "light",
 });
 const page = await context.newPage();
 
@@ -133,7 +140,9 @@ const heading = await page.evaluate(
 
 if (shot) await page.screenshot({ path: shot, fullPage: true });
 
-console.log(`${path}  ${mobile ? "393x852" : "1280x900"}`);
+console.log(
+  `${path}  ${mobile ? "393x852" : "1280x900"}  ${dark ? "dark" : "light"}`,
+);
 console.log(`  status         ${response?.status() ?? "?"}`);
 console.log(`  landed on      ${page.url()}`);
 console.log(`  heading        ${heading}`);
