@@ -1,5 +1,6 @@
-import { BlobError } from "@vercel/blob";
 import { NextResponse } from "next/server";
+
+import { blobFailure } from "@/lib/blob-failure";
 
 import {
   findRecipeBySourceHash,
@@ -15,7 +16,7 @@ import { inspectImage, type SupportedImageType } from "@/lib/image-inspect";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { extractLargestJpeg } from "@/lib/pdf-images";
 import { inspectPdf } from "@/lib/pdf-inspect";
-import { blobStoreId, storeFile } from "@/lib/storage";
+import { storeFile } from "@/lib/storage";
 import { getCurrentHousehold } from "@/lib/session";
 
 /**
@@ -60,22 +61,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[trivet] upload failed", error);
 
-    if (error instanceof BlobError) {
-      // Name the store, so a token pasted from the wrong one is obvious. The
-      // error text talks about the store's configuration, which sends you to
-      // the store's settings when the mistake is actually in the variable.
-      console.error(
-        `[trivet] blob store in use: ${blobStoreId() ?? "unknown"}`,
-      );
-      return NextResponse.json(
-        {
-          error:
-            "File storage rejected the upload. The recipe was not saved - " +
-            "this is a configuration problem, not a problem with your file.",
-        },
-        { status: 500 },
-      );
-    }
+    const refused = blobFailure(error, "file");
+    if (refused) return refused;
 
     return NextResponse.json(
       { error: "Something went wrong reading that card. Nothing was saved." },
