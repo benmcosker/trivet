@@ -120,7 +120,21 @@ export function RecipeSearchBar() {
           color: "text.primary",
           "& input::placeholder": {
             fontStyle: "italic",
-            color: (theme) => theme.palette.text.disabled,
+            /*
+             * `text.secondary`, not `text.disabled`.
+             *
+             * This was disabled, which measures 3.85:1. That clears the 3:1
+             * large-text threshold at `md`, where the field is 26px - but the
+             * size above steps down to 20px at `xs`, and 20px non-bold is not
+             * large text, so the compact string needed 4.5 and did not have
+             * it. Secondary measures 4.73 at both sizes.
+             *
+             * It matters more here than the number suggests: the placeholder
+             * is the only thing naming this field. The design gives it no
+             * visible label, because a label above it would undo the
+             * treatment.
+             */
+            color: "text.secondary",
             // Browsers dim placeholders by default, which on this palette
             // leaves it almost invisible.
             opacity: 1,
