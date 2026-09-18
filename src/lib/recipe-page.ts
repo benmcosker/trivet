@@ -37,9 +37,18 @@ export function parsePage(value: unknown): number {
   return Math.max(Math.trunc(page), 1);
 }
 
+/**
+ * Dishes per page in the planner's picker.
+ *
+ * Smaller than the library's page because a dialog is not a page: three rows
+ * of four at the widest breakpoint, which fits without the grid scrolling away
+ * from the filter field above it.
+ */
+export const PICKER_PAGE_SIZE = 12;
+
 /** How many pages `total` results make. Always at least one, even when empty. */
-export function pageCount(total: number): number {
-  return Math.max(Math.ceil(total / PAGE_SIZE), 1);
+export function pageCount(total: number, size: number = PAGE_SIZE): number {
+  return Math.max(Math.ceil(total / size), 1);
 }
 
 /**
@@ -85,8 +94,9 @@ export function pageWindow(current: number, total: number): (number | "gap")[] {
 export function pageRange(
   current: number,
   total: number,
+  size: number = PAGE_SIZE,
 ): { first: number; last: number } {
   if (total === 0) return { first: 0, last: 0 };
-  const first = (current - 1) * PAGE_SIZE + 1;
-  return { first, last: Math.min(current * PAGE_SIZE, total) };
+  const first = (current - 1) * size + 1;
+  return { first, last: Math.min(current * size, total) };
 }

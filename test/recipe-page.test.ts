@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   PAGE_SIZE,
+  PICKER_PAGE_SIZE,
   pageCount,
   pageRange,
   pageWindow,
@@ -84,6 +85,29 @@ describe("which numbers the control draws", () => {
 
   it("has one number when there is one page", () => {
     expect(pageWindow(1, 1)).toEqual([1]);
+  });
+});
+
+/*
+ * The picker paginates the same library at a different size, so the two page
+ * sizes share the arithmetic. A size-specific bug here would be invisible on
+ * the library page and wrong in the dialog.
+ */
+describe("the picker's smaller pages", () => {
+  it("counts pages at its own size", () => {
+    expect(pageCount(70, PICKER_PAGE_SIZE)).toBe(6);
+    expect(pageCount(PICKER_PAGE_SIZE, PICKER_PAGE_SIZE)).toBe(1);
+    expect(pageCount(PICKER_PAGE_SIZE + 1, PICKER_PAGE_SIZE)).toBe(2);
+  });
+
+  it("ranges at its own size", () => {
+    expect(pageRange(1, 70, PICKER_PAGE_SIZE)).toEqual({ first: 1, last: 12 });
+    expect(pageRange(6, 70, PICKER_PAGE_SIZE)).toEqual({ first: 61, last: 70 });
+  });
+
+  it("leaves the library's own size alone", () => {
+    expect(pageCount(70)).toBe(3);
+    expect(pageRange(1, 70)).toEqual({ first: 1, last: 24 });
   });
 });
 
