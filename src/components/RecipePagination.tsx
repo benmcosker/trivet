@@ -3,7 +3,13 @@ import Stack from "@mui/material/Stack";
 import Link from "next/link";
 
 import { pageRange, pageWindow } from "@/lib/recipe-page";
-import { fonts } from "@/theme/theme";
+
+import {
+  PAGE_GAP_SX,
+  PAGE_RANGE_SX,
+  PAGE_STEP_SX,
+  pageNumberSx,
+} from "./pagination-style";
 
 /**
  * Which page of the recipe box you are on.
@@ -77,12 +83,11 @@ export function RecipePagination({
          */}
         <Box
           sx={{
+            ...pageNumberSx(false),
             display: { xs: "block", sm: "none" },
-            fontFamily: fonts.sans,
-            fontWeight: 600,
             fontSize: "13px",
-            letterSpacing: "0.06em",
-            color: "text.secondary",
+            borderBottom: 0,
+            pb: 0,
             whiteSpace: "nowrap",
           }}
         >
@@ -105,13 +110,7 @@ export function RecipePagination({
                 key={`gap-${index}`}
                 component="span"
                 aria-hidden
-                sx={{
-                  fontFamily: fonts.sans,
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  letterSpacing: "0.06em",
-                  color: "text.disabled",
-                }}
+                sx={PAGE_GAP_SX}
               >
                 &hellip;
               </Box>
@@ -140,13 +139,10 @@ export function RecipePagination({
        */}
       <Box
         sx={{
+          ...PAGE_RANGE_SX,
           mt: "18px",
           textAlign: "center",
-          fontFamily: fonts.serif,
-          fontStyle: "italic",
-          fontWeight: 300,
           fontSize: { xs: "18px", md: "20px" },
-          color: "text.secondary",
         }}
       >
         Dishes {first}&ndash;{last} {summary}
@@ -164,15 +160,6 @@ function hrefFor(page: number, params: string): string {
   const query = next.toString();
   return query ? `/recipes?${query}` : "/recipes";
 }
-
-const LABEL_SX = {
-  fontFamily: fonts.sans,
-  fontWeight: 700,
-  fontSize: "12px",
-  letterSpacing: "0.15em",
-  textTransform: "uppercase",
-  whiteSpace: "nowrap",
-} as const;
 
 /**
  * Previous and Next, which stay put at the ends.
@@ -198,7 +185,7 @@ function Step({
   const inert = page < 1 || page > total;
 
   const sx = {
-    ...LABEL_SX,
+    ...PAGE_STEP_SX,
     minWidth: { xs: 0, md: 200 },
     textAlign: back ? "left" : "right",
   } as const;
@@ -250,21 +237,7 @@ function PageNumber({
       aria-current={here ? "page" : undefined}
       style={{ textDecoration: "none" }}
     >
-      <Box
-        component="span"
-        sx={{
-          display: "block",
-          fontFamily: fonts.sans,
-          fontWeight: here ? 700 : 600,
-          fontSize: "14px",
-          letterSpacing: "0.06em",
-          color: here ? "text.primary" : "text.secondary",
-          pb: "4px",
-          borderBottom: 2,
-          borderColor: here ? "secondary.main" : "transparent",
-          "&:hover": { color: "text.primary" },
-        }}
-      >
+      <Box component="span" sx={{ display: "block", ...pageNumberSx(here) }}>
         {page}
       </Box>
     </Link>
