@@ -13,49 +13,61 @@
     "since a weekly alarm about a form nobody filled in is how people learn to",
     "skip the alarm that matters."
   ],
-
   "runtimes": [
-    { "product": "nodejs", "cycle": "22", "used": ".github/workflows, Vercel" },
+    {
+      "product": "nodejs",
+      "cycle": "22",
+      "used": ".github/workflows, Vercel"
+    },
     {
       "product": "postgresql",
       "cycle": "16",
       "used": "Neon, and CI's service"
     },
-    { "product": "nextjs", "cycle": "16", "used": "the app itself" }
+    {
+      "product": "nextjs",
+      "cycle": "16",
+      "used": "the app itself"
+    }
   ],
-
   "warnWithinDays": 180,
-
   "credentials": [
     {
       "name": "BLOB_READ_WRITE_TOKEN",
-      "where": "Vercel → Storage → the Blob store → Settings → Rotate Credentials",
+      "where": "Vercel \u2192 Storage \u2192 the Blob store \u2192 Settings \u2192 Rotate Credentials",
       "rotatedOn": "2026-09-16",
       "everyDays": 365,
       "note": "Rotate; never create a new store. Rotating regenerates credentials on the same store, so the photo URLs already saved in recipe.imageUrl keep resolving - a new store means a new store id and every one of them 404s. Vercel updates the variables it manages and offers to delay the old secret's expiry: take the shortest delay, because the point of rotating is that the old one stops working. Check that the variable the app actually reads was among the ones updated, then redeploy - the new value does not reach the running deployment until you do."
     },
     {
       "name": "TWILIO_AUTH_TOKEN",
-      "where": "Twilio console → Account → API keys & tokens",
+      "where": "Twilio console \u2192 Account \u2192 API keys & tokens",
       "rotatedOn": null,
       "everyDays": 365
     },
     {
+      "name": "RESEND_API_KEY",
+      "where": "resend.com \u2192 API keys",
+      "rotatedOn": "2026-09-17",
+      "everyDays": 365,
+      "note": "Sending access only; it never needs more. Create the replacement before revoking the old one - they coexist, so there is no window where a password reset cannot be sent. Set it in Vercel and redeploy: the value is read into the build, so saving it on a running deployment changes nothing. Note that the domain verification is separate and survives a rotation."
+    },
+    {
       "name": "ANTHROPIC_API_KEY",
-      "where": "console.anthropic.com → API keys",
+      "where": "console.anthropic.com \u2192 API keys",
       "rotatedOn": null,
       "everyDays": 365
     },
     {
       "name": "BETTER_AUTH_SECRET",
-      "where": "Vercel → Settings → Environment Variables",
+      "where": "Vercel \u2192 Settings \u2192 Environment Variables",
       "rotatedOn": null,
       "everyDays": 730,
       "note": "Rotating this signs everybody out. Worth doing rarely and deliberately."
     },
     {
       "name": "DATABASE_URL",
-      "where": "Neon → Roles → reset password",
+      "where": "Neon \u2192 Roles \u2192 reset password",
       "rotatedOn": null,
       "everyDays": 730
     }

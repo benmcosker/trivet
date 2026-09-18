@@ -22,6 +22,7 @@ import {
 import type { MealSlot, ShoppingProvider } from "@/generated/prisma/enums";
 import { groupBySection } from "@/lib/grocery-sections";
 import { DINNER_SLOTS, FIRST_DINNER, SIDE_SLOTS } from "@/lib/meal-slots";
+import { providerNotes } from "@/lib/provider-notes";
 import { recipeMetaParts, splitTitle } from "@/lib/recipe-meta";
 import type { GroceryLine, WeeklySkipRecord } from "@/lib/grocery";
 import type { HandoffResult, ProviderInfo } from "@/lib/shopping";
@@ -1501,9 +1502,11 @@ export function WeekPlanner({
         ) : null}
 
         {/*
-         * Notes rather than banners, and one per provider: the two kinds
-         * behave very differently, and a row of similar buttons over a single
-         * paragraph would imply otherwise.
+         * Notes rather than banners, and one per thing worth saying rather
+         * than one per provider. The two kinds of provider behave very
+         * differently and one paragraph over a row of similar buttons would
+         * hide that - but Amazon Fresh and Whole Foods are one Amazon with one
+         * constraint, and saying it twice reads as a mistake.
          *
          * Stacked with their hairlines pulled together, so a column of notes
          * reads as ruled paper instead of as a set of boxes.
@@ -1527,17 +1530,15 @@ export function WeekPlanner({
            * overlap was a caption under an alert. As two full paragraphs of
            * serif it is the same sentence twice.
            */}
-          {providers
-            .filter((provider) => !(handoff && provider.id === handoffFrom))
-            .map((provider) => (
-              <PaperNote
-                key={provider.id}
-                label={`A note on ${provider.label}`}
-              >
-                {provider.description}
-                {provider.available ? "" : ` ${provider.unavailableReason}`}
-              </PaperNote>
-            ))}
+          {providerNotes(
+            providers.filter(
+              (provider) => !(handoff && provider.id === handoffFrom),
+            ),
+          ).map((note) => (
+            <PaperNote key={note.key} label={`A note on ${note.subject}`}>
+              {note.body}
+            </PaperNote>
+          ))}
         </Box>
 
         {handoff ? <ShoppingHandoffPanel result={handoff} /> : null}
