@@ -94,22 +94,28 @@ undated note is one nobody thinks to re-test.
   access request, then a demo, then a production key, averaging 30-40 days. So
   this is a date to re-check, not a switch to flip.
 
-- **Two of the weekly health check's eight advisories are false** (checked
-  September 2026). `mysql2` is an optional driver that `better-auth` and
-  `prisma` both carry for people on MySQL; nothing in this codebase imports it
-  and the app is Postgres, so it should not drive a major upgrade. The checker
-  counts a package as "reachable from a request" by its presence in the tree
-  rather than by whether anything imports it, so treat that label as a prompt
-  to run `npm ls <pkg>` rather than as a finding. `deepmerge-ts` is the other
-  one to check the same way before accepting its major.
+- **Four of the weekly health check's eight advisories were false**
+  (September 2026), and the check now knows it. `npm audit --omit=dev` keeps
+  optional peer dependencies, so `prisma` — the CLI, a devDependency, an
+  optional peer of both `@prisma/client` and `better-auth` — counted as
+  production and dragged `@prisma/config` and `deepmerge-ts` with it. `mysql2`
+  is the fourth: a MySQL driver on a Postgres app. None is reachable from a
+  request. There is no cheap way to compute this, because npm's tree is
+  flattened by the time it is printed and the peer edge that caused it is
+  gone — so the corrections are written down in `lifecycle.json`'s
+  `unreachable`, each with a reason and a date. **Add to that list rather than
+  arguing with the report**, and keep the reason honest: a demoted advisory is
+  still printed, which is what stops the list becoming a place findings go to
+  die. Prisma 8's highs are all on this side of the line, so the release
+  candidate is not worth taking; wait for stable.
 
-- **`@types/node` should track the runtime, not the registry** (September
-  2026). The check reports `20 → 26` as a pending major. We run Node 22, so the
-  target is the latest **22.x**: types for Node 26 on a Node 22 runtime
-  describe APIs that do not exist when the code runs, which is worse than being
-  behind. `prisma 8.0.0-rc.15` is likewise not an upgrade — it is a release
-  candidate, and taking one to close a high on a family app trades a known risk
-  for an unknown one. Wait for stable.
+- **`@types/node` tracks the runtime, not the registry** (September 2026).
+  Done, not just noticed: the range is `^22`, and `lifecycle.json`'s `pinned`
+  makes the check measure it against the newest 22.x instead of the newest
+  published. Types for Node 26 on a Node 22 runtime describe APIs that are not
+  there when the code runs — it typechecks and then throws, which is worse than
+  being behind. A pinned package that falls behind _inside_ its track still
+  reports, so this is a correction rather than a mute.
 
 ### Not built yet: autocomplete when adding tags
 
