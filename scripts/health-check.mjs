@@ -70,8 +70,12 @@ const credentials = summariseCredentials(lifecycle.credentials ?? [], today);
 const audit = summariseAudit(
   readJson("/tmp/audit.json"),
   readJson("/tmp/audit-prod.json"),
+  lifecycle.unreachable ?? [],
 );
-const outdated = summariseOutdated(readJson("/tmp/outdated.json"));
+const outdated = summariseOutdated(
+  readJson("/tmp/outdated.json"),
+  lifecycle.pinned ?? [],
+);
 const drift = process.env.DRIFT === "true";
 
 const report = {
