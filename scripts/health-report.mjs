@@ -24,27 +24,48 @@ export const REPORTABLE = ["critical", "high", "moderate"];
  * are different sentences deserving different Mondays. Guessing which was
  * which from the node paths was the first version of this, and it was wrong
  * often enough not to keep.
+ *
+ * `--omit=dev` is still not the same question as "could a request reach this".
+ * npm keeps optional peer dependencies in that tree, so a command-line tool
+ * installed as a devDependency - `prisma` here - counts as production, and
+ * drags everything underneath it along. Four of eight advisories were labelled
+ * that way in September 2026 and none of them was reachable. There is no cheap
+ * way to compute the difference: npm's tree is flattened by the time it is
+ * printed, so the peer edge that caused it is gone. So the correction is
+ * written down instead, in `lifecycle.json`'s `unreachable`, with a reason and
+ * a date per entry - the same bargain as the credential dates. A demoted
+ * advisory is still reported; it just stops being counted as something a
+ * stranger could reach.
  */
-export function summariseAudit(audit, prodAudit) {
+export function summariseAudit(audit, prodAudit, unreachable = []) {
   const entries = Object.entries(audit?.vulnerabilities ?? {});
   const inProd = new Set(Object.keys(prodAudit?.vulnerabilities ?? {}));
+  const checked = new Map(unreachable.map((u) => [u.package, u]));
 
-  const advisories = entries.map(([name, v]) => ({
-    name,
-    severity: v.severity,
-    direct: Boolean(v.isDirect),
-    // npm reports `true`, `false`, or an object describing the fix.
-    fixable: v.fixAvailable !== false,
-    // A fix that changes a major is not a fix you apply on a Tuesday.
-    breaking: Boolean(v.fixAvailable?.isSemVerMajor),
-    prod: inProd.has(name),
-  }));
+  const advisories = entries.map(([name, v]) => {
+    const prod = inProd.has(name);
+    const exempt = checked.get(name);
+    return {
+      name,
+      severity: v.severity,
+      direct: Boolean(v.isDirect),
+      // npm reports `true`, `false`, or an object describing the fix.
+      fixable: v.fixAvailable !== false,
+      // A fix that changes a major is not a fix you apply on a Tuesday.
+      breaking: Boolean(v.fixAvailable?.isSemVerMajor),
+      prod,
+      // What npm said, minus what somebody checked by hand and wrote down.
+      reachable: prod && exempt === undefined,
+      demoted: prod && exempt !== undefined ? exempt : null,
+    };
+  });
 
   const reportable = advisories.filter((a) => REPORTABLE.includes(a.severity));
   return {
     total: entries.length,
     reportable,
-    production: reportable.filter((a) => a.prod),
+    production: reportable.filter((a) => a.reachable),
+    demoted: reportable.filter((a) => a.demoted !== null),
     counts: audit?.metadata?.vulnerabilities ?? {},
   };
 }
@@ -70,19 +91,43 @@ export function bump(current, latest) {
  * quietly grows on an app nobody is maintaining, and the whole point of asking
  * weekly is to see it move from two to three rather than to discover it at
  * eleven.
+ *
+ * Some packages are behind on purpose. `@types/node` tracks the runtime rather
+ * than the registry, so "20 → 26" was never the right advice for an app on
+ * Node 22 - it is a recommendation to describe APIs that will not be there.
+ * Those are listed in `lifecycle.json`'s `pinned` and measured against
+ * `wanted`, the newest release inside the package.json range, instead of
+ * `latest`. A pinned package that is at the top of its track is not behind at
+ * all and says nothing; one that has fallen behind inside its track still
+ * reports, which is the point of not simply muting it.
  */
-export function summariseOutdated(outdated) {
-  const rows = Object.entries(outdated ?? {}).map(([name, o]) => ({
-    name,
-    current: o.current,
-    latest: o.latest,
-    kind: bump(o.current, o.latest),
-  }));
+export function summariseOutdated(outdated, pinned = []) {
+  const heldTo = new Map(pinned.map((p) => [p.package, p]));
+
+  const rows = Object.entries(outdated ?? {}).flatMap(([name, o]) => {
+    const pin = heldTo.get(name);
+    const target = pin ? o.wanted : o.latest;
+    const kind = bump(o.current, target);
+    // Nothing moved, or nothing moved inside the track we hold it to.
+    if (!kind) return [];
+    return [
+      {
+        name,
+        current: o.current,
+        latest: target,
+        kind,
+        pinnedTo: pin ? pin.track : null,
+        // Kept so the report can say what was passed over, and why.
+        published: o.latest,
+      },
+    ];
+  });
 
   return {
     major: rows.filter((r) => r.kind === "major"),
     minor: rows.filter((r) => r.kind === "minor"),
     patch: rows.filter((r) => r.kind === "patch"),
+    pinned: rows.filter((r) => r.pinnedTo !== null),
   };
 }
 
@@ -223,7 +268,11 @@ export function buildReport({
     audit.reportable,
     (a) =>
       `- **${a.name}** - ${a.severity}${a.direct ? ", direct dependency" : ""}` +
-      (a.prod ? ", ships to production" : ", build-time only") +
+      (a.reachable
+        ? ", ships to production"
+        : a.demoted
+          ? ", build-time only (npm counts it as production; checked by hand)"
+          : ", build-time only") +
       (a.fixable
         ? a.breaking
           ? " · fix available, but it is a major"
@@ -231,14 +280,25 @@ export function buildReport({
         : " · no fix published yet"),
   );
 
-  const majors = list(
-    outdated.major,
-    (r) => `- **${r.name}** ${r.current} → ${r.latest}`,
-  );
-  const minors = list(
-    outdated.minor,
-    (r) => `- ${r.name} ${r.current} → ${r.latest}`,
-  );
+  // Said once, under the list, rather than repeated against every line.
+  const demotedNote = audit.demoted.length
+    ? `\n\n<sub>${audit.demoted.length} of these (${audit.demoted
+        .map((a) => `\`${a.name}\``)
+        .join(", ")}) are reported by \`npm audit --omit=dev\` as production
+but are not reachable from a request. Each has a reason and a date in
+\`lifecycle.json\`; re-read them rather than trusting this line.</sub>`
+    : "";
+
+  // A pinned package says what it is held to, so "why is this behind?" is
+  // answered on the line that raises it rather than three files away.
+  const moved = (r) =>
+    `${r.current} → ${r.latest}` +
+    (r.pinnedTo
+      ? ` (held to ${r.pinnedTo}.x; ${r.published} is published)`
+      : "");
+
+  const majors = list(outdated.major, (r) => `- **${r.name}** ${moved(r)}`);
+  const minors = list(outdated.minor, (r) => `- ${r.name} ${moved(r)}`);
 
   return `_Checked ${date}._ CI covers what a commit breaks; this covers what
 time breaks.
@@ -247,7 +307,7 @@ time breaks.
 
 ${audit.total} in the tree, ${audit.reportable.length} at moderate or above, ${audit.production.length} of those reachable from a request.
 
-${advisories}
+${advisories}${demotedNote}
 
 ## Behind
 

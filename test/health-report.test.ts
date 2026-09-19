@@ -295,3 +295,116 @@ describe("summariseCredentials", () => {
     expect(needsAttention({ ...clear, credentials: overdue })).toBe(true);
   });
 });
+
+/*
+ * The two corrections to what npm reports. npm knows what is published and
+ * what is installed; it does not know what we run or what we import, and on
+ * both counts it told this report something false.
+ */
+describe("packages held to a track", () => {
+  // The real shape: @types/node on ^22, with 26 published.
+  const outdated = {
+    "@types/node": { current: "22.20.4", wanted: "22.20.4", latest: "26.6.2" },
+    eslint: { current: "9.39.5", wanted: "9.39.5", latest: "10.11.0" },
+  };
+  const pinned = [{ package: "@types/node", track: "22" }];
+
+  it("says nothing about a pinned package at the top of its track", () => {
+    const summary = summariseOutdated(outdated, pinned);
+    expect(summary.major.map((r: { name: string }) => r.name)).toEqual([
+      "eslint",
+    ]);
+    expect(summary.pinned).toEqual([]);
+  });
+
+  it("still reports one that has fallen behind inside its track", () => {
+    // Muting the package would hide this; measuring against the track does not.
+    const behind = {
+      "@types/node": {
+        current: "22.1.0",
+        wanted: "22.20.4",
+        latest: "26.6.2",
+      },
+    };
+    const summary = summariseOutdated(behind, pinned);
+    expect(summary.minor).toHaveLength(1);
+    expect(summary.minor[0].latest).toBe("22.20.4");
+    expect(summary.minor[0].pinnedTo).toBe("22");
+    expect(summary.minor[0].published).toBe("26.6.2");
+  });
+
+  it("reports the whole jump when nothing is pinned", () => {
+    // Without the pin this is the wrong advice the check used to give.
+    const summary = summariseOutdated(outdated);
+    expect(summary.major.map((r: { name: string }) => r.name)).toEqual([
+      "@types/node",
+      "eslint",
+    ]);
+  });
+
+  it("names the track on the line that raises it", () => {
+    const body = buildReport({
+      audit: { reportable: [], production: [], demoted: [], total: 0 },
+      outdated: summariseOutdated(
+        { "@types/node": { current: "22.1.0", wanted: "22.20.4" } },
+        pinned,
+      ),
+      drift: false,
+      versions: {},
+      date: "2026-09-19",
+    });
+    expect(body).toContain("held to 22.x");
+  });
+});
+
+describe("advisories npm calls production and a person checked", () => {
+  const audit = {
+    vulnerabilities: {
+      next: advisory({ severity: "critical", isDirect: true }),
+      prisma: advisory({ severity: "high", isDirect: true }),
+    },
+  };
+  // npm's --omit=dev tree keeps optional peers, so the CLI lands here too.
+  const prodAudit = {
+    vulnerabilities: { next: advisory(), prisma: advisory() },
+  };
+  const unreachable = [
+    { package: "prisma", checkedOn: "2026-09-19", why: "The CLI." },
+  ];
+
+  it("stops counting one that nothing imports", () => {
+    const summary = summariseAudit(audit, prodAudit, unreachable);
+    expect(summary.production.map((a: { name: string }) => a.name)).toEqual([
+      "next",
+    ]);
+    expect(summary.demoted.map((a: { name: string }) => a.name)).toEqual([
+      "prisma",
+    ]);
+  });
+
+  it("still reports it, rather than hiding it", () => {
+    // A silent exception is how a real finding gets suppressed for a year.
+    const summary = summariseAudit(audit, prodAudit, unreachable);
+    expect(summary.reportable).toHaveLength(2);
+    expect(summary.total).toBe(2);
+  });
+
+  it("does not demote a package nobody wrote down", () => {
+    const summary = summariseAudit(audit, prodAudit, []);
+    expect(summary.production).toHaveLength(2);
+    expect(summary.demoted).toEqual([]);
+  });
+
+  it("says once, under the list, which lines were corrected", () => {
+    const body = buildReport({
+      audit: summariseAudit(audit, prodAudit, unreachable),
+      outdated: { major: [], minor: [], patch: [] },
+      drift: false,
+      versions: {},
+      date: "2026-09-19",
+    });
+    expect(body).toContain("2 at moderate or above, 1 of those reachable");
+    expect(body).toContain("checked by hand");
+    expect(body).toContain("`lifecycle.json`");
+  });
+});

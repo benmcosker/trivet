@@ -11,7 +11,13 @@
     "rotated a token, so it is written down by hand. A null date means nobody",
     "has recorded one - which is reported but never opens an issue on its own,",
     "since a weekly alarm about a form nobody filled in is how people learn to",
-    "skip the alarm that matters."
+    "skip the alarm that matters.",
+    "",
+    "`pinned` and `unreachable` are corrections to what npm reports. npm knows",
+    "what is published and what is installed; it does not know what we run or",
+    "what we import, and on both counts it has told this report something",
+    "false. Each entry carries the reason and the date it was checked, because",
+    "a silent exception is how a real finding gets suppressed for a year."
   ],
   "runtimes": [
     {
@@ -28,6 +34,36 @@
       "product": "nextjs",
       "cycle": "16",
       "used": "the app itself"
+    }
+  ],
+  "pinned": [
+    {
+      "package": "@types/node",
+      "track": "22",
+      "checkedOn": "2026-09-19",
+      "why": "Type definitions describe the runtime, not the registry. We run Node 22 - see `runtimes` above - and @types/node 26 on a Node 22 runtime describes APIs that are not there when the code runs. That is a worse failure than being behind, because it typechecks first and throws later. The package.json range is ^22, and the check compares against the newest release inside that range rather than the newest published."
+    }
+  ],
+  "unreachable": [
+    {
+      "package": "mysql2",
+      "checkedOn": "2026-09-19",
+      "why": "An optional driver that better-auth and prisma both carry for people on MySQL. Nothing in this codebase imports it and the app is Postgres, so it cannot be reached by a request."
+    },
+    {
+      "package": "prisma",
+      "checkedOn": "2026-09-19",
+      "why": "The command-line tool: `bin: prisma`, and a devDependency here. @prisma/client and better-auth both declare it an *optional* peer, which is why it shows up in the production tree - but the app imports the generated client in src/generated/prisma, never the CLI. It runs at build time and on migrations, not on a request."
+    },
+    {
+      "package": "@prisma/config",
+      "checkedOn": "2026-09-19",
+      "why": "Reads prisma.config.ts for the CLI. Its only path into the tree is through `prisma`, and no runtime file in @prisma/client references it - only source maps do."
+    },
+    {
+      "package": "deepmerge-ts",
+      "checkedOn": "2026-09-19",
+      "why": "Reached only through @prisma/config, so it inherits that entry: build-time, not request-time."
     }
   ],
   "warnWithinDays": 180,
