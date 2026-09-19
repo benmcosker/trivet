@@ -109,6 +109,19 @@ undated note is one nobody thinks to re-test.
   die. Prisma 8's highs are all on this side of the line, so the release
   candidate is not worth taking; wait for stable.
 
+- **vitest 5 is gated behind a better-auth schema migration** (19 September
+  2026). `better-auth@1.7.1` declares `peerOptional vitest: "^2 || ^3 || ^4"`,
+  so taking vitest 5 makes `npm ci` fail with ERESOLVE - which `npm install`
+  and a passing test run will not tell you. **After changing any dependency,
+  re-run `npm ci`, not just the tests**: it is the first thing CI does and the
+  only one that checks peer resolution. `better-auth@1.7.4+` widens that peer
+  to allow vitest 5, but 1.7.2-1.7.5 also add a required `issuer` column to
+  the `account` model - a _patch_ release carrying a schema change. Until that
+  migration is written, every `account.create()` throws
+  "Argument `issuer` is missing" and signup breaks. So vitest 5 is not a test
+  upgrade, it is an auth migration wearing one; it needs its own change with
+  the migration, and no advisory is pushing it.
+
 - **eslint 10 is blocked upstream, and the peer range lies about it**
   (19 September 2026). Tried it; `npm run lint` dies before linting anything:
   `TypeError: Error while loading rule 'react/display-name':
