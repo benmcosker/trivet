@@ -109,6 +109,22 @@ undated note is one nobody thinks to re-test.
   die. Prisma 8's highs are all on this side of the line, so the release
   candidate is not worth taking; wait for stable.
 
+- **eslint 10 is blocked upstream, and the peer range lies about it**
+  (19 September 2026). Tried it; `npm run lint` dies before linting anything:
+  `TypeError: Error while loading rule 'react/display-name':
+contextOrFilename.getFilename is not a function`. The whole lint config is
+  `eslint-config-next`, which bundles `eslint-plugin-react`, and
+  **7.37.5 - the latest published - declares `eslint: "^3 || ... || ^9.7"`.
+  No release of it supports eslint 10 at all.** `eslint-config-next` has no
+  stable release past 16.3.5 either; the only newer ones are 16.4.0 canaries,
+  and every version of it declares `eslint: ">=9.0.0"` while depending on a
+  plugin capped at `^9.7`. That range is wrong, which is why npm installs
+  eslint 10 without a warning and it only fails when a rule loads - do not
+  read a clean `npm install` as evidence here. Re-check when
+  `eslint-plugin-react` publishes a version naming eslint 10 in its peers;
+  until then being one major behind on a linter costs nothing. Forcing it
+  with an override would half-upgrade the toolchain, which costs a lot.
+
 - **The health check does not watch GitHub Action versions** (19 September
   2026). It covers npm dependencies, runtimes, credentials and schema drift -
   but the `uses:` lines in `.github/workflows` rot on a calendar like
