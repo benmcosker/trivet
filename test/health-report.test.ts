@@ -89,9 +89,17 @@ describe("summariseAudit", () => {
     expect(summary.reportable[0].fixable).toBe(false);
   });
 
-  it("survives npm saying nothing at all", () => {
-    expect(summariseAudit({}, {}).total).toBe(0);
+  /*
+   * This used to assert `total` was 0 here, which is how the bug lived: npm
+   * saying nothing and npm saying "nothing is wrong" are different facts, and
+   * reading the first as the second is a report that lies on exactly the week
+   * it matters. Still must not throw - that part was always right.
+   */
+  it("treats npm saying nothing at all as unknown, not as clear", () => {
+    expect(summariseAudit({}, {}).total).toBeNull();
+    expect(summariseAudit({}, {}).state).toBe("unknown");
     expect(summariseAudit(undefined, undefined).reportable).toEqual([]);
+    expect(summariseAudit(undefined, undefined).state).toBe("unknown");
   });
 });
 
@@ -406,5 +414,99 @@ describe("advisories npm calls production and a person checked", () => {
     expect(body).toContain("2 at moderate or above, 1 of those reachable");
     expect(body).toContain("checked by hand");
     expect(body).toContain("`lifecycle.json`");
+  });
+});
+
+/*
+ * The failure this file exists to prevent: a week where nobody looked,
+ * reported as a week where nothing was wrong. `npm audit` writes an error
+ * object instead of a report when the registry refuses it, and the workflow
+ * cannot tell that from success, because a successful audit also exits
+ * non-zero whenever it finds something.
+ */
+describe("an audit that did not answer", () => {
+  // The real shape, from a 400 the registry returned on 19 September 2026.
+  const failed = {
+    message:
+      "400 Bad Request - POST https://registry.npmjs.org/-/npm/v1/security/audits/quick - Bad Request",
+    method: "POST",
+  };
+  const clear = {
+    auditReportVersion: 2,
+    vulnerabilities: {},
+    metadata: { vulnerabilities: { high: 0 } },
+  };
+
+  it("is unknown, and unknown is not zero", () => {
+    const summary = summariseAudit(failed, failed);
+    expect(summary.state).toBe("unknown");
+    expect(summary.total).toBeNull();
+    expect(summary.reportable).toEqual([]);
+  });
+
+  it("opens the issue rather than closing it", () => {
+    // The whole point. Without this the workflow comments "Clear this week"
+    // and closes, on a week it learned nothing.
+    const report = {
+      audit: summariseAudit(failed, failed),
+      outdated: { major: [], minor: [], patch: [] },
+      drift: false,
+    };
+    expect(needsAttention(report)).toBe(true);
+  });
+
+  it("still lets a genuinely clear week close the issue", () => {
+    // The fix must not make the issue immortal - that is the same noise
+    // problem wearing the opposite hat.
+    const report = {
+      audit: summariseAudit(clear, clear),
+      outdated: { major: [], minor: [], patch: [] },
+      drift: false,
+    };
+    expect(summariseAudit(clear, clear).state).toBe("ok");
+    expect(needsAttention(report)).toBe(false);
+  });
+
+  it("says so in the body instead of printing an empty list", () => {
+    const body = buildReport({
+      audit: summariseAudit(failed, failed),
+      outdated: { major: [], minor: [], patch: [] },
+      drift: false,
+      versions: {},
+      date: "2026-09-19",
+    });
+    expect(body).toContain("Could not check");
+    // "_None._" under this heading would be the claim we just refused to make.
+    expect(body).not.toContain("_None._\n\n## Behind");
+  });
+
+  it("catches the quieter half: the production audit failing alone", () => {
+    // Every advisory would otherwise read "build-time only", which looks like
+    // a complete answer and is not one.
+    const audit = {
+      vulnerabilities: { next: advisory({ severity: "critical" }) },
+      metadata: { vulnerabilities: { critical: 1 } },
+    };
+    const summary = summariseAudit(audit, failed);
+    expect(summary.state).toBe("ok");
+    expect(summary.reachabilityKnown).toBe(false);
+    expect(summary.production).toEqual([]);
+    expect(summary.reportable[0].reachable).toBeNull();
+    expect(
+      needsAttention({
+        audit: summary,
+        outdated: { major: [], minor: [], patch: [] },
+        drift: false,
+      }),
+    ).toBe(true);
+
+    const body = buildReport({
+      audit: summary,
+      outdated: { major: [], minor: [], patch: [] },
+      drift: false,
+      versions: {},
+      date: "2026-09-19",
+    });
+    expect(body).toContain("unknown this week");
   });
 });

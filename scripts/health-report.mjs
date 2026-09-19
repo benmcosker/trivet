@@ -37,8 +37,35 @@ export const REPORTABLE = ["critical", "high", "moderate"];
  * advisory is still reported; it just stops being counted as something a
  * stranger could reach.
  */
+export function ran(audit) {
+  return Boolean(audit) && typeof audit.vulnerabilities === "object";
+}
+
 export function summariseAudit(audit, prodAudit, unreachable = []) {
-  const entries = Object.entries(audit?.vulnerabilities ?? {});
+  // A lookup that failed is not a clean bill of health. `npm audit` writes an
+  // error object rather than a report when the registry refuses it, and the
+  // workflow's `|| true` - which is there because a *successful* audit exits
+  // non-zero whenever it finds anything - means nothing else notices. Read
+  // that as an empty report and the week says "no advisories" on a week
+  // nobody looked, which is the one failure this file exists to prevent.
+  if (!ran(audit)) {
+    return {
+      state: "unknown",
+      reachabilityKnown: false,
+      total: null,
+      reportable: [],
+      production: [],
+      demoted: [],
+      counts: {},
+    };
+  }
+
+  // The second audit can fail on its own, and then every advisory would read
+  // "build-time only" - a quieter version of the same lie, and the more
+  // dangerous one because the list still looks complete.
+  const reachabilityKnown = ran(prodAudit);
+
+  const entries = Object.entries(audit.vulnerabilities);
   const inProd = new Set(Object.keys(prodAudit?.vulnerabilities ?? {}));
   const checked = new Map(unreachable.map((u) => [u.package, u]));
 
@@ -54,19 +81,24 @@ export function summariseAudit(audit, prodAudit, unreachable = []) {
       // A fix that changes a major is not a fix you apply on a Tuesday.
       breaking: Boolean(v.fixAvailable?.isSemVerMajor),
       prod,
+      reachabilityKnown,
       // What npm said, minus what somebody checked by hand and wrote down.
-      reachable: prod && exempt === undefined,
+      // Unknown when the production audit did not answer: an advisory nobody
+      // classified is not an advisory nobody can reach.
+      reachable: reachabilityKnown ? prod && exempt === undefined : null,
       demoted: prod && exempt !== undefined ? exempt : null,
     };
   });
 
   const reportable = advisories.filter((a) => REPORTABLE.includes(a.severity));
   return {
+    state: "ok",
+    reachabilityKnown,
     total: entries.length,
     reportable,
-    production: reportable.filter((a) => a.reachable),
+    production: reportable.filter((a) => a.reachable === true),
     demoted: reportable.filter((a) => a.demoted !== null),
-    counts: audit?.metadata?.vulnerabilities ?? {},
+    counts: audit.metadata?.vulnerabilities ?? {},
   };
 }
 
@@ -209,6 +241,12 @@ export function needsAttention({
 }) {
   return (
     drift ||
+    // An audit that did not answer is a reason to open the issue, not a
+    // reason to close it. Same rule as a runtime we could not look up: not
+    // knowing and being fine are different answers, and only one of them
+    // deserves silence.
+    audit.state === "unknown" ||
+    audit.reachabilityKnown === false ||
     audit.reportable.length > 0 ||
     outdated.major.length > 0 ||
     outdated.minor.length > 0 ||
@@ -264,21 +302,47 @@ export function buildReport({
     return `- ${what} - ${c.age} days old.${note}`;
   });
 
-  const advisories = list(
-    audit.reportable,
-    (a) =>
-      `- **${a.name}** - ${a.severity}${a.direct ? ", direct dependency" : ""}` +
-      (a.reachable
-        ? ", ships to production"
-        : a.demoted
-          ? ", build-time only (npm counts it as production; checked by hand)"
-          : ", build-time only") +
-      (a.fixable
-        ? a.breaking
-          ? " · fix available, but it is a major"
-          : " · fix available"
-        : " · no fix published yet"),
-  );
+  const advisories =
+    audit.state === "unknown"
+      ? ""
+      : list(
+          audit.reportable,
+          (a) =>
+            `- **${a.name}** - ${a.severity}${a.direct ? ", direct dependency" : ""}` +
+            (a.reachabilityKnown === false
+              ? ", **cannot say whether it ships to production**"
+              : a.reachable
+                ? ", ships to production"
+                : a.demoted
+                  ? ", build-time only (npm counts it as production; checked by hand)"
+                  : ", build-time only") +
+            (a.fixable
+              ? a.breaking
+                ? " · fix available, but it is a major"
+                : " · fix available"
+              : " · no fix published yet"),
+        );
+
+  /*
+   * What the section says above the list, and the two ways it can have
+   * nothing trustworthy to say. "We looked and found none" and "we could not
+   * look" are the same empty list and opposite facts, so they never share a
+   * sentence.
+   */
+  const advisorySummary =
+    audit.state === "unknown"
+      ? `**Could not check.** \`npm audit\` did not return a report this week, so
+this section is not evidence of anything - neither that there are advisories
+nor that there are none. The workflow tolerates a non-zero exit because a
+successful audit exits non-zero whenever it finds something, which means a
+failed one looks the same from outside. Re-run the job; if it keeps failing,
+the endpoint or the lockfile is the thing to fix, not this issue.`
+      : audit.reachabilityKnown === false
+        ? `${audit.total} in the tree, ${audit.reportable.length} at moderate or above. **How many a request
+could reach is unknown this week** - the second audit, the one run with
+\`--omit=dev\`, did not answer, and without it every line below would claim to
+be build-time only.`
+        : `${audit.total} in the tree, ${audit.reportable.length} at moderate or above, ${audit.production.length} of those reachable from a request.`;
 
   // Said once, under the list, rather than repeated against every line.
   const demotedNote = audit.demoted.length
@@ -305,7 +369,7 @@ time breaks.
 
 ## Advisories
 
-${audit.total} in the tree, ${audit.reportable.length} at moderate or above, ${audit.production.length} of those reachable from a request.
+${advisorySummary}
 
 ${advisories}${demotedNote}
 
