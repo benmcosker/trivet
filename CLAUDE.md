@@ -109,6 +109,17 @@ undated note is one nobody thinks to re-test.
   die. Prisma 8's highs are all on this side of the line, so the release
   candidate is not worth taking; wait for stable.
 
+- **A failed `npm audit` used to read as "no advisories"** (19 September
+  2026). npm's quick-audit endpoint returned `400 Invalid package tree` and
+  announced it is being retired; the report would have said the week was
+  clear and closed its own issue. `summariseAudit` now distinguishes "did not
+  answer" from "found nothing", and either one keeps the issue open. Do not
+  "simplify" that back to `audit?.vulnerabilities ?? {}` - a test pinning the
+  old behaviour is what let it survive the first time. The workflow's
+  `|| true` is correct and must stay: a _successful_ audit also exits
+  non-zero whenever it finds something, which is exactly why the failure has
+  to be detected from the output rather than the exit code.
+
 - **`@types/node` tracks the runtime, not the registry** (September 2026).
   Done, not just noticed: the range is `^22`, and `lifecycle.json`'s `pinned`
   makes the check measure it against the newest 22.x instead of the newest
