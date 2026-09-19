@@ -109,6 +109,17 @@ undated note is one nobody thinks to re-test.
   die. Prisma 8's highs are all on this side of the line, so the release
   candidate is not worth taking; wait for stable.
 
+- **The health check does not watch GitHub Action versions** (19 September
+  2026). It covers npm dependencies, runtimes, credentials and schema drift -
+  but the `uses:` lines in `.github/workflows` rot on a calendar like
+  everything else, and nothing reports them. Found when the runner warned that
+  `actions/checkout@v4`, `actions/setup-node@v4` and `actions/github-script@v7`
+  target Node 20 and were being forced onto Node 24; the workflow was warning
+  about itself while the report it generates said nothing. Now on v7, v7 and
+  v9 respectively, all of which declare `using: node24`. Worth teaching the
+  check to read `uses:` lines eventually - until then the runner's annotations
+  are the only warning, and they are easy to miss because the job still passes.
+
 - **A failed `npm audit` used to read as "no advisories"** (19 September
   2026). npm's quick-audit endpoint returned `400 Invalid package tree` and
   announced it is being retired; the report would have said the week was
