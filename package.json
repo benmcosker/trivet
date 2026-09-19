@@ -32,14 +32,14 @@
     "@vercel/blob": "^2.8.0",
     "better-auth": "^1.7.1",
     "heic-to": "^1.5.2",
-    "next": "16.3.2",
+    "next": "16.3.5",
     "pdf-lib": "^1.17.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
