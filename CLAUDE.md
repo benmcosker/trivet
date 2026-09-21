@@ -179,6 +179,22 @@ contextOrFilename.getFilename is not a function`. The whole lint config is
   being behind. A pinned package that falls behind _inside_ its track still
   reports, so this is a correction rather than a mute.
 
+- **A scheduled workflow that does not fire leaves no trace at all**
+  (21 September 2026). The weekly check asked for Mondays 07:00 UTC and had
+  run twice: once six and a half hours late, once not at all. GitHub queues
+  every repository's schedules together and drops what it cannot reach,
+  silently — no run, no annotation, no red tick, and a report that simply does
+  not arrive. Two things came of it. The cron moved to `37 7`, because the top
+  of the hour is where every cron in the world piles up; and
+  `health-watchdog.yml` now looks daily for a successful run in the last eight
+  days and files an issue when it cannot find one. **Neither makes the
+  schedule a guarantee.** The watchdog runs on the same scheduler as the thing
+  it watches, which is a correlated failure nothing inside GitHub can fix -
+  daily rather than weekly only makes it seven chances instead of one. A real
+  dead man's switch has to live somewhere else, and is worth it only when
+  somebody would act on it. The watchdog therefore owns no dependencies: no
+  `npm ci`, no database, no build, nothing it watches for could break it.
+
 ### Not built yet: autocomplete when adding tags
 
 Scoped, not started. Roughly half a session.

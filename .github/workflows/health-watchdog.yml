@@ -1,0 +1,98 @@
+name: Health watchdog
+
+# The weekly health check reports what time breaks. Nothing reported when the
+# check itself did not run: a scheduled workflow that GitHub drops leaves no
+# run, no annotation and no red tick, so the failure is an absence and absence
+# is invisible from the inside. On 21 September the Monday slot passed with
+# nothing queued and nobody would have known but for somebody happening to look.
+#
+# So: a second pair of eyes, daily, whose only job is to notice a silence.
+on:
+  schedule:
+    # Daily at 08:23 UTC - after the weekly check's 07:37 Monday slot, so a
+    # run that happened is already counted rather than raced.
+    #
+    # Daily rather than weekly on purpose. This job is subject to the same
+    # scheduler as the one it watches, which is a real weakness and cannot be
+    # designed away from inside GitHub; seven chances a week instead of one is
+    # how it is made small. :23 for the same reason the other moved off :00.
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+
+# Read the run history, file the notice. Nothing else, and nothing writable in
+# the repository.
+permissions:
+  actions: read
+  issues: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # No `npm ci`, no database, no build. This job watches a job that needs
+      # all three, so it deliberately needs none of them - a watchdog that can
+      # be broken by what it is watching for is not a watchdog. Node's own
+      # fetch does the whole of it.
+      - name: Look for a recent successful run
+        id: check
+        run: node scripts/watchdog-check.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WATCH_WORKFLOW: health.yml
+          # A week plus a day. The weekly check runs Mondays, so seven days is
+          # normal and eight is a Monday that did not happen - with a day of
+          # slack for a late start, which has been as much as six hours.
+          MAX_AGE_DAYS: "8"
+
+      # Same shape as the weekly check's own issue handling, on the same
+      # reasoning: one issue rewritten rather than a new one each morning, and
+      # closed by the run that fixes it. A daily job filing daily duplicates
+      # would teach everybody to mute the label inside a fortnight.
+      - name: File or close the notice
+        uses: actions/github-script@v9
+        env:
+          STALE: ${{ steps.check.outputs.stale }}
+          BODY: ${{ steps.check.outputs.body }}
+        with:
+          script: |
+            const title = "Weekly health has not run";
+            const label = "health";
+            const { owner, repo } = context.repo;
+
+            const existing = (await github.rest.issues.listForRepo({
+              owner, repo, state: "open", labels: label, per_page: 20,
+            })).data.find((i) => i.title === title);
+
+            if (process.env.STALE !== "true") {
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: existing.number,
+                  body: "The weekly check has run since. Closing.",
+                });
+                await github.rest.issues.update({
+                  owner, repo, issue_number: existing.number, state: "closed",
+                });
+              }
+              core.info("The weekly check has run recently.");
+              return;
+            }
+
+            const body = process.env.BODY;
+            if (existing) {
+              await github.rest.issues.update({
+                owner, repo, issue_number: existing.number, body,
+              });
+              core.info(`Updated #${existing.number}`);
+            } else {
+              const made = await github.rest.issues.create({
+                owner, repo, title, body, labels: [label],
+              });
+              core.info(`Opened #${made.data.number}`);
+            }
