@@ -50,3 +50,8 @@ next-env.d.ts
 
 # local upload driver output
 /public/uploads/
+
+# A signed-in session for `npm run browse`, so the usual sweep never has to
+# touch the sign-in rate limiter. Holds a live cookie; deleting it costs one
+# sign-in and nothing else.
+.browse-session.json

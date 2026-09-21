@@ -28,6 +28,17 @@ Read it before proposing work on sharing, admin access, or texting.
   page: each one typechecks, builds cleanly and serves `200`, then dies at
   hydration. A green `npm run build` proves nothing about this — open the page
   in a browser before believing it works.
+- **The browser check signs in, and signing in is rate limited.** better-auth's
+  default rules allow three attempts per ten seconds on `/sign-in`, and they are
+  on because `npm run start` is a production build - `npm run dev` is not rate
+  limited, so this bites only the thing you are checking with. Run the check
+  once per page and the fourth page comes back as a thirty-second navigation
+  timeout that reads exactly like a hydration failure, which is an afternoon.
+  `browse.mjs` now caches its session in `.browse-session.json` and takes every
+  path in one run, so an ordinary sweep signs in not at all; when it does hit
+  the limit it says `429` and says what to do. Do not answer this by loosening
+  `rateLimit.customRules` - that weakens real auth so a test can be run wrong.
+
 - **Name the role in the local database URL, and expect the CLI to disagree
   with the app.** `.env.example` ships
   `postgresql://postgres@127.0.0.1:5432/mealmagic`, which assumes the cluster
@@ -235,9 +246,14 @@ that keeps biting), **data** (schema, migrations, the constraints other code
 leans on), **design** (theme, type scale, how it reads on a phone). Each carries
 the traps for its own layer, so dispatch by what the change touches.
 
-`scripts/browse.mjs` drives the running app in a real browser and reports page
-and console errors. It is the only thing that catches a hydration failure, and
-it exits non-zero on one.
+`npm run browse` drives the running app in a real browser and reports page and
+console errors. It is the only thing that catches a hydration failure, and it
+exits non-zero on one. Give one run every path - `npm run browse -- /plan
+/recipes /pantry` - rather than running it once per page; the trap above says
+why. `npm run browse:seed` creates the account it signs in as, which needs a
+script of its own because signup is invite-only and the first invite has nobody
+to have written it. CI runs the sweep after the build, so a hydration failure
+now fails a pull request instead of waiting to be noticed.
 
 ### Branches
 
