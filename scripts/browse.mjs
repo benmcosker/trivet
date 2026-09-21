@@ -54,6 +54,14 @@ import { chromium } from "playwright";
  * - which is the wrong advice when a perfectly good browser is sitting there.
  *
  * So: honour an explicit override, else let Playwright try, else go and look.
+ *
+ * The fallback says so out loud, because it is driving a browser this
+ * Playwright was not built against and that is worth knowing when a result
+ * looks strange. It has been checked as far apart as 1.63 against the 1194
+ * build - seven minors and forty-nine revisions - and the page-error capture
+ * this whole script exists for still worked. It will not stretch forever. If
+ * a run starts failing in ways the app cannot explain, this line is the first
+ * suspect: `npx playwright install chromium` pairs them up again.
  */
 async function launch() {
   const override = process.env.BROWSE_CHROME;
@@ -81,6 +89,11 @@ async function launch() {
       );
       process.exit(2);
     }
+    console.error(
+      `! Playwright's own browser is not here, using ${found.replace(root + "/", "")}.\n` +
+        `  It was built against a different Playwright; that has worked so far but\n` +
+        `  is not guaranteed. \`npx playwright install chromium\` pairs them up.`,
+    );
     return chromium.launch({ executablePath: found });
   }
 }

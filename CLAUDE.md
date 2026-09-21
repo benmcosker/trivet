@@ -179,6 +179,22 @@ contextOrFilename.getFilename is not a function`. The whole lint config is
   being behind. A pinned package that falls behind _inside_ its track still
   reports, so this is a correction rather than a mute.
 
+- **`playwright` does not need pinning, and must not be muted** (21 September
+  2026). It went in pinned exact at 1.56.1 on the reasoning that the version
+  has to match the browser revision baked into the container. That reasoning
+  was wrong, and tested: 1.63.0 wants chromium 1243, the image ships 1194, and
+  `browse.mjs`'s fallback drove it anyway - page-error capture included, which
+  is the only part that matters. The two places it actually runs settle it
+  regardless, because CI and a laptop both fetch the matching browser with
+  `npx playwright install`. An exact range also buys nothing for
+  reproducibility that `package-lock.json` was not already buying.
+  **It is now `^1.63.0` and should stay an ordinary devDependency.** Do not
+  answer a future report of it being behind with a `pinned` entry in
+  `lifecycle.json`: that mechanism means "the track is the right target", which
+  is true of `@types/node` and false here. This tool is how the app is checked
+  in a browser, so an old one means testing against an old Chromium, and that
+  is a thing worth being told about rather than hidden.
+
 - **A scheduled workflow that does not fire leaves no trace at all**
   (21 September 2026). The weekly check asked for Mondays 07:00 UTC and had
   run twice: once six and a half hours late, once not at all. GitHub queues
