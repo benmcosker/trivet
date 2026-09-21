@@ -7,9 +7,16 @@ name: Weekly health
 # calendar rather than on a commit, so they are checked on one.
 on:
   schedule:
-    # Mondays, 07:00 UTC. Early enough to be waiting on a Monday morning,
-    # late enough that a Sunday night npm publish is already in the registry.
-    - cron: "0 7 * * 1"
+    # Mondays, 07:37 UTC. Early enough to be waiting on a Monday morning, late
+    # enough that a Sunday night npm publish is already in the registry.
+    #
+    # :37 rather than :00 because the minute is the part that decides whether
+    # this runs at all. GitHub queues every repository's scheduled workflows
+    # together and drops what it cannot get to, and the top of the hour is
+    # where every cron in the world piles up. This one asked for 07:00 twice:
+    # the first fired at 13:32, six and a half hours late, and the second did
+    # not fire at all. An odd minute costs nothing and skips the queue.
+    - cron: "37 7 * * 1"
   workflow_dispatch:
 
 # Enough to file the report and no more. Nothing here writes to the repo.
