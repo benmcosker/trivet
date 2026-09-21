@@ -266,7 +266,22 @@ for (const path of paths) {
   );
   if (shot) console.log(`  screenshot     ${shot}`);
 
-  if (pageErrors.length > 0) failed += 1;
+  /*
+   * Signed in but looking at the sign-in page means the session went away
+   * mid-sweep. Every such page is a 200 with no h1 and no page errors, so
+   * without this the whole run goes green while checking nothing - the one
+   * way this check can lie, and the worst one, because it lies quietly.
+   */
+  const bounced =
+    email &&
+    password &&
+    !/\/sign-in/.test(path) &&
+    /\/sign-in/.test(page.url());
+  if (bounced) {
+    console.log(`  NOT SIGNED IN  redirected to sign-in; nothing was checked`);
+  }
+
+  if (pageErrors.length > 0 || bounced) failed += 1;
 }
 
 await browser.close();
@@ -274,6 +289,8 @@ await browser.close();
 // A page error is a failure even when the status was 200 - that is the whole
 // class of bug this exists to catch, so make it fail a script that chains.
 if (failed > 0) {
-  console.error(`\n${failed} of ${paths.length} page(s) had page errors.`);
+  console.error(
+    `\n${failed} of ${paths.length} page(s) did not come back clean.`,
+  );
 }
 process.exit(failed > 0 ? 1 : 0);
