@@ -34,6 +34,18 @@ jobs:
       BETTER_AUTH_SECRET: ci-only-secret
       BETTER_AUTH_URL: http://localhost:3000
 
+      # The account the browser check signs in as. Written by
+      # `npm run browse:seed` into this job's throwaway database, which is
+      # deleted with the runner - so this is a literal for the same reason
+      # BETTER_AUTH_SECRET above is, not an oversight.
+      BROWSE_EMAIL: browse@example.com
+      BROWSE_PASSWORD: ci-only-browse-password
+
+      # `npm ci` would otherwise fetch every browser Playwright ships, on
+      # every run, for a check that wants one of them. Chromium is installed
+      # explicitly below instead.
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
     steps:
       - uses: actions/checkout@v7
 
@@ -57,3 +69,40 @@ jobs:
       - run: npm test
 
       - run: npm run build
+
+      # Everything above this line can pass while the app is broken in a
+      # browser. A function crossing from a server component into MUI's client
+      # code typechecks, builds, serves 200, and dies when React hydrates -
+      # only a real browser watching for page errors sees it. The steps below
+      # are that browser.
+      #
+      # After the build, because it serves the production build, and after
+      # `npm test`, which empties the database the seed then writes to.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the app
+        run: |
+          nohup npm run start > /tmp/app.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3000/api/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The app did not answer /api/health within two minutes."
+          exit 1
+
+      - name: Seed the browse account
+        run: npm run browse:seed
+
+      - name: Browser check
+        run: |
+          npm run browse -- \
+            / /plan /recipes /pantry /household /recipes/new /upload
+
+      # The browser check reports page errors, but when the app itself fell
+      # over the reason is in its log rather than in the page.
+      - name: App log
+        if: failure()
+        run: cat /tmp/app.log
