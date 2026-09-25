@@ -12,6 +12,9 @@ const hasDb = Boolean(process.env.DATABASE_URL);
 const WEEK = new Date("2026-09-07T00:00:00.000Z");
 
 /** A dinner on the Monday of WEEK, with the ingredients given. */
+/** Enough to keep each recipe's public id distinct within a run. */
+let made = 0;
+
 async function planDinner(
   householdId: string,
   createdById: string,
@@ -20,6 +23,7 @@ async function planDinner(
 ) {
   const recipe = await prisma.recipe.create({
     data: {
+      publicId: `pub${made++}`,
       title: `Roast Chicken ${slot}`,
       servings: 4,
       instructions: ["Roast it."],

@@ -10,6 +10,7 @@ import { formatOvenTempShort } from "@/lib/temperature";
 
 import { RecipeMetaLine } from "./RecipeMetaLine";
 import { photoTransitionName } from "@/lib/photo-transition";
+import { recipePath } from "@/lib/recipe-url";
 
 import { RecipePhoto } from "./RecipePhoto";
 import { RecipePlaceholder } from "./RecipePlaceholder";
@@ -41,7 +42,7 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
     // a component function from a server component into MUI's client code
     // typechecks, builds, and then fails at render.
     <Link
-      href={`/recipes/${recipe.id}`}
+      href={recipePath(recipe)}
       style={{ textDecoration: "none", color: "inherit", display: "block" }}
     >
       <Box

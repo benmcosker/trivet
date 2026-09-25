@@ -19,7 +19,12 @@ export async function setRecipeSharedAction(
   const { householdId } = await requireHousehold();
   await setRecipeShared(recipeId, householdId, isShared);
 
-  revalidatePath(`/recipes/${recipeId}`);
+  // The dynamic route rather than one recipe's address: a recipe's address is
+  // its title slugged onto its public id, and the id alone - which is all
+  // these actions carry - cannot spell it. Revalidating the route covers the
+  // page whatever it is called today, which is also what makes a rename
+  // visible everywhere at once.
+  revalidatePath("/recipes/[id]", "page");
   // The library listing changes for everybody else, not just for the owner.
   revalidatePath("/recipes");
   revalidatePath("/plan");

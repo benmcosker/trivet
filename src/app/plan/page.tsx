@@ -38,6 +38,9 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
       // the picker tiles ignore them.
       select: {
         id: true,
+        // The planner links to a recipe, so it needs what an address is made
+        // of - see `recipe-url.ts`.
+        publicId: true,
         title: true,
         servings: true,
         imageUrl: true,

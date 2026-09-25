@@ -27,6 +27,7 @@ import { groupBySection } from "@/lib/grocery-sections";
 import { DINNER_SLOTS, FIRST_DINNER, SIDE_SLOTS } from "@/lib/meal-slots";
 import { providerNotes } from "@/lib/provider-notes";
 import { recipeMetaParts, splitTitle } from "@/lib/recipe-meta";
+import { recipePath } from "@/lib/recipe-url";
 import { servingChoices } from "@/lib/scale";
 import type { GroceryLine, WeeklySkipRecord } from "@/lib/grocery";
 import type { HandoffResult, ProviderInfo } from "@/lib/shopping";
@@ -1443,7 +1444,7 @@ export function WeekPlanner({
                         <Button
                           size="small"
                           component={Link}
-                          href={`/recipes/${planned.id}`}
+                          href={recipePath(planned)}
                           aria-label={`Open the recipe for ${planned.title}`}
                           sx={TEXT_ACTION_SX}
                         >

@@ -143,12 +143,21 @@ function useWakeLock(): { held: boolean; unavailable: boolean } {
  */
 export function CookingView({
   recipeId,
+  recipeHref,
   steps,
   ingredients,
   ovenTemp,
   servingsNote = null,
 }: {
   recipeId: string;
+  /**
+   * Where "done" goes: the recipe's own page, at the count being cooked.
+   *
+   * Handed down rather than built from `recipeId`, because an address is a
+   * title slugged onto a public id and this component has neither. The page
+   * that knows them works it out once, the same way it formats the amounts.
+   */
+  recipeHref: string;
   steps: string[];
   ingredients: CookingIngredient[];
   ovenTemp: string | null;
@@ -308,9 +317,7 @@ export function CookingView({
           size="large"
           variant="contained"
           endIcon={last ? undefined : <NavigateNextIcon />}
-          onClick={() =>
-            last ? router.push(`/recipes/${recipeId}`) : goTo(current + 1)
-          }
+          onClick={() => (last ? router.push(recipeHref) : goTo(current + 1))}
           sx={{ py: 1.5 }}
         >
           {last ? "Done" : "Next"}

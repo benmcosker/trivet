@@ -123,9 +123,13 @@ describe.skipIf(!hasDb)("the activity overview", () => {
 
   it("counts recipes by how they arrived", async () => {
     const { householdId, userId } = await makeHousehold("Cooks");
-    for (const source of ["MANUAL", "MANUAL", "PDF", "PHOTO"] as const) {
+    const sources = ["MANUAL", "MANUAL", "PDF", "PHOTO"] as const;
+    for (const [index, source] of sources.entries()) {
       await prisma.recipe.create({
         data: {
+          // Indexed, not named after the source: two of these are MANUAL, and
+          // a public id is unique.
+          publicId: `pub-${index}`,
           title: `${source} dish`,
           servings: 4,
           source,
@@ -183,6 +187,7 @@ describe.skipIf(!hasDb)("the activity overview", () => {
     const { householdId, userId } = await makeHousehold("Cooks");
     await prisma.recipe.create({
       data: {
+        publicId: "lasagne1",
         title: "A Very Secret Lasagne",
         servings: 4,
         householdId,
@@ -242,6 +247,7 @@ describe.skipIf(!hasDb)("the activity overview", () => {
     await makeHousehold("B");
     await prisma.recipe.create({
       data: {
+        publicId: "onlyasss",
         title: "Only A's",
         servings: 4,
         householdId: a.householdId,

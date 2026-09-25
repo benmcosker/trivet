@@ -17,9 +17,14 @@ import type { ActionResult } from "./actions";
  */
 
 /** The list card and the planner tile both show the average, so both go stale. */
-function revalidateRecipe(recipeId: string): void {
+function revalidateRecipe(): void {
   revalidatePath("/recipes");
-  revalidatePath(`/recipes/${recipeId}`);
+  // The dynamic route rather than one recipe's address: a recipe's address is
+  // its title slugged onto its public id, and the id alone - which is all
+  // these actions carry - cannot spell it. Revalidating the route covers the
+  // page whatever it is called today, which is also what makes a rename
+  // visible everywhere at once.
+  revalidatePath("/recipes/[id]", "page");
   revalidatePath("/plan");
 }
 
@@ -42,7 +47,7 @@ export async function saveReviewAction(
     };
   }
 
-  revalidateRecipe(recipeId);
+  revalidateRecipe();
   return { ok: true };
 }
 
@@ -63,6 +68,6 @@ export async function deleteReviewAction(
     return { ok: false, error: "You have not reviewed this recipe." };
   }
 
-  revalidateRecipe(recipeId);
+  revalidateRecipe();
   return { ok: true };
 }

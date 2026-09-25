@@ -231,6 +231,17 @@ enum RecipeSource {
 
 model Recipe {
   id           String       @id @default(cuid())
+  /// The stable half of a recipe's web address: eight hex characters.
+  ///
+  /// The address is the title slugged onto this - `/recipes/pork-ragu-a3f91c47` -
+  /// but only this half is looked up. The words are decoration, regenerated
+  /// from whatever the title says today, so renaming a dish cannot break a
+  /// link somebody saved.
+  ///
+  /// Kept apart from `id` rather than replacing it. The cuid is the target of
+  /// foreign keys from four tables and appears in a few hundred places in the
+  /// code; this is the only thing the outside world ever sees.
+  publicId     String       @unique
   title        String
   description  String?
   servings     Int          @default(4)
