@@ -383,6 +383,44 @@ const identity: ThemeOptions = {
          * same reason: printing at night from a dark-mode browser should not
          * produce a black page.
          */
+        /*
+         * A dish photo travelling between the library and its recipe.
+         *
+         * `RecipePhoto` names both ends, React pairs them, and the browser
+         * animates one into the other. Everything below is tuning: without a
+         * line of this the morph still works, and in a browser that does not
+         * support view transitions the pages simply swap as they always did.
+         *
+         * The blur covers pixel interpolation while a 230px card stretches to
+         * a 380px header. 400ms is long enough to read as one object moving
+         * and short enough not to feel like waiting.
+         */
+        "::view-transition-group(.morph)": { animationDuration: "400ms" },
+        "::view-transition-image-pair(.morph)": {
+          animationName: "photo-morph",
+        },
+        "@keyframes photo-morph": { "30%": { filter: "blur(3px)" } },
+
+        /*
+         * The transition overlay swallows clicks for as long as it runs. On a
+         * grid of 24 photographs that is a click lost to an animation nobody
+         * asked to wait for.
+         */
+        "::view-transition": { pointerEvents: "none" },
+
+        /*
+         * Motion is the decoration here, not the information: with durations
+         * at zero the pages swap instantly, which is what they did before any
+         * of this existed.
+         */
+        "@media (prefers-reduced-motion: reduce)": {
+          "::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*)":
+            {
+              animationDuration: "0s !important",
+              animationDelay: "0s !important",
+            },
+        },
+
         "[data-print='only']": { display: "none" },
 
         "@media print": {

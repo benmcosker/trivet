@@ -3,6 +3,7 @@ import Typography from "@mui/material/Typography";
 import Link from "next/link";
 
 import type { RecipeWithRelations } from "@/lib/recipes";
+import { photoTransitionName } from "@/lib/photo-transition";
 import { recipeMetaParts } from "@/lib/recipe-meta";
 
 import { RecipeMetaLine } from "./RecipeMetaLine";
@@ -81,6 +82,7 @@ export function RecipeGridCard({
               rounded={0}
               sizes="(max-width: 600px) 116px, (max-width: 900px) 50vw, (max-width: 1440px) 32vw, 430px"
               priority={priority}
+              transitionName={photoTransitionName(recipe.id)}
             />
           ) : (
             // Not omitted: a card with no image is shorter than its neighbours,
@@ -90,6 +92,7 @@ export function RecipeGridCard({
               title={recipe.title}
               height={{ xs: 116, sm: 230 }}
               showTitle
+              transitionName={photoTransitionName(recipe.id)}
             />
           )}
         </Box>
