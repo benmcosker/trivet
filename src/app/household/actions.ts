@@ -119,8 +119,7 @@ export async function renameHouseholdAction(
 /**
  * How many this household cooks for.
  *
- * Saved without a confirmation because there is nothing to confirm: it
- * changes what the next dinner is planned for and nothing that already
+ * It changes what the next dinner is planned for and nothing that already
  * exists. A week already on the planner keeps the numbers it was given -
  * changing them from here would rewrite a plan somebody made on purpose.
  */

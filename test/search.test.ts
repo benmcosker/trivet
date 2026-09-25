@@ -33,6 +33,7 @@ describe.skipIf(!hasDb)("recipe search", () => {
     await prisma.recipe.create({
       data: {
         id: "test-piccata",
+        publicId: "piccata",
         title: "Chicken Piccata",
         description: "Lemony pan sauce with capers",
         instructions: [
@@ -55,6 +56,7 @@ describe.skipIf(!hasDb)("recipe search", () => {
     await prisma.recipe.create({
       data: {
         id: "test-salmon",
+        publicId: "salmon",
         title: "Sheet Pan Salmon",
         description: "Weeknight fish",
         instructions: ["Roast at 425 until flaky"],

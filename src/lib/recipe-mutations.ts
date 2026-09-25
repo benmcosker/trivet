@@ -1,7 +1,24 @@
+import { randomBytes } from "node:crypto";
+
 import { prisma } from "./db";
 import { visibleRecipes } from "./recipe-visibility";
 import type { RecipeInput } from "./recipe-schema";
 import { upsertTags } from "./recipes";
+
+/**
+ * A fresh public id: eight hex characters.
+ *
+ * Four bytes of randomness, which is 4.3 billion addresses - enough that the
+ * unique index has never had to argue with this, and it would be caught if it
+ * did. `randomBytes` rather than `Math.random` because an address people paste
+ * to each other should not be predictable from the one before it.
+ *
+ * Here rather than in `recipe-url.ts` on purpose: that file is imported by the
+ * planner, which is client code, and `node:crypto` cannot go there.
+ */
+function newPublicId(): string {
+  return randomBytes(4).toString("hex");
+}
 
 function emptyToNull(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -29,6 +46,7 @@ export async function createRecipe(
 
   const recipe = await prisma.recipe.create({
     data: {
+      publicId: newPublicId(),
       title: input.title,
       description: emptyToNull(input.description),
       servings: input.servings,

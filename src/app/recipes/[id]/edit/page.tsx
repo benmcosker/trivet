@@ -1,9 +1,10 @@
 import Typography from "@mui/material/Typography";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
 import { EditRecipeForm } from "@/components/EditRecipeForm";
 import { getRecipe } from "@/lib/recipes";
+import { recipePath } from "@/lib/recipe-url";
 import { requireHousehold } from "@/lib/session";
 
 export default async function EditRecipePage({
@@ -16,6 +17,11 @@ export default async function EditRecipePage({
   // Reachable by typing the URL even though the button is hidden. Saving would
   // be refused anyway; this is so nobody fills in a form that cannot be saved.
   if (!recipe || recipe.householdId !== householdId) notFound();
+
+  // Corrected like the other two, so the address in the bar matches the dish
+  // being edited - including straight after a rename.
+  const canonical = `${recipePath(recipe)}/edit`;
+  if (`/recipes/${id}/edit` !== canonical) redirect(canonical);
 
   return (
     <AppShell>

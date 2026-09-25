@@ -45,7 +45,19 @@ export async function saveRecipeAction(
   }
 
   revalidatePath("/recipes");
-  revalidatePath(`/recipes/${id}`);
+  // The dynamic route rather than one recipe's address: a recipe's address is
+  // its title slugged onto its public id, and the id alone - which is all
+  // these actions carry - cannot spell it. Revalidating the route covers the
+  // page whatever it is called today, which is also what makes a rename
+  // visible everywhere at once.
+  revalidatePath("/recipes/[id]", "page");
+  /*
+   * By id, which the recipe page then corrects to the readable address.
+   *
+   * It could be spelled out here instead, at the cost of a second query for
+   * the title this function has just written. One place decides what a
+   * recipe's address is, and everywhere else is allowed to be a step behind.
+   */
   redirect(`/recipes/${id}`);
 }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import type { RecipeWithRelations } from "@/lib/recipes";
 import { photoTransitionName } from "@/lib/photo-transition";
+import { recipePath } from "@/lib/recipe-url";
 import { recipeMetaParts } from "@/lib/recipe-meta";
 
 import { RecipeMetaLine } from "./RecipeMetaLine";
@@ -93,7 +94,7 @@ export function RecipeGridCard({
      * to borrow.
      */
     <Link
-      href={`/recipes/${recipe.id}`}
+      href={recipePath(recipe)}
       style={{ textDecoration: "none", color: "inherit", display: "contents" }}
     >
       <Box

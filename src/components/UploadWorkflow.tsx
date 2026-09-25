@@ -18,6 +18,7 @@ import {
 } from "@/app/upload/actions";
 import { heicToJpeg } from "@/lib/heic";
 import type { ExtractedRecipe, RecipeInput } from "@/lib/recipe-schema";
+import { recipePath } from "@/lib/recipe-url";
 
 import { RecipePhoto } from "./RecipePhoto";
 import { RecipeForm } from "./RecipeForm";
@@ -25,7 +26,7 @@ import { RecipeForm } from "./RecipeForm";
 /** A little beyond the server's own 60s ceiling. */
 const UPLOAD_TIMEOUT_MS = 70_000;
 
-type ExistingRecipe = { id: string; title: string };
+type ExistingRecipe = { id: string; publicId: string; title: string };
 
 type Extracted = {
   recipe: ExtractedRecipe;
@@ -155,7 +156,7 @@ export function UploadWorkflow() {
             {extracted.similar.map((match, index) => (
               <span key={match.id}>
                 {index > 0 ? ", " : ""}
-                <Link href={`/recipes/${match.id}`}>{match.title}</Link>
+                <Link href={recipePath(match)}>{match.title}</Link>
               </span>
             ))}
             . This is a different file, so it may be a better copy of the same
@@ -215,8 +216,8 @@ export function UploadWorkflow() {
           {duplicateOf ? (
             <>
               {" "}
-              <Link href={`/recipes/${duplicateOf.id}`}>Open it</Link>, or pick
-              a different file.
+              <Link href={recipePath(duplicateOf)}>Open it</Link>, or pick a
+              different file.
             </>
           ) : null}
         </Alert>

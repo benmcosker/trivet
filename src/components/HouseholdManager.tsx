@@ -118,17 +118,40 @@ function HouseholdName({
   defaultServings: number | null;
 }) {
   const [draft, setDraft] = useState(current);
+  const [servings, setServings] = useState(
+    defaultServings == null ? "" : String(defaultServings),
+  );
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const changed = draft.trim() !== current;
+  const savedServings = defaultServings == null ? "" : String(defaultServings);
+  /*
+   * Either field having moved is enough to enable Save.
+   *
+   * The serving count used to save itself the moment it changed, with the
+   * name's Save button sitting disabled beside it. That reads as a button
+   * that has not noticed - somebody picks six, sees a greyed-out Save, and
+   * cannot tell whether anything happened. One button for the card, and it
+   * lights up for whichever field moved.
+   */
+  const changed = draft.trim() !== current || servings !== savedServings;
 
   function save(event: FormEvent) {
     event.preventDefault();
     setError(null);
     startTransition(async () => {
-      const result = await renameHouseholdAction(draft);
-      if (!result.ok) setError(result.error);
+      if (servings !== savedServings) {
+        await setDefaultServingsAction(
+          servings === "" ? null : Number(servings),
+        );
+      }
+      if (draft.trim() !== current) {
+        const result = await renameHouseholdAction(draft);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+      }
     });
   }
 
@@ -156,24 +179,19 @@ function HouseholdName({
             Save
           </Button>
         </Stack>
+        <Box sx={{ mt: 2 }}>
+          <ServingDefault
+            value={servings}
+            onChange={setServings}
+            disabled={pending}
+          />
+        </Box>
+
         {error ? (
           <Alert severity="error" sx={{ mt: 2 }}>
             {error}
           </Alert>
         ) : null}
-      </CardContent>
-
-      {/*
-       * Outside the name's form, and saving on its own.
-       *
-       * Two fields under one Save would mean choosing a number and walking
-       * away without it taking, which is how a household ends up planning
-       * for four while the page says six. It is also not part of the same
-       * question: one is what you are called and the other is how many of
-       * you there are.
-       */}
-      <CardContent sx={{ pt: 0 }}>
-        <ServingDefault current={defaultServings} />
       </CardContent>
     </Card>
   );
@@ -182,18 +200,29 @@ function HouseholdName({
 /**
  * How many this household cooks for.
  *
+ * A field in the household card's form, saved by that card's Save button
+ * along with the name. It used to save itself on change, which left the Save
+ * button beside it greyed out and looking broken.
+ *
  * What it changes is the next dinner planned, not the week already on the
  * planner: a plan somebody made on purpose is not rewritten from a settings
- * page, and the planner has its own per-evening control for the Saturday
- * when four become eight.
+ * page, and the planner has its own per-evening control for the Saturday when
+ * four become eight.
  *
  * It only ever raises a dish. A recipe for eight planned by a household of
  * two is still a recipe for eight - this app does not scale down - so the
  * number is a floor under the week rather than a target for it.
  */
-function ServingDefault({ current }: { current: number | null }) {
-  const [pending, startTransition] = useTransition();
-
+function ServingDefault({
+  value,
+  onChange,
+  disabled,
+}: {
+  /** The chosen count as a string, or "" for "whatever the recipe makes". */
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
   const choices = Array.from({ length: MAX_SERVINGS }, (_, i) => i + 1);
 
   return (
@@ -202,14 +231,9 @@ function ServingDefault({ current }: { current: number | null }) {
         select
         size="small"
         label="Usually cooking for"
-        value={current == null ? "" : String(current)}
-        disabled={pending}
-        onChange={(event) => {
-          const value = event.target.value;
-          startTransition(async () => {
-            await setDefaultServingsAction(value === "" ? null : Number(value));
-          });
-        }}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
         sx={{ maxWidth: { sm: 260 } }}
       >
         {/*

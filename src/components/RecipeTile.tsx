@@ -11,6 +11,8 @@ import { ReviewStars } from "./ReviewStars";
 
 export type TileRecipe = {
   id: string;
+  /** The stable half of the recipe's address. See `recipe-url.ts`. */
+  publicId: string;
   title: string;
   imageUrl: string | null;
   /** Optional so a tile can be shown before review scores have been loaded. */

@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { PAGE_SIZE } from "./recipe-page";
 import { DEFAULT_SORT, type RecipeSort } from "./recipe-sort";
 import { NO_REVIEWS, type ReviewSummary } from "./review-schema";
+import { publicIdFromPath } from "./recipe-url";
 import { visibleRecipes, visibleRecipesSql } from "./recipe-visibility";
 import { getReviewSummaries } from "./reviews";
 
@@ -271,12 +272,31 @@ export async function searchRecipes(
  * turns either into the same 404. Telling the two apart would answer a
  * stranger's guessed id with the news that it exists.
  */
+/**
+ * One recipe, by whatever the address said.
+ *
+ * Two kinds of address reach this. The current one carries the title and ends
+ * in a public id - `pork-ragu-a3f91c47` - and everything before that last
+ * hyphen is thrown away. The old one is the cuid itself, which is what every
+ * link saved before this change looks like, and those go on working: the
+ * parameter is tried against `id` as well.
+ *
+ * One query rather than two. A cuid has no hyphens, so it survives
+ * `publicIdFromPath` whole and simply fails to match a `publicId`; a current
+ * address yields eight characters that cannot match anybody's `id`. Neither
+ * can find the wrong recipe.
+ */
 export async function getRecipe(
-  id: string,
+  param: string,
   householdId: string,
 ): Promise<RecipeWithRelations | null> {
   const recipe = await prisma.recipe.findFirst({
-    where: { AND: [{ id }, visibleRecipes(householdId)] },
+    where: {
+      AND: [
+        { OR: [{ publicId: publicIdFromPath(param) }, { id: param }] },
+        visibleRecipes(householdId),
+      ],
+    },
     include: recipeInclude,
   });
   if (!recipe) return null;

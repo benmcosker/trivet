@@ -8,7 +8,7 @@ import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
 import { formatAmount } from "@/lib/quantity";
@@ -19,6 +19,7 @@ import { LinkButton } from "@/components/LinkButton";
 import { RecipeImageUploader } from "@/components/RecipeImageUploader";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { photoTransitionName } from "@/lib/photo-transition";
+import { recipePath } from "@/lib/recipe-url";
 import {
   readServings,
   scaleFactor,
@@ -71,6 +72,22 @@ export default async function RecipePage({
   const choices = servingChoices(recipe.servings);
   const scaled = servings !== recipe.servings;
 
+  /*
+   * One address per recipe, and this is it.
+   *
+   * Everything else may link by whatever it has - the cuid an old bookmark
+   * carries, or a slug made from a title since renamed - and land here to be
+   * corrected. That is what lets the rest of the app link to a recipe without
+   * first working out what its address is today.
+   *
+   * The serving count travels through the redirect, or asking for eight from
+   * an old link would quietly give you four.
+   */
+  const canonical = recipePath(recipe);
+  if (`/recipes/${id}` !== canonical) {
+    redirect(servingsHref(canonical, servings, recipe.servings));
+  }
+
   const mine = recipe.householdId === user.householdId;
   const totalMinutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
   const ovenTemp = formatOvenTemp(recipe.ovenTemp, recipe.ovenTempUnit);
@@ -102,7 +119,7 @@ export default async function RecipePage({
            */}
           <LinkButton
             href={servingsHref(
-              `/recipes/${recipe.id}/cook`,
+              `${recipePath(recipe)}/cook`,
               servings,
               recipe.servings,
             )}
@@ -123,7 +140,7 @@ export default async function RecipePage({
           {mine ? (
             <>
               <LinkButton
-                href={`/recipes/${recipe.id}/edit`}
+                href={`${recipePath(recipe)}/edit`}
                 startIcon={<EditIcon />}
                 variant="outlined"
               >
@@ -154,7 +171,7 @@ export default async function RecipePage({
       {choices.length > 1 ? (
         <Box sx={{ mb: 2 }}>
           <ServingScaler
-            path={`/recipes/${recipe.id}`}
+            path={recipePath(recipe)}
             choices={choices}
             current={servings}
             recipeServings={recipe.servings}

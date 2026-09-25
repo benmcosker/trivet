@@ -2,7 +2,12 @@ import { createHash } from "node:crypto";
 
 import { prisma } from "./db";
 
-export type ExistingRecipe = { id: string; title: string };
+export type ExistingRecipe = {
+  id: string;
+  /** The stable half of its address, so a link can be offered. */
+  publicId: string;
+  title: string;
+};
 
 /** SHA-256 of a file's bytes, hex encoded. */
 export function hashBytes(bytes: Uint8Array): string {
@@ -30,7 +35,7 @@ export async function findRecipeBySourceHash(
     where: {
       householdId_sourceFileSha256: { householdId, sourceFileSha256 },
     },
-    select: { id: true, title: true },
+    select: { id: true, publicId: true, title: true },
   });
 }
 
@@ -68,9 +73,9 @@ export async function findSimilarlyTitled(
   if (!trimmed) return [];
 
   const rows = await prisma.$queryRaw<
-    { id: string; title: string; score: number }[]
+    { id: string; publicId: string; title: string; score: number }[]
   >`
-    SELECT "id", "title", similarity("title", ${trimmed})::float8 AS score
+    SELECT "id", "publicId", "title", similarity("title", ${trimmed})::float8 AS score
     FROM "recipe"
     WHERE similarity("title", ${trimmed}) >= ${TITLE_SIMILARITY_THRESHOLD}
       AND ("id" <> ${options.excludeId ?? ""})
@@ -79,5 +84,5 @@ export async function findSimilarlyTitled(
     LIMIT ${options.limit ?? 3}
   `;
 
-  return rows.map(({ id, title: t }) => ({ id, title: t }));
+  return rows.map(({ id, publicId, title: t }) => ({ id, publicId, title: t }));
 }

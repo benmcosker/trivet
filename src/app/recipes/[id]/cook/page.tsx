@@ -1,11 +1,12 @@
 import Typography from "@mui/material/Typography";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
 import { CookingView } from "@/components/CookingView";
 import { LinkButton } from "@/components/LinkButton";
 import { formatAmount } from "@/lib/quantity";
 import { getRecipe } from "@/lib/recipes";
+import { recipePath } from "@/lib/recipe-url";
 import {
   readServings,
   scaleFactor,
@@ -49,10 +50,17 @@ export default async function CookRecipePage({
   const servings = readServings(serves, recipe.servings);
   const factor = scaleFactor(servings, recipe.servings);
 
+  // The same correction the recipe page makes, for the same reason: one
+  // address per page, whatever the link that arrived said.
+  const canonical = `${recipePath(recipe)}/cook`;
+  if (`/recipes/${id}/cook` !== canonical) {
+    redirect(servingsHref(canonical, servings, recipe.servings));
+  }
+
   return (
     <AppShell>
       <LinkButton
-        href={servingsHref(`/recipes/${recipe.id}`, servings, recipe.servings)}
+        href={servingsHref(recipePath(recipe), servings, recipe.servings)}
         size="small"
         sx={{ ml: -1, mb: 0.5 }}
       >
@@ -76,6 +84,7 @@ export default async function CookRecipePage({
 
       <CookingView
         recipeId={recipe.id}
+        recipeHref={servingsHref(recipePath(recipe), servings, recipe.servings)}
         steps={recipe.instructions}
         ingredients={recipe.ingredients.map((ingredient) => ({
           id: ingredient.id,
