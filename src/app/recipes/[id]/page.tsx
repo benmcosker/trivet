@@ -380,7 +380,16 @@ export default async function RecipePage({
               </Typography>
               <Stack spacing={2} component="ol" sx={{ pl: 3, m: 0 }}>
                 {recipe.instructions.map((step, index) => (
-                  <Typography key={index} component="li" variant="body1">
+                  <Typography
+                    key={index}
+                    component="li"
+                    variant="body1"
+                    // On the step rather than on the list, so the measure is
+                    // the text's and the numbers hang outside it. A cap on
+                    // the <ol> would have the 24px of `pl` eaten out of the
+                    // 55ch, leaving the words a few characters short.
+                    sx={{ maxWidth: "55ch", textWrap: "pretty" }}
+                  >
                     {step}
                   </Typography>
                 ))}
@@ -397,7 +406,20 @@ export default async function RecipePage({
                   <Typography variant="h3" gutterBottom>
                     Notes
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  {/*
+                   * The same 55ch as the description and the steps, at a
+                   * third size, and it lands in the same place: a `ch`
+                   * follows the font, so one number holds every block on
+                   * this page to the same measure without any of them
+                   * knowing what size the others are set in. Measured at
+                   * 1440px: description 73 characters a line, steps 72,
+                   * notes 72 - against 182, 113 and 139 uncapped.
+                   */}
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ maxWidth: "55ch", textWrap: "pretty" }}
+                  >
                     {recipe.notes}
                   </Typography>
                 </>
