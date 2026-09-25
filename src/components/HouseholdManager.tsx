@@ -11,18 +11,21 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import MenuItem from "@mui/material/MenuItem";
 import Typography from "@mui/material/Typography";
 import { useState, useTransition, type FormEvent } from "react";
 
 import {
   createInviteAction,
   renameHouseholdAction,
+  setDefaultServingsAction,
   revokeInviteAction,
   saveMyPhoneAction,
   type CreatedInvite,
   type InviteKind,
 } from "@/app/household/actions";
 import { formatPhone } from "@/lib/phone";
+import { MAX_SERVINGS } from "@/lib/scale";
 
 import { SmsConsentCheckbox, SmsDisclosure } from "./SmsDisclosure";
 
@@ -65,6 +68,7 @@ const KIND_COPY: Record<InviteKind, { label: string; detail: string }> = {
 
 export function HouseholdManager({
   householdName,
+  defaultServings,
   members,
   invites,
   inviteDays,
@@ -74,6 +78,8 @@ export function HouseholdManager({
   smsConfigured,
 }: {
   householdName: string;
+  /** How many this household cooks for, or null when nobody has said. */
+  defaultServings: number | null;
   members: MemberView[];
   invites: InviteView[];
   inviteDays: number;
@@ -84,7 +90,11 @@ export function HouseholdManager({
 }) {
   return (
     <Stack spacing={3}>
-      <HouseholdName current={householdName} maxLength={maxNameLength} />
+      <HouseholdName
+        current={householdName}
+        maxLength={maxNameLength}
+        defaultServings={defaultServings}
+      />
       <MyPhone
         current={myPhone}
         consented={myConsent}
@@ -100,9 +110,12 @@ export function HouseholdManager({
 function HouseholdName({
   current,
   maxLength,
+  defaultServings,
 }: {
   current: string;
   maxLength: number;
+  /** How many this household cooks for, or null when nobody has said. */
+  defaultServings: number | null;
 }) {
   const [draft, setDraft] = useState(current);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +162,74 @@ function HouseholdName({
           </Alert>
         ) : null}
       </CardContent>
+
+      {/*
+       * Outside the name's form, and saving on its own.
+       *
+       * Two fields under one Save would mean choosing a number and walking
+       * away without it taking, which is how a household ends up planning
+       * for four while the page says six. It is also not part of the same
+       * question: one is what you are called and the other is how many of
+       * you there are.
+       */}
+      <CardContent sx={{ pt: 0 }}>
+        <ServingDefault current={defaultServings} />
+      </CardContent>
     </Card>
+  );
+}
+
+/**
+ * How many this household cooks for.
+ *
+ * What it changes is the next dinner planned, not the week already on the
+ * planner: a plan somebody made on purpose is not rewritten from a settings
+ * page, and the planner has its own per-evening control for the Saturday
+ * when four become eight.
+ *
+ * It only ever raises a dish. A recipe for eight planned by a household of
+ * two is still a recipe for eight - this app does not scale down - so the
+ * number is a floor under the week rather than a target for it.
+ */
+function ServingDefault({ current }: { current: number | null }) {
+  const [pending, startTransition] = useTransition();
+
+  const choices = Array.from({ length: MAX_SERVINGS }, (_, i) => i + 1);
+
+  return (
+    <Stack spacing={1}>
+      <TextField
+        select
+        size="small"
+        label="Usually cooking for"
+        value={current == null ? "" : String(current)}
+        disabled={pending}
+        onChange={(event) => {
+          const value = event.target.value;
+          startTransition(async () => {
+            await setDefaultServingsAction(value === "" ? null : Number(value));
+          });
+        }}
+        sx={{ maxWidth: { sm: 260 } }}
+      >
+        {/*
+         * A real answer rather than a blank: it puts the app back to planning
+         * each dish for whatever it makes, which is what it did before anyone
+         * was asked.
+         */}
+        <MenuItem value="">Whatever the recipe makes</MenuItem>
+        {choices.map((choice) => (
+          <MenuItem key={choice} value={String(choice)}>
+            {choice}
+          </MenuItem>
+        ))}
+      </TextField>
+      <Typography variant="caption" color="text.secondary">
+        New dinners are planned for this. It never cooks a recipe for fewer
+        people than it was written for, and this week&rsquo;s plan keeps the
+        numbers it already has.
+      </Typography>
+    </Stack>
   );
 }
 

@@ -2,6 +2,7 @@ import { SmsConsentSource } from "@/generated/prisma/enums";
 
 import { prisma } from "./db";
 import { parsePhone } from "./phone";
+import { MAX_SERVINGS } from "./scale";
 
 /**
  * A household's name when nobody has chosen one.
@@ -34,6 +35,8 @@ export type HouseholdMember = {
 export type HouseholdDetail = {
   id: string;
   name: string;
+  /** How many this household cooks for, or null when nobody has said. */
+  defaultServings: number | null;
   members: HouseholdMember[];
 };
 
@@ -61,6 +64,7 @@ export async function getHousehold(
   return {
     id: household.id,
     name: household.name,
+    defaultServings: household.defaultServings,
     members: household.members.map((member) => ({
       id: member.id,
       name: member.name,
@@ -87,6 +91,51 @@ export async function renameHousehold(
     data: { name: trimmed },
   });
   return trimmed;
+}
+
+/**
+ * How many this household cooks for, or null when nobody has said.
+ *
+ * Its own small query rather than another column on the session lookup that
+ * every page runs: this is wanted when a meal is planned, which is a handful
+ * of times a week, and not when a page is rendered, which is constantly.
+ */
+export async function defaultServingsFor(
+  householdId: string,
+): Promise<number | null> {
+  const household = await prisma.household.findUnique({
+    where: { id: householdId },
+    select: { defaultServings: true },
+  });
+  return household?.defaultServings ?? null;
+}
+
+/**
+ * Say how many the household cooks for, or stop saying.
+ *
+ * Null is a real answer and not a failure: it puts the app back to planning
+ * each dish for whatever it makes, which is what it did before the question
+ * was asked.
+ *
+ * Bounded by the same cap as everything else, because a default of forty
+ * would reach the planner as forty and be clamped there, one dish at a time,
+ * leaving a number on the household page that nothing on any other page
+ * agrees with.
+ */
+export async function setDefaultServings(
+  householdId: string,
+  servings: number | null,
+): Promise<number | null> {
+  const saved =
+    servings == null || !Number.isFinite(servings)
+      ? null
+      : Math.min(Math.max(Math.trunc(servings), 1), MAX_SERVINGS);
+
+  await prisma.household.update({
+    where: { id: householdId },
+    data: { defaultServings: saved },
+  });
+  return saved;
 }
 
 export type SavePhoneResult =

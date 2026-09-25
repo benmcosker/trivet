@@ -26,6 +26,7 @@ export default async function HouseholdPage() {
 
       <HouseholdManager
         householdName={household?.name ?? user.householdName}
+        defaultServings={household?.defaultServings ?? null}
         members={
           household?.members.map((member) => ({
             id: member.id,

@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { createInvite, revokeInvite } from "@/lib/invites";
-import { renameHousehold, saveOwnPhone } from "@/lib/household";
+import {
+  renameHousehold,
+  saveOwnPhone,
+  setDefaultServings,
+} from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
 
 export type InviteKind = "family" | "outside";
@@ -110,6 +114,30 @@ export async function renameHouseholdAction(
 
   revalidatePath("/household");
   return { ok: true, name: saved };
+}
+
+/**
+ * How many this household cooks for.
+ *
+ * Saved without a confirmation because there is nothing to confirm: it
+ * changes what the next dinner is planned for and nothing that already
+ * exists. A week already on the planner keeps the numbers it was given -
+ * changing them from here would rewrite a plan somebody made on purpose.
+ */
+export async function setDefaultServingsAction(
+  servings: number | null,
+): Promise<void> {
+  const user = await requireHousehold();
+
+  try {
+    await setDefaultServings(user.householdId, servings);
+  } catch (error) {
+    console.error("[household] could not save the serving default", error);
+    return;
+  }
+
+  revalidatePath("/household");
+  revalidatePath("/plan");
 }
 
 /** Withdraw a code before anyone uses it. */
