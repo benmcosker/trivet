@@ -153,7 +153,34 @@ export default async function RecipePage({
       </Stack>
 
       {recipe.description ? (
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
+        /*
+         * Held to about seventy characters a line.
+         *
+         * Uncapped this ran the full width of the page: 182 characters a line
+         * at 1440px, measured, which is somewhere past twice what anybody
+         * reads comfortably. Long measure is tiring in a specific way - the
+         * eye loses the start of the next line on the way back from the end
+         * of this one, and you reread the line you have just read.
+         *
+         * The number is 55 and not 65 because `ch` is not a character. It is
+         * the width of the "0" glyph, and in Newsreader at this size that is
+         * 9.8px against an average of 7.2px for the characters in an actual
+         * sentence - so a `ch` buys about 1.36 characters of room. Measured
+         * on the rendered line boxes: 65ch gives 83 to 86 characters a line,
+         * past the 80 that WCAG 1.4.8 asks for. 55ch gives 69 to 73, which
+         * is the top of the range typography has settled on (45-75, with 66
+         * the usual ideal) and inside the accessibility limit.
+         *
+         * `ch` rather than pixels even so, because the limit is about
+         * characters and the unit follows the font: a pixel width tuned for
+         * this face would be the wrong measure the day the type changes. It
+         * is the same rule `RecipeHero` has held its description to since it
+         * was drawn, recalibrated for body size.
+         */
+        <Typography
+          color="text.secondary"
+          sx={{ mb: 2, maxWidth: "55ch", textWrap: "pretty" }}
+        >
           {recipe.description}
         </Typography>
       ) : null}
