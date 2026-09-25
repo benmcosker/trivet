@@ -712,14 +712,12 @@ export function WeekPlanner({
           .join(" and ")}`;
 
   function assignSlot(date: string, slot: MealSlot, recipeId: string | null) {
-    const recipe = recipes.find((r) => r.id === recipeId);
     startTransition(async () => {
-      await setPlannedMealAction({
-        date,
-        slot,
-        recipeId,
-        servings: recipe?.servings ?? 4,
-      });
+      // How many it is for is the server's to decide: the household's own
+      // number when it has one, and what the recipe makes when it does not.
+      // This used to send the recipe's count, which is how the browser came
+      // to have an opinion about a shopping list.
+      await setPlannedMealAction({ date, slot, recipeId });
       router.refresh();
     });
   }

@@ -16,10 +16,22 @@ datasource db {
 /// model makes that unit explicit so a second family can use the app without
 /// fighting the first for Tuesday dinner.
 model Household {
-  id        String   @id @default(cuid())
+  id              String   @id @default(cuid())
   /// Shown in the nav and on the household page. "The McMullens".
-  name      String
-  createdAt DateTime @default(now())
+  name            String
+  /// How many this household cooks for, or null when nobody has said.
+  ///
+  /// Null rather than a number with a default, because "we are six" and "we
+  /// have never been asked" want different behaviour: the first plans every
+  /// dinner for six, and the second plans each dish for whatever it makes,
+  /// which is what the app did before anyone could say. A column defaulting
+  /// to four would quietly claim every household had answered.
+  ///
+  /// Only ever raises a dish: a recipe for eight planned by a household of
+  /// two is still a recipe for eight, because scaling down is not something
+  /// this app does. See `clampServings`.
+  defaultServings Int?
+  createdAt       DateTime @default(now())
 
   members  User[]
   invites  Invite[]

@@ -3,7 +3,12 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/db";
 import { findRecipeBySourceHash, findSimilarlyTitled } from "@/lib/duplicates";
 import { getWeeklySkips, getWeekPlan, weekStartOf } from "@/lib/grocery";
-import { defaultHouseholdName, getHousehold } from "@/lib/household";
+import {
+  defaultHouseholdName,
+  defaultServingsFor,
+  getHousehold,
+  setDefaultServings,
+} from "@/lib/household";
 import { createInvite, redeemInvite } from "@/lib/invites";
 import { addPantryItem, listPantryItems, removePantryItem } from "@/lib/pantry";
 import {
@@ -33,6 +38,46 @@ describe("defaultHouseholdName", () => {
 
   it("falls back when there is no name to use", () => {
     expect(defaultHouseholdName("   ")).toBe("My Household");
+  });
+});
+
+describe.skipIf(!hasDb)("how many a household cooks for", () => {
+  let home: { householdId: string; userId: string };
+
+  beforeEach(async () => {
+    await reset();
+    home = await makeHousehold("Ours");
+  });
+
+  it("has no answer until somebody gives one", async () => {
+    // Null and four are different answers: one is "we are four" and the other
+    // is "nobody has been asked", which plans each dish for what it makes.
+    expect(await defaultServingsFor(home.householdId)).toBeNull();
+    expect((await getHousehold(home.householdId))?.defaultServings).toBeNull();
+  });
+
+  it("remembers the number it was given", async () => {
+    await setDefaultServings(home.householdId, 6);
+    expect(await defaultServingsFor(home.householdId)).toBe(6);
+  });
+
+  it("can be told to stop answering", async () => {
+    await setDefaultServings(home.householdId, 6);
+    await setDefaultServings(home.householdId, null);
+    expect(await defaultServingsFor(home.householdId)).toBeNull();
+  });
+
+  it.each([
+    [40, 8],
+    [0, 1],
+    [-3, 1],
+    [6.7, 6],
+  ])("brings %j inside the cap as %i", async (given, expected) => {
+    // A default of forty would reach the planner as forty and be clamped
+    // there one dish at a time, leaving a number on the household page that
+    // nothing else agrees with.
+    expect(await setDefaultServings(home.householdId, given)).toBe(expected);
+    expect(await defaultServingsFor(home.householdId)).toBe(expected);
   });
 });
 

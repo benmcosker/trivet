@@ -12,6 +12,7 @@ import { weekShoppingList } from "@/lib/week-list";
 import { getProvider, type HandoffResult } from "@/lib/shopping";
 import { createRecipe } from "@/lib/recipe-mutations";
 import { recipeInput } from "@/lib/recipe-schema";
+import { defaultServingsFor } from "@/lib/household";
 import { clampServings } from "@/lib/scale";
 import { listPantryItems } from "@/lib/pantry";
 import { suggestSides } from "@/lib/side-suggestions";
@@ -23,7 +24,6 @@ export async function setPlannedMealAction(input: {
   date: string;
   slot: MealSlot;
   recipeId: string | null;
-  servings: number;
 }): Promise<void> {
   const { householdId } = await requireHousehold();
 
@@ -53,15 +53,22 @@ export async function setPlannedMealAction(input: {
     if (!recipe) return;
 
     /*
-     * How many this evening is for, brought inside what the recipe offers.
+     * How many this evening is for.
      *
-     * The number arrives in a form post, which is not a promise: unchecked,
-     * `servings: 5000` is a shopping list for five thousand people, and a
-     * negative one is a list that subtracts. Clamped against this recipe's
-     * own count rather than a constant, so a dish that serves twelve is not
-     * quietly planned for eight.
+     * Decided here rather than sent from the browser. The household's own
+     * number is the answer when it has one, and what the recipe makes when it
+     * does not - and either way it is clamped against this recipe, so a dish
+     * that serves twelve is not quietly planned for a household of four.
+     *
+     * It used to arrive in the action's input, which meant a form post could
+     * say five thousand and get a shopping list for five thousand. Nothing
+     * outside this file decides it now.
      */
-    const servings = clampServings(input.servings, recipe.servings);
+    const household = await defaultServingsFor(householdId);
+    const servings = clampServings(
+      household ?? recipe.servings,
+      recipe.servings,
+    );
 
     await prisma.plannedMeal.upsert({
       where: {
@@ -292,6 +299,12 @@ export async function acceptSideAction(
         userId,
       ));
 
+    // A side is planned for the same number as everything else that evening.
+    // Left at the catalogue's four, a household of eight would find one dish
+    // on the table scaled and the other not.
+    const household = await defaultServingsFor(householdId);
+    const servings = clampServings(household ?? side.servings, side.servings);
+
     await prisma.plannedMeal.upsert({
       where: { householdId_date_slot: { householdId, date, slot: "SIDE" } },
       create: {
@@ -299,9 +312,9 @@ export async function acceptSideAction(
         date,
         slot: "SIDE",
         recipeId,
-        servings: side.servings,
+        servings,
       },
-      update: { recipeId, servings: side.servings },
+      update: { recipeId, servings },
     });
   } catch (error) {
     console.error("[sides] could not add the side", error);
