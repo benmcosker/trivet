@@ -12,6 +12,7 @@ import { weekShoppingList } from "@/lib/week-list";
 import { getProvider, type HandoffResult } from "@/lib/shopping";
 import { createRecipe } from "@/lib/recipe-mutations";
 import { recipeInput } from "@/lib/recipe-schema";
+import { clampServings } from "@/lib/scale";
 import { listPantryItems } from "@/lib/pantry";
 import { suggestSides } from "@/lib/side-suggestions";
 import { findSide } from "@/lib/sides";
@@ -47,9 +48,20 @@ export async function setPlannedMealAction(input: {
      */
     const recipe = await prisma.recipe.findFirst({
       where: { AND: [{ id: input.recipeId }, visibleRecipes(householdId)] },
-      select: { id: true },
+      select: { id: true, servings: true },
     });
     if (!recipe) return;
+
+    /*
+     * How many this evening is for, brought inside what the recipe offers.
+     *
+     * The number arrives in a form post, which is not a promise: unchecked,
+     * `servings: 5000` is a shopping list for five thousand people, and a
+     * negative one is a list that subtracts. Clamped against this recipe's
+     * own count rather than a constant, so a dish that serves twelve is not
+     * quietly planned for eight.
+     */
+    const servings = clampServings(input.servings, recipe.servings);
 
     await prisma.plannedMeal.upsert({
       where: {
@@ -60,11 +72,59 @@ export async function setPlannedMealAction(input: {
         date,
         slot: input.slot,
         recipeId: input.recipeId,
-        servings: input.servings,
+        servings,
       },
-      update: { recipeId: input.recipeId, servings: input.servings },
+      update: { recipeId: input.recipeId, servings },
     });
   }
+
+  revalidatePath("/plan");
+}
+
+/**
+ * How many people one evening is cooking for.
+ *
+ * Set on the day rather than on each dish, because that is the question being
+ * answered: six are coming on Saturday, not "the main is for six and the side
+ * is for four". An evening whose side feeds four while its main feeds six
+ * produces a shopping list that is right about neither, and nobody wants to
+ * say the number three times.
+ *
+ * Each meal is clamped against its own recipe, so one big dish on the table
+ * keeps its own count instead of being scaled down to meet the day's.
+ */
+export async function setDayServingsAction(input: {
+  date: string;
+  servings: number;
+}): Promise<void> {
+  const { householdId } = await requireHousehold();
+
+  const date = new Date(`${input.date}T00:00:00.000Z`);
+
+  const meals = await prisma.plannedMeal.findMany({
+    where: { householdId, date },
+    select: { id: true, recipe: { select: { servings: true } } },
+  });
+
+  /*
+   * One transaction rather than a loop of updates: a day left half scaled is
+   * the inconsistency this action exists to prevent, and it would be silent -
+   * the page would show six and the list would buy for both.
+   *
+   * A meal with no recipe is a typed-in title like "leftovers". It has no
+   * ingredients, so its servings reach no shopping list, but it is kept in
+   * step anyway so the evening reads as one number.
+   */
+  await prisma.$transaction(
+    meals.map((meal) =>
+      prisma.plannedMeal.update({
+        where: { id: meal.id },
+        data: {
+          servings: clampServings(input.servings, meal.recipe?.servings ?? 1),
+        },
+      }),
+    ),
+  );
 
   revalidatePath("/plan");
 }

@@ -5,6 +5,8 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import CardActionArea from "@mui/material/CardActionArea";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
@@ -15,6 +17,7 @@ import { Fragment, useState, useTransition } from "react";
 
 import {
   sendWeekToProviderAction,
+  setDayServingsAction,
   setPlannedMealAction,
   textShoppingListAction,
   type TextListActionResult,
@@ -24,6 +27,7 @@ import { groupBySection } from "@/lib/grocery-sections";
 import { DINNER_SLOTS, FIRST_DINNER, SIDE_SLOTS } from "@/lib/meal-slots";
 import { providerNotes } from "@/lib/provider-notes";
 import { recipeMetaParts, splitTitle } from "@/lib/recipe-meta";
+import { servingChoices } from "@/lib/scale";
 import type { GroceryLine, WeeklySkipRecord } from "@/lib/grocery";
 import type { HandoffResult, ProviderInfo } from "@/lib/shopping";
 
@@ -720,6 +724,37 @@ export function WeekPlanner({
     });
   }
 
+  /**
+   * The serving counts this evening could be cooked for.
+   *
+   * Taken from the largest dish on the table rather than from the first one:
+   * the day is set as a whole, and a main that serves six must not be pulled
+   * down to four to match a side. Fewer than two entries means there is
+   * nothing to choose between, and the cell says the number instead of
+   * offering it.
+   */
+  function dayServingChoices(date: string): number[] {
+    const planned = [...DINNER_SLOTS, ...SIDE_SLOTS].flatMap(
+      (slot) => byKey.get(`${date}|${slot}`) ?? [],
+    );
+    if (planned.length === 0) return [];
+
+    return servingChoices(
+      Math.max(
+        ...planned.map(
+          (meal) => recipes.find((r) => r.id === meal.recipeId)?.servings ?? 1,
+        ),
+      ),
+    );
+  }
+
+  function setDayServings(date: string, servings: number) {
+    startTransition(async () => {
+      await setDayServingsAction({ date, servings });
+      router.refresh();
+    });
+  }
+
   function gotItThisWeek(name: string) {
     startTransition(async () => {
       await skipForWeekAction(name, weekStartIso);
@@ -914,6 +949,68 @@ export function WeekPlanner({
   }
 
   /**
+   * How many this evening is for.
+   *
+   * On the day rather than on each dish, because that is the question being
+   * answered - six are coming on Saturday, not "the main is for six and the
+   * side is for four". Setting it scales every dish planned for that date, so
+   * the shopping list adds up to one evening instead of to a disagreement.
+   *
+   * Up only, and never past eight: `servingChoices` holds both rules, and the
+   * action holds them again on the way into the database, because a menu is
+   * not a guarantee about what arrives in a form post.
+   *
+   * The number moves out of the dish's meta line and into this label while
+   * the control is showing, rather than being printed in both places - a
+   * hundred-and-eighty-pixel cell that says "Serves 6" twice reads as a bug.
+   */
+  function DayServings({
+    date,
+    day,
+    servings,
+    choices,
+  }: {
+    date: string;
+    day: string;
+    servings: number;
+    choices: number[];
+  }) {
+    const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+
+    return (
+      <>
+        <Button
+          size="small"
+          disabled={pending}
+          aria-label={`${servings} servings on ${day}. Change how many.`}
+          onClick={(event) => setAnchor(event.currentTarget)}
+          sx={TEXT_ACTION_SX}
+        >
+          Serves {servings}
+        </Button>
+        <Menu
+          open={anchor !== null}
+          anchorEl={anchor}
+          onClose={() => setAnchor(null)}
+        >
+          {choices.map((choice) => (
+            <MenuItem
+              key={choice}
+              selected={choice === servings}
+              onClick={() => {
+                setAnchor(null);
+                if (choice !== servings) setDayServings(date, choice);
+              }}
+            >
+              {choice}
+            </MenuItem>
+          ))}
+        </Menu>
+      </>
+    );
+  }
+
+  /**
    * Everything you can still add to an evening, in one place.
    *
    * Side by side now rather than stacked. They were stacked while they were
@@ -1085,6 +1182,9 @@ export function WeekPlanner({
           const planned =
             recipes.find((r) => r.id === dinner?.recipeId) ?? null;
           const isToday = date === todayIso;
+          // Computed once: the meta line and the footer have to agree about
+          // whether this evening has a number to choose.
+          const choices = dayServingChoices(date);
 
           return (
             <Grid key={date} size={{ xs: 6, sm: 4, md: 3, lg: 12 / 7 }}>
@@ -1205,7 +1305,13 @@ export function WeekPlanner({
                       <DishMeta
                         parts={recipeMetaParts(
                           {
-                            servings: dinner?.servings ?? planned.servings,
+                            // Said by the footer control when there is one;
+                            // printed here when the dish is too big to scale
+                            // and there is nothing to offer.
+                            servings:
+                              choices.length > 1
+                                ? null
+                                : (dinner?.servings ?? planned.servings),
                             prepMinutes: planned.prepMinutes,
                             cookMinutes: planned.cookMinutes,
                           },
@@ -1310,6 +1416,15 @@ export function WeekPlanner({
                         borderColor: "divider",
                       }}
                     >
+                      {choices.length > 1 ? (
+                        <DayServings
+                          date={date}
+                          day={day}
+                          servings={dinner?.servings ?? planned.servings}
+                          choices={choices}
+                        />
+                      ) : null}
+
                       <AddMore date={date} day={day} />
 
                       {/*

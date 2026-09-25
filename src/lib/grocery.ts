@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { SHOPPING_SLOTS } from "./meal-slots";
+import { scaleFactor } from "./scale";
 
 export type GroceryLine = {
   name: string;
@@ -113,9 +114,10 @@ export function aggregateIngredients(
   for (const meal of meals) {
     if (!meal.recipe) continue;
 
-    // A recipe claiming zero servings would divide by zero; treat it as 1.
-    const recipeServings = meal.recipe.servings > 0 ? meal.recipe.servings : 1;
-    const scale = meal.servings / recipeServings;
+    // The same ratio the recipe page will scale by, computed in the same
+    // place, so a week planned for eight cannot buy for eight while the
+    // recipe reads for four. The zero-servings guard lives there too.
+    const scale = scaleFactor(meal.servings, meal.recipe.servings);
 
     for (const ingredient of meal.recipe.ingredients) {
       const unit = normaliseUnit(ingredient.unit);
