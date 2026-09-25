@@ -152,3 +152,44 @@ export function roundForCooking(value: number): number {
   // is the one more likely to have the next amount somebody scales to.
   return Math.abs(value - third) < Math.abs(value - eighth) ? third : eighth;
 }
+
+/**
+ * The serving count a URL is asking for.
+ *
+ * Next hands a repeated query parameter over as an array, so `?serves=6&serves=9`
+ * arrives as one; the first is taken and the rest ignored rather than the
+ * request being refused, because there is no reading of that URL worth an
+ * error page.
+ *
+ * Nothing at all, a word, a negative - all fall back to what the recipe makes.
+ * The failure case is a page showing the recipe as written, which is exactly
+ * what somebody who typed nothing asked for.
+ */
+export function readServings(
+  param: string | string[] | undefined,
+  recipeServings: number,
+): number {
+  const raw = Array.isArray(param) ? param[0] : param;
+  if (raw == null || raw.trim() === "") return ownServings(recipeServings);
+  return clampServings(Number(raw), recipeServings);
+}
+
+/**
+ * A link to this page at that serving count.
+ *
+ * The parameter appears only when it is asking for more than the recipe
+ * already makes. Cooking a four-serving recipe for four is the recipe, and
+ * `?serves=4` on the end of it is a second URL for one page - two things to
+ * share, two things to bookmark, and two entries in the back button that
+ * render identically.
+ */
+export function servingsHref(
+  path: string,
+  target: number,
+  recipeServings: number,
+): string {
+  const servings = clampServings(target, recipeServings);
+  return servings > ownServings(recipeServings)
+    ? `${path}?serves=${servings}`
+    : path;
+}

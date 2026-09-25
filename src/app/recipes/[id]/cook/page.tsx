@@ -6,6 +6,12 @@ import { CookingView } from "@/components/CookingView";
 import { LinkButton } from "@/components/LinkButton";
 import { formatAmount } from "@/lib/quantity";
 import { getRecipe } from "@/lib/recipes";
+import {
+  readServings,
+  scaleFactor,
+  scaleQuantity,
+  servingsHref,
+} from "@/lib/scale";
 import { requireHousehold } from "@/lib/session";
 import { formatOvenTemp } from "@/lib/temperature";
 
@@ -23,6 +29,7 @@ import { formatOvenTemp } from "@/lib/temperature";
  */
 export default async function CookRecipePage({
   params,
+  searchParams,
 }: PageProps<"/recipes/[id]/cook">) {
   const user = await requireHousehold();
 
@@ -32,10 +39,20 @@ export default async function CookRecipePage({
   // "not shared with you" must not be told apart by a guessed id.
   if (!recipe) notFound();
 
+  /*
+   * The count came down in the link from the recipe page, and is read here
+   * rather than carried in memory: this is a URL you leave open on a phone
+   * for an hour, and the reload that eventually happens has to come back to
+   * the same amounts rather than to the recipe as written.
+   */
+  const { serves } = await searchParams;
+  const servings = readServings(serves, recipe.servings);
+  const factor = scaleFactor(servings, recipe.servings);
+
   return (
     <AppShell>
       <LinkButton
-        href={`/recipes/${recipe.id}`}
+        href={servingsHref(`/recipes/${recipe.id}`, servings, recipe.servings)}
         size="small"
         sx={{ ml: -1, mb: 0.5 }}
       >
@@ -62,11 +79,25 @@ export default async function CookRecipePage({
         steps={recipe.instructions}
         ingredients={recipe.ingredients.map((ingredient) => ({
           id: ingredient.id,
-          amount: formatAmount(ingredient.quantity, ingredient.unit),
+          amount: formatAmount(
+            scaleQuantity(ingredient.quantity, factor),
+            ingredient.unit,
+          ),
           name: ingredient.name,
           note: ingredient.note,
         }))}
         ovenTemp={formatOvenTemp(recipe.ovenTemp, recipe.ovenTempUnit)}
+        /*
+         * Said inside the ingredient list, where the amounts being read are.
+         * Formatted here with everything else this view is handed, because
+         * MUI's components are client code and a formatter crossing that
+         * boundary builds, serves 200 and dies at hydration.
+         */
+        servingsNote={
+          servings === recipe.servings
+            ? null
+            : `Amounts are for ${servings}. The steps are written for ${recipe.servings}.`
+        }
       />
     </AppShell>
   );

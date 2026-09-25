@@ -4,10 +4,12 @@ import { formatQuantity } from "@/lib/quantity";
 import {
   MAX_SERVINGS,
   clampServings,
+  readServings,
   roundForCooking,
   scaleFactor,
   scaleQuantity,
   servingChoices,
+  servingsHref,
 } from "@/lib/scale";
 
 describe("servingChoices", () => {
@@ -147,5 +149,48 @@ describe("roundForCooking", () => {
 
   it.each([[0], [-1], [NaN]])("has nothing to say about %j", (value) => {
     expect(roundForCooking(value)).toBe(0);
+  });
+});
+
+describe("readServings", () => {
+  it("shows the recipe as written when the URL says nothing", () => {
+    expect(readServings(undefined, 4)).toBe(4);
+    expect(readServings("", 4)).toBe(4);
+  });
+
+  it("reads the number somebody asked for", () => {
+    expect(readServings("8", 4)).toBe(8);
+  });
+
+  it("takes the first of a repeated parameter rather than refusing", () => {
+    // ?serves=6&serves=9 arrives as an array. There is no reading of that URL
+    // worth an error page.
+    expect(readServings(["6", "9"], 4)).toBe(6);
+  });
+
+  it.each([["abc"], ["-3"], ["5000"], ["2"]])(
+    "brings %j inside what the recipe offers",
+    (raw) => {
+      const servings = readServings(raw, 4);
+      expect(servings).toBeGreaterThanOrEqual(4);
+      expect(servings).toBeLessThanOrEqual(MAX_SERVINGS);
+    },
+  );
+});
+
+describe("servingsHref", () => {
+  it("carries the count when it is more than the recipe makes", () => {
+    expect(servingsHref("/recipes/abc", 8, 4)).toBe("/recipes/abc?serves=8");
+  });
+
+  it("leaves the URL alone when it is the recipe as written", () => {
+    // ?serves=4 on a recipe for four is a second URL for one page: two things
+    // to bookmark and two back-button entries that render identically.
+    expect(servingsHref("/recipes/abc", 4, 4)).toBe("/recipes/abc");
+  });
+
+  it("leaves it alone for a count that would have been clamped away", () => {
+    expect(servingsHref("/recipes/abc", 2, 4)).toBe("/recipes/abc");
+    expect(servingsHref("/recipes/abc", 6, 12)).toBe("/recipes/abc");
   });
 });

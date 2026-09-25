@@ -146,11 +146,21 @@ export function CookingView({
   steps,
   ingredients,
   ovenTemp,
+  servingsNote = null,
 }: {
   recipeId: string;
   steps: string[];
   ingredients: CookingIngredient[];
   ovenTemp: string | null;
+  /**
+   * What scaling did and did not touch, when the amounts are not the
+   * recipe's own. Null when they are, which is most of the time.
+   *
+   * A finished sentence rather than the numbers behind it: the page that
+   * knows them is a server component, and a formatter cannot cross into
+   * here.
+   */
+  servingsNote?: string | null;
 }) {
   const [showIngredients, setShowIngredients] = useState(false);
   const { held, unavailable } = useWakeLock();
@@ -354,6 +364,17 @@ export function CookingView({
                 </Box>
               ))}
             </Stack>
+
+            {servingsNote ? (
+              <Typography
+                variant="caption"
+                component="p"
+                color="text.secondary"
+                sx={{ mt: 2, display: "block" }}
+              >
+                {servingsNote}
+              </Typography>
+            ) : null}
           </Paper>
         </Collapse>
       </Box>

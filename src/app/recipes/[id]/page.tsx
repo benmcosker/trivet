@@ -19,8 +19,16 @@ import { LinkButton } from "@/components/LinkButton";
 import { RecipeImageUploader } from "@/components/RecipeImageUploader";
 import { RecipePhoto } from "@/components/RecipePhoto";
 import { photoTransitionName } from "@/lib/photo-transition";
+import {
+  readServings,
+  scaleFactor,
+  scaleQuantity,
+  servingChoices,
+  servingsHref,
+} from "@/lib/scale";
 import { RecipePlaceholder } from "@/components/RecipePlaceholder";
 import { RecipeReviews } from "@/components/RecipeReviews";
+import { ServingScaler } from "@/components/ServingScaler";
 import { ReviewStars } from "@/components/ReviewStars";
 import { getMyReview, listReviews } from "@/lib/reviews";
 import { formatMinutes, formatOvenTemp } from "@/lib/temperature";
@@ -29,6 +37,7 @@ import { requireHousehold } from "@/lib/session";
 
 export default async function RecipePage({
   params,
+  searchParams,
 }: PageProps<"/recipes/[id]">) {
   const user = await requireHousehold();
 
@@ -43,6 +52,24 @@ export default async function RecipePage({
     listReviews(recipe.id),
     getMyReview(recipe.id, user.id),
   ]);
+
+  /*
+   * How many this reading of the recipe is for.
+   *
+   * In the URL rather than in the browser, so a recipe opened for eight is a
+   * link you can send, a bookmark, and a page that survives the reload a
+   * propped-up phone eventually gets. Absent, out of range or nonsense all
+   * come back as the recipe as written - see `readServings`.
+   *
+   * Nothing is stored. Scaling is a way of reading a recipe, not an edit to
+   * it: the household's copy still says what it always said, and the next
+   * person to open it gets that.
+   */
+  const { serves } = await searchParams;
+  const servings = readServings(serves, recipe.servings);
+  const factor = scaleFactor(servings, recipe.servings);
+  const choices = servingChoices(recipe.servings);
+  const scaled = servings !== recipe.servings;
 
   const mine = recipe.householdId === user.householdId;
   const totalMinutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
@@ -74,7 +101,11 @@ export default async function RecipePage({
            * a hob and follow it, so this one is outside the ownership check.
            */}
           <LinkButton
-            href={`/recipes/${recipe.id}/cook`}
+            href={servingsHref(
+              `/recipes/${recipe.id}/cook`,
+              servings,
+              recipe.servings,
+            )}
             startIcon={<SoupKitchenIcon />}
             variant="contained"
           >
@@ -114,11 +145,40 @@ export default async function RecipePage({
         <ReviewStars summary={recipe.reviews} />
       </Box>
 
+      {/*
+       * Above the chips rather than among them: the chips state facts about
+       * the dish and this asks a question of the reader, and a row that mixes
+       * the two reads as though the servings were another fact you could not
+       * change.
+       */}
+      {choices.length > 1 ? (
+        <Box sx={{ mb: 2 }}>
+          <ServingScaler
+            path={`/recipes/${recipe.id}`}
+            choices={choices}
+            current={servings}
+            recipeServings={recipe.servings}
+          />
+        </Box>
+      ) : null}
+
       <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1, mb: 3 }}>
-        <Chip
-          label={recipe.yieldNote ?? `Serves ${recipe.servings}`}
-          size="small"
-        />
+        {/*
+         * The count moves into the control when there is one, so it is not
+         * printed twice. A yield note is not a count - "Makes 12 muffins" is
+         * a sentence about the recipe as written - so it stays either way,
+         * and the line under the ingredients says what scaling did to it.
+         */}
+        {choices.length > 1 ? (
+          recipe.yieldNote ? (
+            <Chip label={recipe.yieldNote} size="small" />
+          ) : null
+        ) : (
+          <Chip
+            label={recipe.yieldNote ?? `Serves ${recipe.servings}`}
+            size="small"
+          />
+        )}
         {totalMinutes > 0 ? (
           <Chip label={`${formatMinutes(totalMinutes)} total`} size="small" />
         ) : null}
@@ -216,7 +276,10 @@ export default async function RecipePage({
                   <Box key={ingredient.id}>
                     <Typography variant="body2">
                       <Box component="span" sx={{ fontWeight: 600 }}>
-                        {formatAmount(ingredient.quantity, ingredient.unit)}
+                        {formatAmount(
+                          scaleQuantity(ingredient.quantity, factor),
+                          ingredient.unit,
+                        )}
                       </Box>{" "}
                       {ingredient.name}
                     </Typography>
@@ -233,6 +296,32 @@ export default async function RecipePage({
                   </Typography>
                 ) : null}
               </Stack>
+
+              {/*
+               * What scaling did not touch, said plainly.
+               *
+               * The method is free text: "stir in 2 cups of stock" stays two
+               * cups however many the ingredients are for, and that is the
+               * one that ruins a dinner. Times do not double when the tray
+               * does, and a yield note is a sentence rather than a number.
+               * Multiplying the numerals in a step is how "cook for 20
+               * minutes" becomes forty, so they are left alone and named
+               * instead.
+               */}
+              {scaled ? (
+                <Typography
+                  variant="caption"
+                  component="p"
+                  color="text.secondary"
+                  sx={{ mt: 2, display: "block" }}
+                >
+                  Amounts are for {servings}.{" "}
+                  {recipe.yieldNote
+                    ? "The method, the times and the yield are"
+                    : "The method and the times are"}{" "}
+                  written for {recipe.servings}.
+                </Typography>
+              ) : null}
             </CardContent>
           </Card>
         </Grid>
