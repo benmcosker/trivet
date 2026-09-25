@@ -9,6 +9,8 @@ import type { RecipeWithRelations } from "@/lib/recipes";
 import { formatOvenTempShort } from "@/lib/temperature";
 
 import { RecipeMetaLine } from "./RecipeMetaLine";
+import { photoTransitionName } from "@/lib/photo-transition";
+
 import { RecipePhoto } from "./RecipePhoto";
 import { RecipePlaceholder } from "./RecipePlaceholder";
 
@@ -65,12 +67,14 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
               rounded={0}
               priority
               sizes="(max-width: 900px) 100vw, 55vw"
+              transitionName={photoTransitionName(recipe.id)}
             />
           ) : (
             <RecipePlaceholder
               title={recipe.title}
               height={HERO_PHOTO_HEIGHT}
               showTitle
+              transitionName={photoTransitionName(recipe.id)}
             />
           )}
         </Box>

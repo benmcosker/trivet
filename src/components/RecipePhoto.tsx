@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import Image from "next/image";
+import { ViewTransition } from "react";
 
 /**
  * A dish photo, sized for the device asking for it.
@@ -21,6 +22,7 @@ export function RecipePhoto({
   height,
   priority = false,
   rounded = 1,
+  transitionName,
 }: {
   src: string;
   /** The CSS width this will occupy, per breakpoint. */
@@ -32,8 +34,21 @@ export function RecipePhoto({
    */
   priority?: boolean;
   rounded?: number;
+  /**
+   * Morph this photo into the same photo on another page.
+   *
+   * Both ends of the journey pass the same name - the card in the library and
+   * the picture at the top of the recipe - and React hands the pair to the
+   * browser's View Transitions API, which animates one into the other rather
+   * than swapping two unrelated rectangles.
+   *
+   * A name must be unique on the page at any one moment, so this is opt-in
+   * rather than automatic: `/plan` can show one dish on two evenings, and two
+   * elements claiming one name is how the whole transition stops working.
+   */
+  transitionName?: string;
 }) {
-  return (
+  const photo = (
     <Box
       sx={{
         position: "relative",
@@ -52,5 +67,20 @@ export function RecipePhoto({
         style={{ objectFit: "cover" }}
       />
     </Box>
+  );
+
+  if (!transitionName) return photo;
+
+  /*
+   * `share="morph"` names the animation so the theme can slow it down and blur
+   * it; `default="none"` keeps these out of every *other* transition on the
+   * page. Both are needed together - a named pair with `default="none"` and no
+   * `share` silently stops morphing, which looks exactly like the feature not
+   * working.
+   */
+  return (
+    <ViewTransition name={transitionName} share="morph" default="none">
+      {photo}
+    </ViewTransition>
   );
 }

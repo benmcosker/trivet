@@ -18,6 +18,7 @@ import { IconChip } from "@/components/IconChip";
 import { LinkButton } from "@/components/LinkButton";
 import { RecipeImageUploader } from "@/components/RecipeImageUploader";
 import { RecipePhoto } from "@/components/RecipePhoto";
+import { photoTransitionName } from "@/lib/photo-transition";
 import { RecipePlaceholder } from "@/components/RecipePlaceholder";
 import { RecipeReviews } from "@/components/RecipeReviews";
 import { ReviewStars } from "@/components/ReviewStars";
@@ -157,12 +158,14 @@ export default async function RecipePage({
             rounded={2}
             priority
             sizes="(max-width: 1200px) 100vw, 1152px"
+            transitionName={photoTransitionName(recipe.id)}
           />
         ) : (
           <RecipePlaceholder
             title={recipe.title}
             height={{ xs: 160, sm: 220 }}
             showTitle
+            transitionName={photoTransitionName(recipe.id)}
           />
         )}
 

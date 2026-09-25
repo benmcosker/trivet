@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import { ViewTransition } from "react";
 
 /**
  * Ruled paper where the picture will go. The theme owns the two tones; this
@@ -31,13 +32,21 @@ export function RecipePlaceholder({
   title,
   height,
   showTitle = false,
+  transitionName,
 }: {
   title: string;
   height: number | { xs: number; sm?: number; md?: number };
   /** Adds the dish's initials, for placeholders large enough to carry them. */
   showTitle?: boolean;
+  /**
+   * Morph this into the same recipe's placeholder on another page. See
+   * `RecipePhoto`. A dish without a photo is still the same dish, and the
+   * stripe and initials are what identify it - so it travels too, rather than
+   * half the library morphing and the other half blinking.
+   */
+  transitionName?: string;
 }) {
-  return (
+  const placeholder = (
     <Box
       // Decorative. The title is always beside or below this in real text, so
       // announcing it here would just repeat the recipe's name.
@@ -71,6 +80,14 @@ export function RecipePlaceholder({
         </Typography>
       ) : null}
     </Box>
+  );
+
+  if (!transitionName) return placeholder;
+
+  return (
+    <ViewTransition name={transitionName} share="morph" default="none">
+      {placeholder}
+    </ViewTransition>
   );
 }
 
