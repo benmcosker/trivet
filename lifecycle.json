@@ -70,42 +70,48 @@
   "credentials": [
     {
       "name": "BLOB_READ_WRITE_TOKEN",
-      "where": "Vercel \u2192 Storage \u2192 the Blob store \u2192 Settings \u2192 Rotate Credentials",
+      "where": "Vercel → Storage → the Blob store → Settings → Rotate Credentials",
       "rotatedOn": "2026-09-19",
+      "dueMonth": "September",
       "everyDays": 365,
       "note": "Rotate; never create a new store. Rotating regenerates credentials on the same store, so the photo URLs already saved in recipe.imageUrl keep resolving - a new store means a new store id and every one of them 404s. Vercel updates the variables it manages and offers to delay the old secret's expiry: take the shortest delay, because the point of rotating is that the old one stops working. Check that the variable the app actually reads was among the ones updated, then redeploy - the new value does not reach the running deployment until you do."
     },
     {
       "name": "TWILIO_AUTH_TOKEN",
-      "where": "Twilio console \u2192 Account \u2192 API keys & tokens",
+      "where": "Twilio console → Account → API keys & tokens",
       "rotatedOn": null,
+      "dueMonth": "October",
       "everyDays": 365
     },
     {
       "name": "RESEND_API_KEY",
-      "where": "resend.com \u2192 API keys",
+      "where": "resend.com → API keys",
       "rotatedOn": "2026-09-17",
+      "dueMonth": "September",
       "everyDays": 365,
       "note": "Sending access only; it never needs more. Create the replacement before revoking the old one - they coexist, so there is no window where a password reset cannot be sent. Set it in Vercel and redeploy: the value is read into the build, so saving it on a running deployment changes nothing. Note that the domain verification is separate and survives a rotation."
     },
     {
       "name": "ANTHROPIC_API_KEY",
-      "where": "console.anthropic.com \u2192 API keys",
+      "where": "console.anthropic.com → API keys",
       "rotatedOn": null,
+      "dueMonth": "April",
       "everyDays": 365
     },
     {
       "name": "BETTER_AUTH_SECRET",
-      "where": "Vercel \u2192 Settings \u2192 Environment Variables",
+      "where": "Vercel → Settings → Environment Variables",
       "rotatedOn": null,
+      "dueMonth": "January",
       "everyDays": 730,
       "note": "Rotating this signs everybody out. Worth doing rarely and deliberately."
     },
     {
       "name": "DATABASE_URL",
-      "where": "Neon \u2192 Roles \u2192 reset password",
+      "where": "Neon → Roles → reset password",
       "rotatedOn": null,
-      "everyDays": 730
+      "dueMonth": "November",
+      "everyDays": 365
     }
   ]
 }
