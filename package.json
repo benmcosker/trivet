@@ -23,6 +23,7 @@
     "prepare": "husky"
   },
   "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx}": "eslint --fix",
     "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
