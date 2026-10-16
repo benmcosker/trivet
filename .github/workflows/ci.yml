@@ -102,7 +102,14 @@ jobs:
             / /plan /recipes /pantry /household /recipes/new /upload
 
       # The browser check reports page errors, but when the app itself fell
-      # over the reason is in its log rather than in the page.
+      # over the reason is in its log rather than in the page. A failure
+      # before the app starts - a lint or format check - leaves no log, and
+      # a bare cat would then fail too and bury the real error under its own.
       - name: App log
         if: failure()
-        run: cat /tmp/app.log
+        run: |
+          if [ -f /tmp/app.log ]; then
+            cat /tmp/app.log
+          else
+            echo "No app log: the job failed before the app started."
+          fi
