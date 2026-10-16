@@ -19,7 +19,11 @@
     "db:deploy": "prisma migrate deploy && prisma generate",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "vercel-build": "node scripts/migrate-on-deploy.mjs && next build"
+    "vercel-build": "node scripts/migrate-on-deploy.mjs && next build",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
@@ -47,6 +51,8 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "playwright": "^1.63.0",
     "prettier": "^3.9.6",
     "prisma": "^7.10.0",
