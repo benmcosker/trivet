@@ -5,11 +5,7 @@ Upload a recipe card - a PDF, or a photograph of a printed or handwritten one -
 plan a dinner for each night from your library, and take the resulting shopping
 list to the shop.
 
-## See it work
-
-A minute and a half, start to finish: photograph a card, cook from it,
-plan the week, and text yourself the list.
-
+## Demo video
 https://github.com/user-attachments/assets/f4008d4c-4334-4b36-83d7-cc69ad15a5a2
 
 ## What it looks like
