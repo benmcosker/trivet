@@ -17,7 +17,20 @@
     "what is published and what is installed; it does not know what we run or",
     "what we import, and on both counts it has told this report something",
     "false. Each entry carries the reason and the date it was checked, because",
-    "a silent exception is how a real finding gets suppressed for a year."
+    "a silent exception is how a real finding gets suppressed for a year.",
+    "",
+    "`patched` is neither of those - it is a record rather than a correction.",
+    "These are transitive packages whose advisory was fixed by a patch release",
+    "the parent's range already allowed, so npm reached it on its own and the",
+    "lockfile simply records that it did. package.json is untouched: there is",
+    "no override, because an override would pin a floor npm reaches anyway and",
+    "then sit there fighting the parent the day it moves past it. The entry",
+    "exists so that somebody regenerating the lockfile from scratch can see a",
+    "CVE was involved, which the lockfile alone does not say.",
+    "",
+    "An override would be the right tool for the opposite case - a parent that",
+    "pins us to a vulnerable version, where the fix has to be forced past what",
+    "the dependency will accept. That has not happened yet."
   ],
   "runtimes": [
     {
@@ -64,6 +77,22 @@
       "package": "deepmerge-ts",
       "checkedOn": "2026-09-19",
       "why": "Reached only through @prisma/config, so it inherits that entry: build-time, not request-time."
+    }
+  ],
+  "patched": [
+    {
+      "package": "sharp",
+      "patchedOn": "2026-10-16",
+      "to": "0.35.5",
+      "advisory": "GHSA-wq5f-xc86-pv6w",
+      "why": "A librsvg vulnerability (CVE-2026-96889) in a package this codebase never imports: sharp arrives through next, whose image optimiser is its only path here. Fixed in 0.35.5, inside the range next already asks for, so the lockfile moved and nothing was declared."
+    },
+    {
+      "package": "source-map-js",
+      "patchedOn": "2026-10-16",
+      "to": "1.2.2",
+      "advisory": "GHSA-68fv-2mgg-jv7q",
+      "why": "An event-loop denial of service through indexed source-map section offsets. Arrives twice - through next via postcss, and through vitest via vite via postcss - and both parents allow 1.2.2, which is the fix."
     }
   ],
   "warnWithinDays": 180,
