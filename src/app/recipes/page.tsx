@@ -129,7 +129,15 @@ export default async function RecipesPage({
             // between them was buying nothing but scrolling: the whole header
             // ran to 500px on an 852px screen before a single dish appeared.
             gap: { xs: 1.5, md: 4 },
-            mb: { xs: "20px", md: "36px" },
+            /*
+             * 44px at `md`, not 36. On a desktop the controls sit off to the
+             * right of the title, so the search row is what lands under the
+             * `h1` - and at 36px it sat close enough to be read as the line
+             * under a headline rather than as the first control. On a phone
+             * the Filters row is already between the two, so that gap stays at
+             * 20px and the budget above is untouched.
+             */
+            mb: { xs: "20px", md: "44px" },
           }}
         >
           <Box>

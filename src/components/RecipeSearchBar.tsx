@@ -7,10 +7,14 @@ import Menu from "@mui/material/Menu";
 import type { Theme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import MenuItem from "@mui/material/MenuItem";
+import Typography from "@mui/material/Typography";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { RECIPE_SORTS, type RecipeSort } from "@/lib/recipe-sort";
+
+/** So the shelf label and the field are a real label/control pair. */
+const FIELD_ID = "recipe-search";
 
 /**
  * One line: what you are looking for, and the order to show it in.
@@ -18,10 +22,50 @@ import { RECIPE_SORTS, type RecipeSort } from "@/lib/recipe-sort";
  * Search state lives in the URL so a filtered view can be linked and survives a
  * reload. Typing is debounced to avoid a query per keystroke.
  *
- * The field has no box - just the rule it shares with the sort control, which
- * is the point of the treatment: at 26px serif italic the placeholder is an
- * invitation rather than a form field, and "What are you in the mood for?" only
- * works if it does not look like something to fill in.
+ * ## Why this row did not read as a search
+ *
+ * The owner of the app asked for a search on this page while looking straight
+ * at one. The field was there and it was invisible to him, and the reason was
+ * not a missing icon.
+ *
+ * This page speaks in two voices. Serif at content scale is the library - the
+ * `h1`, the dish titles, the collection names. Small uppercase Karla is
+ * everything you can operate - Filters, New recipe, the sort, the pagination,
+ * the "Collections" shelf label. The field was rendered entirely in the first
+ * voice and placed where a standfirst goes: directly under the `h1`, full
+ * measure, italic. So the eye filed it as the deck under a title. The only
+ * Karla on the line belonged to the sort control, off at the right, which read
+ * as a caption annotating the phrase rather than as the field's neighbour. And
+ * one rule ran the whole width underneath both of them, which is the shape of
+ * a masthead rule, not of a field.
+ *
+ * So the fix is not to restyle the field. It is to re-file the row into the
+ * other voice, leaving the field's own typography alone:
+ *
+ * - **The row is addressed.** A `Search` shelf label leads it, in the same
+ *   overline the collections row below uses for `Collections`, so the two rows
+ *   read as a matched pair of ways in. It is beside the field, not above it: a
+ *   label stacked over this would turn the invitation into a form field, which
+ *   is the thing the treatment exists to avoid. Beside it, it is the page's
+ *   own grammar for "label, then the things" - and it is a real `<label>`, so
+ *   the word itself puts the caret in the field.
+ * - **The rule belongs to the field.** It moved off the row container onto the
+ *   field's own zone, which it now shares with the label and nothing else.
+ *   Stopping where the field stops is what makes it an underline rather than a
+ *   section divider - the least box that still says "you can write on this
+ *   line". The sort keeps a hairline of its own, the one `RecipeFilters`
+ *   already wears, so the two controls that narrow and order the library look
+ *   like each other instead of like the field.
+ *
+ * A magnifying glass was the obvious alternative and is wrong twice over. It
+ * answers "what is this for", which the placeholder already answers in words,
+ * rather than "can I type here", which is what was missing. And it would be
+ * the only drawn icon on a page built from type and hairlines, so it would
+ * read as an ornament on a phrase - the same misfiling in a new costume.
+ *
+ * Hover and focus do move the label, but they are the reward, not the signal:
+ * an affordance that appears only once you are already pointing at the thing
+ * is no use to somebody who cannot find it.
  *
  * The tag chips that used to sit below this have moved behind the Filters
  * control in the page header; the collections row covers the common ways in.
@@ -37,10 +81,17 @@ export function RecipeSearchBar() {
    * tried, and reads as a bug rather than as a shortened phrase. The short
    * form says the same thing.
    *
+   * The shelf label now spends about 53px of that line, so the sort control
+   * collapses to its `short` label here for the same reason and under the same
+   * rule: say it in fewer words rather than say half of it. At 360px - the
+   * narrowest width worth drawing for - the collapsed sort buys back about
+   * 55px against the label's 53, so the placeholder has no less room than it
+   * had before any of this.
+   *
    * Resolved after mount rather than with `noSsr`. The server has no viewport,
    * so `noSsr` makes the client's first render disagree with the HTML it is
    * hydrating - a real mismatch, spent on a placeholder. This way the first
-   * paint carries the long string and a phone swaps it a frame later.
+   * paint carries the long strings and a phone swaps them a frame later.
    */
   const compact = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
 
@@ -82,72 +133,119 @@ export function RecipeSearchBar() {
     setSortAnchor(null);
   }
 
-  const sortLabel =
-    RECIPE_SORTS.find((option) => option.value === sort)?.label ??
-    "Newest first";
+  const chosen = RECIPE_SORTS.find((option) => option.value === sort);
+  const sortName = chosen?.label ?? "Newest first";
+  const sortLabel = compact ? (chosen?.short ?? "Newest") : sortName;
 
   return (
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        // Each rule is the bottom edge of its own box now, so ending the two
+        // controls on one line is what lines the two rules up.
+        alignItems: "flex-end",
         flexWrap: "nowrap",
         columnGap: 1.5,
-        rowGap: 1,
-        // The emphatic rule rather than the hairline: this one separates the
-        // way in from the library, not one row from the next.
-        borderBottom: "1px solid",
-        borderColor: "text.primary",
-        pb: "14px",
         mb: "22px",
       }}
     >
-      <InputBase
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={
-          compact ? "In the mood for?" : "What are you in the mood for?"
-        }
-        // The placeholder says what the field is for, and a visible label above
-        // it would undo the treatment.
-        inputProps={{ "aria-label": "Search recipes" }}
+      <Box
         sx={{
           flex: 1,
           minWidth: 0,
-          // Serif, taken from the variant rather than a restated font stack.
-          fontFamily: (theme) => theme.typography.body1.fontFamily,
-          fontSize: { xs: "1.25rem", md: "1.625rem" },
-          color: "text.primary",
-          "& input::placeholder": {
-            fontStyle: "italic",
-            /*
-             * `text.secondary`, not `text.disabled`.
-             *
-             * This was disabled, which measures 3.85:1. That clears the 3:1
-             * large-text threshold at `md`, where the field is 26px - but the
-             * size above steps down to 20px at `xs`, and 20px non-bold is not
-             * large text, so the compact string needed 4.5 and did not have
-             * it. Secondary measures 4.73 at both sizes.
-             *
-             * It matters more here than the number suggests: the placeholder
-             * is the only thing naming this field. The design gives it no
-             * visible label, because a label above it would undo the
-             * treatment.
-             */
-            color: "text.secondary",
-            // Browsers dim placeholders by default, which on this palette
-            // leaves it almost invisible.
-            opacity: 1,
-          },
+          display: "flex",
+          // The 11px label sits on the serif's baseline rather than halfway up
+          // a 26px line.
+          alignItems: "baseline",
+          columnGap: { xs: "10px", md: "14px" },
+          // The rule the field owns, and the reason it is here rather than on
+          // the row: across the whole row it was a divider under a title, and
+          // it read as one.
+          borderBottom: "1px solid",
+          borderColor: "text.primary",
+          pb: "12px",
+          // The field is the whole zone, not just the glyphs in it.
+          cursor: "text",
+          "&:hover > label, &:focus-within > label": { color: "text.primary" },
         }}
-      />
+      >
+        {/*
+         * The shelf label, matching "Collections" one row down. A real
+         * <label>, so the word is a click target; the accessible name is still
+         * the fuller "Search recipes" on the input, which this prefixes.
+         */}
+        <Typography
+          component="label"
+          htmlFor={FIELD_ID}
+          variant="overline"
+          sx={{
+            flexShrink: 0,
+            color: "text.secondary",
+            cursor: "pointer",
+            transition: "color 120ms",
+          }}
+        >
+          Search
+        </Typography>
+
+        <InputBase
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={
+            compact ? "In the mood for?" : "What are you in the mood for?"
+          }
+          inputProps={{ id: FIELD_ID, "aria-label": "Search recipes" }}
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            // The field's zone owns the padding above its rule; the input
+            // must not add a second helping of it.
+            p: 0,
+            // Serif, taken from the variant rather than a restated font stack.
+            fontFamily: (theme) => theme.typography.body1.fontFamily,
+            fontSize: { xs: "1.25rem", md: "1.625rem" },
+            color: "text.primary",
+            "& input::placeholder": {
+              fontStyle: "italic",
+              /*
+               * `text.secondary`, not `text.disabled`.
+               *
+               * This was disabled, which measures 3.85:1. That clears the 3:1
+               * large-text threshold at `md`, where the field is 26px - but the
+               * size above steps down to 20px at `xs`, and 20px non-bold is not
+               * large text, so the compact string needed 4.5 and did not have
+               * it. Secondary measures 4.73 at both sizes.
+               *
+               * The placeholder is no longer the only thing naming this field -
+               * the label beside it is - but it is still the only thing saying
+               * what to put in it, and it stays at the measured colour.
+               */
+              color: "text.secondary",
+              // Browsers dim placeholders by default, which on this palette
+              // leaves it almost invisible.
+              opacity: 1,
+            },
+          }}
+        />
+      </Box>
 
       <Button
         onClick={(e) => setSortAnchor(e.currentTarget)}
         aria-haspopup="listbox"
+        // The button's text shortens on a phone; its name does not.
+        aria-label={`Sort: ${sortName}`}
         sx={{
           flexShrink: 0,
           whiteSpace: "nowrap",
+          // The hairline RecipeFilters wears. Sort and Filters do the same
+          // kind of work and now look like it.
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          borderRadius: 0,
+          // The rule hugs the words rather than sitting at the bottom of a
+          // button, and lands level with the field's.
+          padding: "6px 0 12px",
+          "&:hover": { borderColor: "text.primary" },
         }}
       >
         {sortLabel} ↓
@@ -163,6 +261,11 @@ export function RecipeSearchBar() {
             selected={option.value === sort}
             onClick={() => setSort(option.value)}
           >
+            {/*
+             * Always the full wording. The menu has the room, and choosing
+             * between "Newest" and "Oldest" is harder than choosing between
+             * the phrases they shorten.
+             */}
             {option.label}
           </MenuItem>
         ))}
