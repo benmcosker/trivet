@@ -2,6 +2,7 @@
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import InputBase from "@mui/material/InputBase";
 import Menu from "@mui/material/Menu";
 import type { Theme } from "@mui/material/styles";
@@ -9,7 +10,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import MenuItem from "@mui/material/MenuItem";
 import Typography from "@mui/material/Typography";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { RECIPE_SORTS, type RecipeSort } from "@/lib/recipe-sort";
 
@@ -67,6 +68,66 @@ const FIELD_ID = "recipe-search";
  * an affordance that appears only once you are already pointing at the thing
  * is no use to somebody who cannot find it.
  *
+ * ## Why the query can be undone, and by a word
+ *
+ * A search was a one-way door. `RecipeFilters` has carried a Clear since it
+ * was built, so the two controls that narrow the same library disagreed about
+ * whether narrowing is reversible: the tags could be put back, the query had
+ * to be deleted a character at a time.
+ *
+ * The conventional control is an ✕ in the corner of the field, and it was
+ * weighed on its merits rather than waved off by the paragraph above. It wins
+ * on two things - everybody already knows it, and it costs almost no width -
+ * and the row is not short of width at 360 once the long placeholder has been
+ * replaced by somebody's own four or five characters. It loses on three.
+ *
+ * The first is the one that decides it: **the page already owns a word for
+ * this act.** The tag dialog says `Clear`. Spelling the same act two ways,
+ * once as a word and once as a mark, is two vocabularies for one idea, and
+ * the mark is the half nobody can read back to you. Second, it is the weaker
+ * state label, and that matters more here than it usually would - this is the
+ * only thing on the page that says a search is running at all. An ✕ says
+ * "remove"; it does not say what is on. Third, a 10px mark at the end of a
+ * line is a poor target, where the word is 43px wide and legible across the
+ * room, which is the posture this app is read in.
+ *
+ * The no-drawn-marks argument above is real and points the same way - an ✕
+ * would be the only such mark on a page built from type and hairlines - but
+ * it is the supporting argument, not the load-bearing one. If this row had no
+ * room for a word, the ✕ would be the right answer and the prior would
+ * have to give. It has the room. So: `Clear`, in the overline the rest of the
+ * row's machinery is set in.
+ *
+ * **Two Clears, one rule: each empties the box it is drawn inside.** The
+ * dialog's sits under the tag chips and clears the tags. This one sits inside
+ * the field's own rule, between the label and the end of that rule, and clears
+ * the field. Neither reaches past its own edge - which is why this one leaves
+ * an active collection alone. The tags can already be put back from two places
+ * in plain sight: the collections row shows the live one with a dark rule and
+ * untoggles it, and the dialog has its own Clear. The query had nowhere. One
+ * control that swept away both would be the only thing on the page that
+ * undoes something you cannot see it pointing at.
+ *
+ * **It appears only when there is something to clear**, which is where it
+ * parts company with the Filters button. That button is always there because
+ * it is also the way in to the tags; a dialog's action row is a fixed panel
+ * and a button vanishing out of it would make the row jump. This is neither.
+ * It is also, as it happens, the page's only mark that a search is running:
+ * the collections row goes on offering six other ways in regardless, and
+ * nothing else changes. A greyed word in the resting state would spend that
+ * signal to buy symmetry with a control behind a dialog.
+ *
+ * Clearing goes through `query` state like every keystroke does, so it takes
+ * the same debounced path to the URL and gets `page` deleted with it. Focus
+ * returns to the field, because the control removes itself the moment it
+ * works and focus would otherwise fall to the document.
+ *
+ * `Escape` does the same thing while the field has focus. It is where a
+ * desktop hand goes first and it costs two lines, but nothing advertises it,
+ * and a phone has no Escape key - so it is the second way, not the way.
+ * Likewise the hover that darkens the label: a reward for already pointing at
+ * the row, never the signal.
+ *
  * The tag chips that used to sit below this have moved behind the Filters
  * control in the page header; the collections row covers the common ways in.
  */
@@ -98,6 +159,20 @@ export function RecipeSearchBar() {
   const sort = (searchParams.get("sort") ?? "newest") as RecipeSort;
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  /**
+   * Empty the field and put the caret back in it.
+   *
+   * Only the state is touched: the effect below is the one path to the URL,
+   * so clearing cannot forget to drop `page` the way a second writer would.
+   * The focus call runs before React commits the removal of the button that
+   * called it, so focus lands on the field rather than on the document.
+   */
+  function clearQuery() {
+    inputRef.current?.focus();
+    setQuery("");
+  }
 
   useEffect(() => {
     const current = searchParams.get("q") ?? "";
@@ -191,6 +266,14 @@ export function RecipeSearchBar() {
         <InputBase
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          inputRef={inputRef}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape" || !query) return;
+            // Browsers otherwise let Escape bubble, and a search input in
+            // Safari treats it as "revert to the last committed value".
+            e.preventDefault();
+            clearQuery();
+          }}
           placeholder={
             compact ? "In the mood for?" : "What are you in the mood for?"
           }
@@ -227,6 +310,44 @@ export function RecipeSearchBar() {
             },
           }}
         />
+        {/*
+         * Inside the field's rule, at the far end of it - the label names the
+         * zone from one side and this empties it from the other, and the rule
+         * under both is what says the two belong to the field rather than to
+         * the row. Present only while there is a query, so in the resting
+         * state it spends none of the width the placeholder needs, and when
+         * it does appear the placeholder is gone anyway.
+         */}
+        {query ? (
+          <ButtonBase
+            onClick={clearQuery}
+            aria-label="Clear search"
+            sx={(theme) => ({
+              flexShrink: 0,
+              position: "relative",
+              // The row's machinery voice, taken from the variant so it can
+              // never drift from the Search label beside it.
+              ...theme.typography.overline,
+              color: "text.secondary",
+              transition: "color 120ms",
+              "&:hover, &:focus-visible": { color: "text.primary" },
+              // The word is 11px on a 38px line; the target it answers to is
+              // not. A pseudo-element grows the hit area past 44px without
+              // moving the word off the baseline it shares with the label.
+              // It grows leftwards, over the empty tail of the field, rather
+              // than symmetrically: at 393 the sort control starts 12px to
+              // the right and a target that met it would take taps meant for
+              // the sort.
+              "&::after": {
+                content: '""',
+                position: "absolute",
+                inset: "-16px -2px -16px -22px",
+              },
+            })}
+          >
+            Clear
+          </ButtonBase>
+        ) : null}
       </Box>
 
       <Button
