@@ -31,7 +31,15 @@ Upload takes a PDF or a photograph of a card.
 ![Uploading a recipe card](docs/screenshots/upload.png)
 
 Screenshots are of a seeded demo library, so no dish photos are attached - the
-striped placeholders are what the app draws when a recipe has none.
+striped placeholders are what the app draws when a recipe has none. They are
+taken from `npm run seed:demo`, so retaking them is a command rather than an
+afternoon:
+
+```
+npm run browse:seed   # once, with the app running
+npm run seed:demo
+npm run browse -- /recipes --shot=docs/screenshots/recipes.png
+```
 
 ## What works
 
