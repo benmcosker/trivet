@@ -96,6 +96,27 @@ be a string`. The way through is the Unix socket and peer auth, with a role
 Each carries a date, because what they record can change and a confident
 undated note is one nobody thinks to re-test.
 
+- **The phone header on `/recipes` is 309px, not 500** (24 October 2026).
+  A comment in `src/app/recipes/page.tsx` said the header "ran to 500px on an
+  852px screen"; measured on a seeded 113-dish library at 393x852 it was
+  407.4px, and 500 could not be reproduced. **Write down the number you
+  measured, not the one you remember** - an undated round figure is how a
+  budget stops being checkable. It is now 309px, and the bands it is made of
+  are: top bar 110.6, `main` pt 16, title row 49 (`h1` 30px with the dish
+  count beside it), mb 18, search row 50.8, mb 18, collections row 33.4,
+  mb 13. The hero that follows is 485px and its title lands at 552, so the
+  second dish name is on the first screen at 838.
+
+  To re-measure: the fixture is what makes it comparable, and `npm test`
+  empties the database, so it has to be rebuilt afterwards -
+  `npm run browse:seed`, then `BROWSE_EMAIL=browse@example.com npm run
+seed:demo` for nine dishes, then 104 filler rows and a longer household
+  name, or the eyebrow and the collection counts measure short. `npm run dev`
+  cannot serve this check in a container - `next/font/google` needs egress -
+  so it is `npm run build && npm run start`, and `getBoundingClientRect().top`
+  at scroll 0 in a 393x852 Playwright context with `isMobile` and
+  `deviceScaleFactor: 2`.
+
 - **Instacart: applications closed** (re-checked September 2026, unchanged
   since August). The Developer Platform opened to everyone in March 2024 and
   has since stopped taking new applicants, with no waitlist - "check back in
