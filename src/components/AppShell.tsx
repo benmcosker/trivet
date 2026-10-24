@@ -28,7 +28,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
           maxWidth: PAGE_MAX_WIDTH,
           mx: "auto",
           px: PAGE_PADDING_X,
-          pt: { xs: 2.5, md: 7 },
+          pt: { xs: 2, md: 7 },
           pb: { xs: 5, md: 9 },
         }}
       >

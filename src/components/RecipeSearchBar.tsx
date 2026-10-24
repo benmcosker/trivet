@@ -221,7 +221,7 @@ export function RecipeSearchBar() {
         alignItems: "flex-end",
         flexWrap: "nowrap",
         columnGap: 1.5,
-        mb: "22px",
+        mb: { xs: "18px", md: "22px" },
       }}
     >
       <Box

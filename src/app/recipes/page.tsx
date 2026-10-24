@@ -122,29 +122,53 @@ export default async function RecipesPage({
         <Box
           sx={{
             display: "flex",
-            alignItems: { xs: "stretch", md: "flex-end" },
+            /*
+             * One row on a phone, not two. The title had the band to itself
+             * and the controls sat under it, which spent a whole row on two
+             * buttons. Measured at 393: the row has 353px inside the page
+             * gutters, the title and its count take 177 and `New recipe`
+             * takes 131, so with the 18px gap they fit in 326 with 27 over.
+             *
+             * `nowrap` is what holds them there. With `wrap` the button drops
+             * to its own row the moment the title is a word wider than it was
+             * measured - which is the whole band this change bought back,
+             * given away by a rename.
+             */
+            flexWrap: { xs: "nowrap", md: "wrap" },
+            alignItems: { xs: "baseline", md: "flex-end" },
             justifyContent: "space-between",
-            flexWrap: "wrap",
-            // On a phone the title and the controls stack, and a 32px gap
-            // between them was buying nothing but scrolling: the whole header
-            // ran to 500px on an 852px screen before a single dish appeared.
             gap: { xs: 1.5, md: 4 },
             /*
              * 44px at `md`, not 36. On a desktop the controls sit off to the
              * right of the title, so the search row is what lands under the
              * `h1` - and at 36px it sat close enough to be read as the line
              * under a headline rather than as the first control. On a phone
-             * the Filters row is already between the two, so that gap stays at
-             * 20px and the budget above is untouched.
+             * the search row is the next thing down and 18px separates them.
+             *
+             * **The phone header is a budget, and it is measured.** At 393x852
+             * everything above the first dish came to 407px - 48% of the
+             * screen, one dish name on it. It is 309px now; see CLAUDE.md for
+             * the band-by-band breakdown and how to re-measure it. Anything
+             * added here is paid for out of the first screen.
              */
-            mb: { xs: "20px", md: "44px" },
+            mb: { xs: "18px", md: "44px" },
           }}
         >
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="overline"
               component="p"
-              sx={{ color: "secondary.main", mb: "12px" }}
+              sx={{
+                /*
+                 * The household's name is scene-setting, and this is the page
+                 * you open twenty times a week. It is worth a band of a
+                 * desktop header and not worth one of a phone's, so at `xs`
+                 * only the count survives, folded into the title line below.
+                 */
+                display: { xs: "none", md: "block" },
+                color: "secondary.main",
+                mb: "12px",
+              }}
             >
               {/*
                * The viewer's household, even though the library is shared by all
@@ -154,22 +178,73 @@ export default async function RecipesPage({
               {withArticle(householdName)} recipe box · {libraryCount}{" "}
               {libraryCount === 1 ? "dish" : "dishes"}
             </Typography>
-            <Typography variant="h1">Recipes</Typography>
+            {/*
+             * The count sits beside the title rather than inside it. Inside,
+             * the `h1`'s accessible name came out as "Recipes113 dishes" -
+             * the browse sweep reads the heading back, which is how that was
+             * caught. The heading is "Recipes" at every width; this is the
+             * eyebrow above it, moved onto its line.
+             */}
+            <Box sx={{ display: "flex", alignItems: "baseline", gap: "10px" }}>
+              <Typography
+                variant="h1"
+                sx={{
+                  /*
+                   * 30px at `xs`, against the scale's 48. The theme's step is
+                   * measured for a page label alone on its line; this one
+                   * shares its line with a button and with the count.
+                   *
+                   * `sm` and `md` restate the theme's own `h1` rather than
+                   * being left out: an `sx` breakpoint has no "stop here", so
+                   * an `xs` value with nothing above it is the value at every
+                   * width - leaving them off put 30px type on a 1280px page.
+                   */
+                  fontSize: { xs: "1.875rem", sm: "3rem", md: "4.75rem" },
+                  lineHeight: { xs: 1.05, sm: 0.95 },
+                }}
+              >
+                Recipes
+              </Typography>
+              {/*
+               * `variant="overline"` rather than an `sx` callback spreading
+               * `theme.typography.overline`: a function cannot cross from this
+               * server component into MUI's client code - it typechecks,
+               * builds, and dies at render.
+               */}
+              <Typography
+                variant="overline"
+                component="p"
+                sx={{
+                  display: { xs: "block", md: "none" },
+                  color: "secondary.main",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {libraryCount} {libraryCount === 1 ? "dish" : "dishes"}
+              </Typography>
+            </Box>
           </Box>
 
           <Stack
             direction="row"
             sx={{
               alignItems: "center",
-              // Filters and New recipe share the row width on a phone rather
-              // than huddling at the left with a hole beside them.
-              justifyContent: { xs: "space-between", md: "flex-start" },
-              width: { xs: "100%", md: "auto" },
               gap: "18px",
+              // The title takes the row and this takes what it needs: never
+              // squeezed by a long title, never stretched into the hole
+              // beside a short one.
+              flex: "0 0 auto",
               pb: { xs: 0, md: "8px" },
             }}
           >
-            <RecipeFilters tags={tags} />
+            {/*
+             * At `xs` the way in to the tags is the `Collections` shelf label
+             * two rows down - see `CollectionsRow`. Here it would be the one
+             * thing forcing the title and the button onto separate rows.
+             */}
+            <Box sx={{ display: { xs: "none", md: "block" } }}>
+              <RecipeFilters tags={tags} />
+            </Box>
             <LinkButton href="/recipes/new" variant="contained" color="ink">
               New recipe
             </LinkButton>
@@ -178,7 +253,7 @@ export default async function RecipesPage({
 
         <RecipeSearchBar />
 
-        <CollectionsRow collections={pickCollections(tags)} />
+        <CollectionsRow collections={pickCollections(tags)} tags={tags} />
 
         {/*
          * Not a 404: the recipes exist and the visitor did nothing wrong. Not a
