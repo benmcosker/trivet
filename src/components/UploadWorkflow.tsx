@@ -547,6 +547,30 @@ export function UploadWorkflow() {
             </Box>
 
             {/*
+             * The link half's description, the sibling of the file half's.
+             *
+             * Both halves name a shape and then a bound. The file half's
+             * bound is a limit (`Up to 20 MB.`); this one's is a generosity,
+             * and the asymmetry is the point - a file has to be small enough,
+             * a link only has to be a recipe.
+             *
+             * `One recipe` is doing the work: it excludes the search result,
+             * the Pinterest pin and the Instagram reel without scolding
+             * anybody, and those are the pastes that fail worst, because they
+             * extract *something* and it is confident and wrong.
+             *
+             * What it must never say is that almost any cooking site can be
+             * read automatically - eight of twenty-one measured sites refuse
+             * a server outright. It says where the recipe can end up, which
+             * is true of all of them: twelve by paste, the rest by the
+             * handoff. A sentence about the destination cannot be falsified
+             * by somebody's CDN.
+             */}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              The page for one recipe. Almost any cooking site.
+            </Typography>
+
+            {/*
              * The field telling you about itself, rather than the page
              * telling you something - so a line under the field rather than a
              * note.
