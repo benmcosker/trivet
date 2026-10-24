@@ -4,6 +4,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
+import ButtonBase from "@mui/material/ButtonBase";
 import CardContent from "@mui/material/CardContent";
 import InputBase from "@mui/material/InputBase";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -110,6 +111,20 @@ export function UploadWorkflow() {
   const [elapsed, setElapsed] = useState(0);
   const [address, setAddress] = useState("");
   const [addressInvalid, setAddressInvalid] = useState(false);
+  const addressRef = useRef<HTMLInputElement | null>(null);
+
+  /**
+   * Empty the address and put the caret back in it.
+   *
+   * The focus call runs before React commits the removal of the Clear that
+   * called it, so focus lands on the field rather than on the document - the
+   * control removes itself the moment it works.
+   */
+  function clearAddress() {
+    addressRef.current?.focus();
+    setAddress("");
+    setAddressInvalid(false);
+  }
   const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [extracted, setExtracted] = useState<Extracted | null>(null);
@@ -449,6 +464,12 @@ export function UploadWorkflow() {
                */}
               <InputBase
                 value={address}
+                inputRef={addressRef}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape" || !address) return;
+                  event.preventDefault();
+                  clearAddress();
+                }}
                 onChange={(event) => {
                   setAddress(event.target.value);
                   if (addressInvalid) setAddressInvalid(false);
@@ -483,6 +504,46 @@ export function UploadWorkflow() {
                   },
                 }}
               />
+
+              {/*
+               * The same Clear the recipes search carries, for the same
+               * reason and in the same word: the page owns one word for this
+               * act, and spelling it a second way here would be two
+               * vocabularies for one idea. It sits inside the field's rule at
+               * the far end of it, so it empties the box it is drawn inside
+               * and nothing else - the button below and the file half are not
+               * its business.
+               *
+               * Only while there is something to clear. A pasted address is
+               * long, and often the wrong one, and getting back to an empty
+               * field should not mean holding backspace over ninety
+               * characters.
+               */}
+              {address ? (
+                <ButtonBase
+                  onClick={clearAddress}
+                  aria-label="Clear the address"
+                  sx={(theme) => ({
+                    flexShrink: 0,
+                    position: "relative",
+                    ...theme.typography.overline,
+                    color: "text.secondary",
+                    transition: "color 120ms",
+                    "&:hover, &:focus-visible": { color: "text.primary" },
+                    // The word is 11px; the target it answers to is not. It
+                    // grows leftwards over the end of the field rather than
+                    // symmetrically, so it cannot take a tap meant for
+                    // anything to its right.
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      inset: "-16px -2px -16px -22px",
+                    },
+                  })}
+                >
+                  Clear
+                </ButtonBase>
+              ) : null}
             </Box>
 
             {/*
@@ -648,8 +709,8 @@ function HandoffNote({ handoff }: { handoff: Handoff }) {
         <>{site} didn&apos;t answer with a web page.</>
       ) : (
         <>
-          {site} only answers a real browser, so there was nothing for Trivet to
-          read.
+          {site} is one of a few sites that only answer a real browser, so there
+          was nothing for Trivet to read.
         </>
       )}{" "}
       Open it yourself, print the page to a PDF — choose Print, then Save as PDF
