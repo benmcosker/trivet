@@ -88,11 +88,23 @@ stays: it costs one call and it is the only thing standing between a teaser and
 a saved half-recipe.
 
 **A 429 is not a refusal.** Food52 is rate limiting, not refusing, and the
-remedy is to wait rather than to print a PDF. It currently falls into
-`refused` and is told to open a browser, which is wrong advice for a site that
-would have answered a minute later. Worth its own first clause - `food52.com
-asked us to slow down. Try again in a minute.` - with no handoff tail, since
-there is nothing to hand off to yet.
+remedy is to wait rather than to print a PDF. It had fallen into `refused` and
+was being told to open a browser, which is wrong advice for a site that would
+have answered a minute later.
+
+Now its own outcome, `busy`, with a note that ends where the others carry the
+print-to-PDF tail - there is nothing to hand off to, because the site said yes,
+later:
+
+> **Try that one again in a minute**
+>
+> food52.com asked us to slow down. Nothing is wrong with the address - paste
+> it again shortly and it should come through.
+
+503 deliberately stays with the refusals. Cloudflare serves its challenge page
+as a 503, so on this path it is overwhelmingly the bot wall talking rather than
+an origin under load, and "try again in a minute" would be a promise nothing is
+going to keep.
 
 ## The architecture this assumes
 

@@ -210,6 +210,8 @@ function refusalSummary(handoff: HandoffPayload): string {
       return `${handoff.host} didn't answer in time.`;
     case "refused":
       return `${handoff.host} only answers a real browser.`;
+    case "busy":
+      return `${handoff.host} asked us to slow down.`;
     default:
       return `${handoff.host} didn't answer with a web page.`;
   }
