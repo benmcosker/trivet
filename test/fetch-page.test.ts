@@ -118,7 +118,7 @@ describe("fetchPage", () => {
   it.each([
     [403, "refused"],
     [401, "refused"],
-    [429, "refused"],
+    [429, "busy"],
     [503, "refused"],
     [521, "refused"],
     [404, "missing"],
@@ -363,5 +363,25 @@ describe("fetchPage redirects", () => {
 
     expect(bytes).toBeNull();
     expect(asked).toEqual(["https://example.com/dish.jpg"]);
+  });
+});
+
+describe("a site that is only busy", () => {
+  it("is not told to print a PDF", async () => {
+    const result = await fetchPage("https://food52.com/recipes/soup", {
+      fetchImpl: answering("", { status: 429 }),
+    });
+
+    // The distinction the copy rests on: a refusal is permanent for this
+    // server and needs a browser, a 429 is the same site saying yes, later.
+    expect(result).toEqual({ ok: false, failure: "busy", status: 429 });
+  });
+
+  it("keeps 503 with the refusals, because Cloudflare serves its wall as one", async () => {
+    const result = await fetchPage("https://example.com/soup", {
+      fetchImpl: answering("", { status: 503 }),
+    });
+
+    expect(result).toEqual({ ok: false, failure: "refused", status: 503 });
   });
 });

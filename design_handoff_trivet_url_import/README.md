@@ -38,6 +38,74 @@ full ingredients and no method - the ingredients are what Google wants, the
 method is what the subscription is for. A parse of that succeeds silently and
 drops half the recipe.
 
+## A wider measurement, 24 October
+
+Twenty-one sites, reached from a residential connection with a browser User-Agent.
+This one tests the door rather than the room: a 200 here says the site answers a
+server, not that the recipe page carries markup. The six in the table above were
+checked for both.
+
+**Answering** - [NYT Cooking](https://cooking.nytimes.com),
+[Bon Appetit](https://www.bonappetit.com), [Epicurious](https://www.epicurious.com),
+[Smitten Kitchen](https://smittenkitchen.com),
+[King Arthur Baking](https://www.kingarthurbaking.com),
+[BBC Good Food](https://www.bbcgoodfood.com), [Delish](https://www.delish.com),
+[Love and Lemons](https://www.loveandlemons.com),
+[America's Test Kitchen](https://www.americastestkitchen.com),
+[PureWow](https://www.purewow.com), [Once Upon a Chef](https://onceuponachef.com),
+[A Pinch of Joy](https://www.apinchofjoy.com)
+
+**Refusing with 403** - [Serious Eats](https://www.seriouseats.com),
+[Simply Recipes](https://www.simplyrecipes.com),
+[Allrecipes](https://www.allrecipes.com), [The Kitchn](https://www.thekitchn.com),
+[Half Baked Harvest](https://www.halfbakedharvest.com),
+[Budget Bytes](https://www.budgetbytes.com),
+[The Woks of Life](https://thewoksoflife.com), [Saveur](https://www.saveur.com)
+
+**Rate limited with 429** - [Food52](https://food52.com)
+
+### The failures are not random, which matters
+
+Every Dotdash Meredith property refused: Serious Eats, Simply Recipes,
+Allrecipes, The Kitchn, four for four. Every Conde Nast title answered - Bon
+Appetit, Epicurious - and so did Hearst's Delish. This is not about paywalls or
+about how big a site is. It is a handful of corporate edge configurations, and
+the independent blogs split along what looks like shared ad-network security
+rather than three separate decisions: Half Baked Harvest, Budget Bytes and The
+Woks of Life refuse, while Smitten Kitchen, Love and Lemons, Once Upon a Chef
+and A Pinch of Joy do not.
+
+That makes a known-bad list tractable. It is a few publishers rather than a long
+tail discovered one disappointment at a time.
+
+### Two corrections to the design above
+
+**NYT Cooking answers, and answered with a usable recipe.** It was the paywall
+example this was designed around and it is not one. The truncated-method case
+the model pass exists to catch is still real - a site can serve ingredients for
+Google and keep the method - but no site has yet been seen doing it. The pass
+stays: it costs one call and it is the only thing standing between a teaser and
+a saved half-recipe.
+
+**A 429 is not a refusal.** Food52 is rate limiting, not refusing, and the
+remedy is to wait rather than to print a PDF. It had fallen into `refused` and
+was being told to open a browser, which is wrong advice for a site that would
+have answered a minute later.
+
+Now its own outcome, `busy`, with a note that ends where the others carry the
+print-to-PDF tail - there is nothing to hand off to, because the site said yes,
+later:
+
+> **Try that one again in a minute**
+>
+> food52.com asked us to slow down. Nothing is wrong with the address - paste
+> it again shortly and it should come through.
+
+503 deliberately stays with the refusals. Cloudflare serves its challenge page
+as a 503, so on this path it is overwhelmingly the bot wall talking rather than
+an origin under load, and "try again in a minute" would be a promise nothing is
+going to keep.
+
 ## The architecture this assumes
 
 Every URL goes through the model. Parsed `schema.org/Recipe` markup is an

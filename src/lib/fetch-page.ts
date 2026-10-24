@@ -56,11 +56,18 @@ export const MAX_REDIRECTS = 5;
  * Why a page did not come back, in the terms the copy is written in.
  *
  * - `refused` - the site answered, and answered no. Print it yourself.
+ * - `busy` - the site asked us to slow down. Wait, then try the same address.
  * - `missing` - there is nothing at that address. Check the address.
  * - `timeout` - no answer in time. Same remedy as a refusal.
  * - `error` - it answered with something that is not a readable page.
+ *
+ * `busy` is apart from `refused` because the remedy is. A refusal is permanent
+ * for this address from this server and the only way through it is a browser;
+ * a 429 is the same site saying yes, later. Food52 answers 429 and would have
+ * answered the recipe a minute afterwards, and sending somebody to print a PDF
+ * for that is work they did not need to do.
  */
-export type PageFailure = "refused" | "missing" | "timeout" | "error";
+export type PageFailure = "refused" | "busy" | "missing" | "timeout" | "error";
 
 export type PageFetchResult =
   | { ok: true; html: string; finalUrl: string }
@@ -68,7 +75,7 @@ export type PageFetchResult =
 
 /** Answered, and answered no. */
 const REFUSING_STATUSES = new Set([
-  401, 402, 403, 405, 406, 429, 451, 503,
+  401, 402, 403, 405, 406, 451, 503,
   // Cloudflare's own range: "web server is returning an unknown error" and
   // friends. These are the bot wall talking, not the origin.
   520, 521, 522, 523, 524, 525, 526, 527, 530,
@@ -76,6 +83,16 @@ const REFUSING_STATUSES = new Set([
 
 /** Nothing there. */
 const MISSING_STATUSES = new Set([404, 410]);
+
+/**
+ * Answered, and answered not just now.
+ *
+ * 429 only. 503 stays with the refusals: Cloudflare serves its challenge page
+ * as a 503, so on this path it is overwhelmingly the bot wall talking rather
+ * than an origin under load, and "try again in a minute" would be a promise
+ * nothing is going to keep.
+ */
+const BUSY_STATUSES = new Set([429]);
 
 /**
  * Hosts a signed-in person must not be able to make this server fetch.
@@ -375,6 +392,7 @@ function decodeHtml(bytes: Uint8Array, contentType: string): string {
 
 function statusFailure(status: number): PageFailure {
   if (MISSING_STATUSES.has(status)) return "missing";
+  if (BUSY_STATUSES.has(status)) return "busy";
   if (REFUSING_STATUSES.has(status)) return "refused";
   return "error";
 }

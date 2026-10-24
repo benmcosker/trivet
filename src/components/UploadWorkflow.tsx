@@ -49,7 +49,7 @@ type RecipeSource = "PDF" | "PHOTO" | "URL";
  * is then a change to one component rather than a deployment of the API.
  */
 type Handoff = {
-  kind: "refused" | "timeout" | "missing" | "error";
+  kind: "refused" | "busy" | "timeout" | "missing" | "error";
   /** `halfbakedharvest.com`. */
   host: string;
   /** `halfbakedharvest.com/soup`: the address as the copy says it back. */
@@ -627,6 +627,18 @@ function HandoffNote({ handoff }: { handoff: Handoff }) {
       {handoff.host}
     </MuiLink>
   );
+
+  if (handoff.kind === "busy") {
+    // Not a handoff at all: the site said yes, later. Printing the page would
+    // be work nobody needed to do, so this note ends without the tail the
+    // others share - there is nothing to hand off to.
+    return (
+      <PaperNote label="Try that one again in a minute" live>
+        {site} asked us to slow down. Nothing is wrong with the address — paste
+        it again shortly and it should come through.
+      </PaperNote>
+    );
+  }
 
   return (
     <PaperNote label="This one needs your browser" live>
