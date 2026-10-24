@@ -550,6 +550,11 @@ export function UploadWorkflow() {
              * The field telling you about itself, rather than the page
              * telling you something - so a line under the field rather than a
              * note.
+             *
+             * Below the line above, not instead of it: that one says what the
+             * field wants, this says what you gave it is not that, and a cook
+             * who has just been corrected can look up one line to see what
+             * they should have pasted.
              */}
             {addressInvalid ? (
               <Typography
@@ -690,13 +695,21 @@ function HandoffNote({ handoff }: { handoff: Handoff }) {
   );
 
   if (handoff.kind === "busy") {
-    // Not a handoff at all: the site said yes, later. Printing the page would
-    // be work nobody needed to do, so this note ends without the tail the
-    // others share - there is nothing to hand off to.
+    /*
+     * Not a handoff at all: the site said yes, later. Printing the page would
+     * be work nobody needed to do, so this note ends without the tail the
+     * others share - there is nothing to hand off to.
+     *
+     * The wording does not say which "later" it is. This covers a 429, where
+     * the site asked us to slow down, and a transient resolver failure, where
+     * nobody asked anything - see `networkFailure` in `fetch-page.ts`. Both
+     * leave the cook in the same position and want the same remedy, so the
+     * copy states that position rather than guessing at the mechanism.
+     */
     return (
       <PaperNote label="Try that one again in a minute" live>
-        {site} asked us to slow down. Nothing is wrong with the address — paste
-        it again shortly and it should come through.
+        We couldn&apos;t get through to {site} just now. Nothing is wrong with
+        the address — paste it again shortly and it should come through.
       </PaperNote>
     );
   }
