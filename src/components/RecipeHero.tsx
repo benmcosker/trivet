@@ -18,8 +18,15 @@ import { RecipePlaceholder } from "./RecipePlaceholder";
 /** Three is what fits on one line beside a 52px title. */
 const MAX_HERO_TAGS = 3;
 
-/** Tall enough to hold the column beside it without either looking stranded. */
-const HERO_PHOTO_HEIGHT = { xs: 240, sm: 340, md: 480 };
+/**
+ * Tall enough to hold the column beside it without either looking stranded.
+ *
+ * 190 at `xs`, where it is stacked above that column rather than beside it:
+ * nothing is left stranded by a shorter picture there, and the 50px it gives
+ * back is 50px of the one screen that decides whether a second dish name is
+ * visible at all.
+ */
+const HERO_PHOTO_HEIGHT = { xs: 190, sm: 340, md: 480 };
 
 /**
  * The newest recipe, given the front page.
@@ -50,9 +57,9 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "1.35fr 1fr" },
-          gap: { xs: 3, md: "52px" },
+          gap: { xs: 2, sm: 3, md: "52px" },
           alignItems: "stretch",
-          pb: "56px",
+          pb: { xs: "32px", sm: "56px" },
           borderBottom: 1,
           borderColor: "divider",
           // The only thing that moves on hover, per the design.
@@ -113,6 +120,15 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
             <Typography
               variant="body1"
               sx={{
+                /*
+                 * Not on a phone. The grid cards below carry no description
+                 * either, so this is the hero arguing for its dish in a voice
+                 * the rest of the page does not use - and it costs about a
+                 * fifth of the screen the first dish has to fit in. The title,
+                 * the meta line and the tags still say more about this recipe
+                 * than any card does.
+                 */
+                display: { xs: "none", sm: "block" },
                 fontSize: "1.25rem",
                 lineHeight: 1.6,
                 color: "text.muted",
