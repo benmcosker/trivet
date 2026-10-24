@@ -227,6 +227,8 @@ enum RecipeSource {
   PDF
   /// A photograph of a recipe card, rather than a PDF of one.
   PHOTO
+  /// A recipe page on the web, read from the address somebody pasted.
+  URL
 }
 
 model Recipe {
