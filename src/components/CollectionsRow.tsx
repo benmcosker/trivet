@@ -7,6 +7,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { TagCount } from "@/lib/collections";
 
+import { RecipeFilters } from "./RecipeFilters";
+
 /**
  * The six named ways into the library.
  *
@@ -15,7 +17,20 @@ import type { TagCount } from "@/lib/collections";
  * same `?tag=` the chips always did, so a collection is a linkable view and the
  * back button undoes it.
  */
-export function CollectionsRow({ collections }: { collections: TagCount[] }) {
+export function CollectionsRow({
+  collections,
+  tags,
+}: {
+  collections: TagCount[];
+  /**
+   * The whole vocabulary, for the door at the head of the row.
+   *
+   * On a phone the `Filters` control is not in the page header - it was the
+   * one thing forcing the title and `New recipe` onto separate rows - so the
+   * shelf label is also the way in to the rest of the tags.
+   */
+  tags: TagCount[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -39,9 +54,20 @@ export function CollectionsRow({ collections }: { collections: TagCount[] }) {
     <Box
       sx={{
         display: "flex",
-        alignItems: "center",
+        // Baseline, not centre. An 11px uppercase label and a 19px serif name
+        // centred on each other sit at two different heights; on a shared
+        // baseline the label reads as the address of the names beside it, and
+        // the collections' rules - which hang 2px under their own text - line
+        // up with each other rather than stepping.
+        alignItems: "baseline",
         gap: { xs: "20px", md: "26px" },
-        mb: { xs: "28px", md: "56px" },
+        /*
+         * 22px of air under this row at `xs`, of which the filters door's own
+         * padding is already supplying 9 - see `RecipeFilters`, where that
+         * padding is what makes an 11px label a 33px target in a row that
+         * cannot let anything overhang it.
+         */
+        mb: { xs: "13px", md: "56px" },
         // Six serif words do not fit across a phone. Scrolling the row keeps
         // them on one line, where wrapping would spend three lines on shelf
         // labels.
@@ -62,7 +88,13 @@ export function CollectionsRow({ collections }: { collections: TagCount[] }) {
         "& > *": { flexShrink: 0 },
       }}
     >
-      <Typography variant="overline" sx={{ color: "text.secondary" }}>
+      <Box sx={{ display: { xs: "contents", md: "none" } }}>
+        <RecipeFilters tags={tags} appearance="shelf" />
+      </Box>
+      <Typography
+        variant="overline"
+        sx={{ display: { xs: "none", md: "block" }, color: "text.secondary" }}
+      >
         Collections
       </Typography>
 
