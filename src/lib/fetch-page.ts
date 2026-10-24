@@ -45,6 +45,14 @@ export const MAX_PAGE_BYTES = 2 * 1024 * 1024;
 export const MAX_IMAGE_FETCH_BYTES = 8 * 1024 * 1024;
 
 /**
+ * How many redirects to follow before giving up.
+ *
+ * Five is more than any recipe site needs and short enough that a loop costs
+ * five requests rather than a timeout.
+ */
+export const MAX_REDIRECTS = 5;
+
+/**
  * Why a page did not come back, in the terms the copy is written in.
  *
  * - `refused` - the site answered, and answered no. Print it yourself.
@@ -104,11 +112,78 @@ export function isPublicHost(hostname: string): boolean {
 }
 
 /**
+ * Follow redirects by hand, checking every hop.
+ *
+ * `redirect: "follow"` would be one line instead of thirty, and it is the
+ * hole this exists to close. The address somebody pastes is checked against
+ * `isPublicHost` before anything is fetched - but a page is free to answer
+ * 302 to wherever it likes, and with the platform following that redirect
+ * internally nothing ever looks at where it went. A public page pointing at
+ * `http://169.254.169.254/` is a request for the deployment's own cloud
+ * metadata, made by the deployment, with the deployment's credentials.
+ *
+ * So every hop is a fetch this code decides to make, and every hop goes
+ * through the same guard as the first one. A redirect somewhere it may not
+ * go is not distinguished from any other unreadable answer: the person
+ * pasted an address and got a page that cannot be read, which is what `error`
+ * already says, and saying more would describe this server's network to
+ * somebody probing it.
+ */
+async function fetchFollowing(
+  address: string,
+  init: RequestInit,
+  fetchImpl: PageFetcher,
+): Promise<{ ok: true; response: Response; finalUrl: string } | { ok: false }> {
+  let current = address;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+    let url: URL;
+    try {
+      url = new URL(current);
+    } catch {
+      return { ok: false };
+    }
+
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return { ok: false };
+    }
+    if (!isPublicHost(url.hostname)) return { ok: false };
+
+    const response = await fetchImpl(url.toString(), {
+      ...init,
+      redirect: "manual",
+    });
+
+    if (response.status < 300 || response.status > 399) {
+      return { ok: true, response, finalUrl: response.url || url.toString() };
+    }
+
+    const location = response.headers.get("location");
+    if (!location) {
+      // A 3xx with nowhere to go is not a redirect, whatever it says.
+      return { ok: true, response, finalUrl: url.toString() };
+    }
+
+    // Relative Locations are common and legal; resolve against this hop.
+    try {
+      current = new URL(location, url).toString();
+    } catch {
+      return { ok: false };
+    }
+  }
+
+  // More hops than any real page needs: a loop, or something playing.
+  return { ok: false };
+}
+
+/**
  * Fetch a page as HTML, or say why not.
  *
  * Redirects are followed - one of the measured sites answers 301 before it
  * answers anything else - and the address that finally answered comes back as
  * `finalUrl`, because that is the one worth saving as the recipe's source.
+ * They are followed by hand rather than by the platform, so that each one is
+ * checked: see `fetchFollowing`.
  */
 export async function fetchPage(
   address: string,
@@ -128,16 +203,22 @@ export async function fetchPage(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetchImpl(address, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": BROWSER_USER_AGENT,
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
+    const hop = await fetchFollowing(
+      address,
+      {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": BROWSER_USER_AGENT,
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
       },
-    });
+      fetchImpl,
+    );
+
+    if (!hop.ok) return { ok: false, failure: "error" };
+    const { response } = hop;
 
     if (!response.ok) {
       return {
@@ -159,7 +240,7 @@ export async function fetchPage(
     return {
       ok: true,
       html: decodeHtml(bytes, contentType),
-      finalUrl: response.url || address,
+      finalUrl: hop.finalUrl,
     };
   } catch (error) {
     return { ok: false, failure: networkFailure(error) };
@@ -190,26 +271,23 @@ export async function fetchImageBytes(
     maxBytes = MAX_IMAGE_FETCH_BYTES,
   } = options;
 
-  let url: URL;
-  try {
-    url = new URL(address);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-  if (!isPublicHost(url.hostname)) return null;
-
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetchImpl(url.toString(), {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: { "User-Agent": BROWSER_USER_AGENT, Accept: "image/*" },
-    });
-    if (!response.ok) return null;
-    return await readCapped(response, maxBytes);
+    // Through the same guarded follower as the page. An image address comes
+    // out of somebody else's markup rather than out of our own hands, so it
+    // is no more trustworthy than the page that advertised it.
+    const hop = await fetchFollowing(
+      address,
+      {
+        signal: controller.signal,
+        headers: { "User-Agent": BROWSER_USER_AGENT, Accept: "image/*" },
+      },
+      fetchImpl,
+    );
+    if (!hop.ok || !hop.response.ok) return null;
+    return await readCapped(hop.response, maxBytes);
   } catch {
     return null;
   } finally {

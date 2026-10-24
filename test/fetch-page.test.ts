@@ -38,6 +38,39 @@ function throwing(error: unknown): PageFetcher {
   };
 }
 
+/**
+ * A fetcher that redirects along a given chain, recording every address it
+ * was actually asked for.
+ *
+ * The record is the point: the guard is only worth anything if a hop it
+ * refuses is a request this code never makes, and a test that only checked
+ * the return value would pass just as well if the request went out and the
+ * answer was thrown away.
+ */
+function redirecting(
+  chain: Record<string, string>,
+  asked: string[],
+): PageFetcher {
+  return async (url) => {
+    asked.push(url);
+    const to = chain[url];
+    if (to) {
+      const response = new Response(null, {
+        status: 302,
+        headers: { location: to },
+      });
+      Object.defineProperty(response, "url", { value: url });
+      return response;
+    }
+    const response = new Response("<html>arrived</html>", {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+    Object.defineProperty(response, "url", { value: url });
+    return response;
+  };
+}
+
 describe("fetchPage", () => {
   it("returns the page and the address that answered", async () => {
     const result = await fetchPage("https://example.com/soup", {
@@ -228,5 +261,107 @@ describe("fetchImageBytes", () => {
         fetchImpl: answering("secrets"),
       }),
     ).toBeNull();
+  });
+});
+
+describe("fetchPage redirects", () => {
+  it("follows a redirect and reports where it ended up", async () => {
+    const asked: string[] = [];
+    const result = await fetchPage("https://example.com/soup", {
+      fetchImpl: redirecting(
+        { "https://example.com/soup": "https://example.com/recipes/soup" },
+        asked,
+      ),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.finalUrl).toBe("https://example.com/recipes/soup");
+    }
+    expect(asked).toEqual([
+      "https://example.com/soup",
+      "https://example.com/recipes/soup",
+    ]);
+  });
+
+  it("resolves a relative Location against the hop that sent it", async () => {
+    const asked: string[] = [];
+    const result = await fetchPage("https://example.com/a/b", {
+      fetchImpl: redirecting({ "https://example.com/a/b": "../soup" }, asked),
+    });
+
+    expect(result.ok).toBe(true);
+    expect(asked[1]).toBe("https://example.com/soup");
+  });
+
+  it("never requests a redirect into the private range", async () => {
+    const asked: string[] = [];
+    const result = await fetchPage("https://example.com/soup", {
+      fetchImpl: redirecting(
+        {
+          "https://example.com/soup":
+            "http://169.254.169.254/latest/meta-data/",
+        },
+        asked,
+      ),
+    });
+
+    expect(result).toEqual({ ok: false, failure: "error" });
+    // The guard is worthless if the request went out anyway.
+    expect(asked).toEqual(["https://example.com/soup"]);
+  });
+
+  it("never requests a redirect to the loopback", async () => {
+    const asked: string[] = [];
+    await fetchPage("https://example.com/soup", {
+      fetchImpl: redirecting(
+        { "https://example.com/soup": "http://localhost:3000/admin" },
+        asked,
+      ),
+    });
+
+    expect(asked).toEqual(["https://example.com/soup"]);
+  });
+
+  it("refuses a redirect off http into another scheme", async () => {
+    const asked: string[] = [];
+    const result = await fetchPage("https://example.com/soup", {
+      fetchImpl: redirecting(
+        { "https://example.com/soup": "file:///etc/passwd" },
+        asked,
+      ),
+    });
+
+    expect(result).toEqual({ ok: false, failure: "error" });
+    expect(asked).toEqual(["https://example.com/soup"]);
+  });
+
+  it("gives up on a redirect loop rather than hanging", async () => {
+    const asked: string[] = [];
+    const result = await fetchPage("https://example.com/a", {
+      fetchImpl: redirecting(
+        {
+          "https://example.com/a": "https://example.com/b",
+          "https://example.com/b": "https://example.com/a",
+        },
+        asked,
+      ),
+    });
+
+    expect(result).toEqual({ ok: false, failure: "error" });
+    expect(asked.length).toBeLessThanOrEqual(6);
+  });
+
+  it("guards the image fetch's redirects too", async () => {
+    const asked: string[] = [];
+    const bytes = await fetchImageBytes("https://example.com/dish.jpg", {
+      fetchImpl: redirecting(
+        { "https://example.com/dish.jpg": "http://10.0.0.1/secret.jpg" },
+        asked,
+      ),
+    });
+
+    expect(bytes).toBeNull();
+    expect(asked).toEqual(["https://example.com/dish.jpg"]);
   });
 });
