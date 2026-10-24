@@ -9,3 +9,9 @@ package-lock.json
 # Globbed rather than listed: this is the second such folder and the pass
 # after this one will bring a third.
 design_handoff_*/
+
+# Saved pages the markup parser is tested against. They are specimens, not
+# source: the point of a fixture is the shape it arrived in - a block of JSON
+# with a trailing comma, an attribute in single quotes - and formatting them
+# would quietly repair exactly what they exist to exercise.
+test/fixtures/*.html

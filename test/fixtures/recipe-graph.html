@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+  The common WordPress/Yoast shape: one ld+json block holding an `@graph`
+  array, with the Recipe nested among a WebSite, a WebPage and a Person. The
+  recipe names no publisher of its own, so the site's name has to come from
+  the WebSite node beside it rather than from the recipe.
+
+  The malformed block above it is deliberate. Sites inline JSON that has been
+  through a templating engine and lost a quote, and one bad block must not
+  cost the page its recipe.
+
+  Written by hand; not a copy of any real page.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sheet Pan Harissa Chicken</title>
+    <script type='application/ld+json' class="pretend-breadcrumbs">
+      { "@context": "https://schema.org", "@type": "BreadcrumbList", }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://pretendblog.example/#website",
+            "url": "https://pretendblog.example/",
+            "name": "Pretend Blog"
+          },
+          {
+            "@type": "WebPage",
+            "@id": "https://pretendblog.example/harissa-chicken/",
+            "name": "Sheet Pan Harissa Chicken",
+            "isPartOf": { "@id": "https://pretendblog.example/#website" }
+          },
+          {
+            "@type": "Person",
+            "@id": "https://pretendblog.example/#/schema/person/1",
+            "name": "A Cook"
+          },
+          {
+            "@type": "Recipe",
+            "name": "Sheet Pan Harissa Chicken",
+            "description": "One tray, forty minutes.",
+            "image": {
+              "@type": "ImageObject",
+              "url": "https://cdn.pretendblog.example/harissa-chicken.jpg",
+              "width": 1200,
+              "height": 1200
+            },
+            "author": {
+              "@id": "https://pretendblog.example/#/schema/person/1"
+            },
+            "recipeYield": "4",
+            "cookTime": "PT40M",
+            "recipeIngredient": [
+              "8 chicken thighs",
+              "3 tbsp harissa",
+              "2 red onions, cut into wedges",
+              "1 lemon, halved"
+            ],
+            "recipeInstructions": [
+              { "@type": "HowToStep", "text": "Heat the oven to 200C." },
+              {
+                "@type": "HowToStep",
+                "text": "Toss everything together on a sheet pan."
+              },
+              {
+                "@type": "HowToStep",
+                "text": "Roast for forty minutes, until the skin crisps."
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Sheet Pan Harissa Chicken</h1>
+  </body>
+</html>
