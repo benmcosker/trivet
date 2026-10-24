@@ -2,9 +2,25 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
+import { COLLECTION_SLUGS } from "./collections";
 import type { SupportedImageType } from "./image-inspect";
 import { hostLabel } from "./recipe-address";
 import { OVEN_TEMP_RANGE, type ExtractedRecipe } from "./recipe-schema";
+
+/**
+ * The collections row's vocabulary, in the words a tag is written in.
+ *
+ * Derived from `COLLECTION_SLUGS` rather than restated, so the prompt cannot
+ * drift from the row it exists to fill. A tag is matched to a collection by
+ * slug, so "Weeknight" and "weeknight" are the same shelf but "Quick" is not
+ * one at all - which is the whole reason this is in the prompt.
+ */
+const COLLECTION_NAMES = COLLECTION_SLUGS.map((slug) =>
+  slug
+    .split("-")
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" "),
+).join(", ");
 
 /**
  * The shape Claude is asked to return.
@@ -102,7 +118,13 @@ const extractionSchema = z.object({
     .array(z.string())
     .describe(
       "3-6 short labels describing cuisine, method, meal or dietary fit, " +
-        "e.g. 'Italian', 'Sheet Pan', 'Vegetarian'. Title Case.",
+        "e.g. 'Italian', 'Sheet Pan', 'Vegetarian'. Title Case. " +
+        "Where one of these fits the dish, prefer the exact word: " +
+        COLLECTION_NAMES +
+        ". These are the shelves the library is browsed by, so a dish that " +
+        "belongs on one and is labelled with a synonym is a dish nobody " +
+        "finds. Do not force them: a recipe that is none of these gets none " +
+        "of them, and an untrue label is worse than a missing one.",
     ),
   notes: z.string().nullable().describe("Any tips or storage notes"),
   confidence: z
