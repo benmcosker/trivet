@@ -144,6 +144,19 @@ describe("fetchPage", () => {
     expect(result).toEqual({ ok: false, failure: "missing" });
   });
 
+  it("treats a resolver that is only stalling as the site being busy", async () => {
+    // EAI_AGAIN is "ask me later", not "no such name". Calling it `missing`
+    // told the cook to check an address that was never wrong.
+    const error = new TypeError("fetch failed");
+    (error as { cause?: unknown }).cause = { code: "EAI_AGAIN" };
+
+    const result = await fetchPage("https://halfbakedharvest.com/soup", {
+      fetchImpl: throwing(error),
+    });
+
+    expect(result).toEqual({ ok: false, failure: "busy" });
+  });
+
   it("reads an abort as a timeout", async () => {
     const aborted = new Error("aborted");
     aborted.name = "AbortError";

@@ -404,7 +404,19 @@ function networkFailure(error: unknown): PageFailure {
   // resolve is the same outcome for the person as a 404: there is nothing at
   // that address, and nothing to print.
   const code = (error as { cause?: { code?: string } })?.cause?.code;
-  if (code === "ENOTFOUND" || code === "EAI_AGAIN") return "missing";
+  if (code === "ENOTFOUND") return "missing";
+
+  /*
+   * `EAI_AGAIN` is not that, though it arrives at the same place: it is the
+   * resolver saying "ask me later", about a name that is very likely fine.
+   * Read as `missing` it produced "Nothing is at halfbakedharvest.com/soup.
+   * Check the address" about a site that plainly exists, which sends the cook
+   * to proofread an address that was never wrong.
+   *
+   * `busy` already means the thing that is true here - the address is good,
+   * try it shortly - so this needs no new outcome, only the right one.
+   */
+  if (code === "EAI_AGAIN") return "busy";
   if (code === "UND_ERR_HEADERS_TIMEOUT" || code === "UND_ERR_BODY_TIMEOUT") {
     return "timeout";
   }

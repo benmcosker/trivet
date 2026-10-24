@@ -547,9 +547,38 @@ export function UploadWorkflow() {
             </Box>
 
             {/*
+             * The link half's description, the sibling of the file half's.
+             *
+             * Both halves name a shape and then a bound. The file half's
+             * bound is a limit (`Up to 20 MB.`); this one's is a generosity,
+             * and the asymmetry is the point - a file has to be small enough,
+             * a link only has to be a recipe.
+             *
+             * `One recipe` is doing the work: it excludes the search result,
+             * the Pinterest pin and the Instagram reel without scolding
+             * anybody, and those are the pastes that fail worst, because they
+             * extract *something* and it is confident and wrong.
+             *
+             * What it must never say is that almost any cooking site can be
+             * read automatically - eight of twenty-one measured sites refuse
+             * a server outright. It says where the recipe can end up, which
+             * is true of all of them: twelve by paste, the rest by the
+             * handoff. A sentence about the destination cannot be falsified
+             * by somebody's CDN.
+             */}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              The page for one recipe. Almost any cooking site.
+            </Typography>
+
+            {/*
              * The field telling you about itself, rather than the page
              * telling you something - so a line under the field rather than a
              * note.
+             *
+             * Below the line above, not instead of it: that one says what the
+             * field wants, this says what you gave it is not that, and a cook
+             * who has just been corrected can look up one line to see what
+             * they should have pasted.
              */}
             {addressInvalid ? (
               <Typography
@@ -690,13 +719,21 @@ function HandoffNote({ handoff }: { handoff: Handoff }) {
   );
 
   if (handoff.kind === "busy") {
-    // Not a handoff at all: the site said yes, later. Printing the page would
-    // be work nobody needed to do, so this note ends without the tail the
-    // others share - there is nothing to hand off to.
+    /*
+     * Not a handoff at all: the site said yes, later. Printing the page would
+     * be work nobody needed to do, so this note ends without the tail the
+     * others share - there is nothing to hand off to.
+     *
+     * The wording does not say which "later" it is. This covers a 429, where
+     * the site asked us to slow down, and a transient resolver failure, where
+     * nobody asked anything - see `networkFailure` in `fetch-page.ts`. Both
+     * leave the cook in the same position and want the same remedy, so the
+     * copy states that position rather than guessing at the mechanism.
+     */
     return (
       <PaperNote label="Try that one again in a minute" live>
-        {site} asked us to slow down. Nothing is wrong with the address — paste
-        it again shortly and it should come through.
+        We couldn&apos;t get through to {site} just now. Nothing is wrong with
+        the address — paste it again shortly and it should come through.
       </PaperNote>
     );
   }
