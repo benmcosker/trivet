@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+  A page that publishes its Recipe at the top level of an ld+json block.
+
+  Written by hand rather than saved from a real site, and shaped to be
+  awkward in the three ways real pages are: the script tag carries extra
+  attributes, the block holds an array rather than one object, and the first
+  Recipe in that array is a stub. One of the sites measured for this feature
+  returns exactly that - two Recipe matches in one block, the first carrying
+  little more than a name - which is why the parser takes the first complete
+  one rather than the first one.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Leek and Potato Soup - Pretend Kitchen</title>
+    <meta property="og:site_name" content="Not The Right Answer" />
+    <meta
+      property="og:image"
+      content="https://cdn.example.com/og-fallback.jpg"
+    />
+    <script
+      type="application/ld+json"
+      class="pretend-schema"
+      data-generator="pretend-recipe-plugin"
+    >
+      [
+        {
+          "@context": "https://schema.org",
+          "@type": "Recipe",
+          "name": "Leek and Potato Soup"
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": ["Recipe", "NewsArticle"],
+          "name": "Leek and Potato Soup",
+          "description": "A thick winter soup.",
+          "image": [
+            "https://cdn.example.com/soup-1x1.jpg",
+            "https://cdn.example.com/soup-4x3.jpg"
+          ],
+          "publisher": { "@type": "Organization", "name": "Pretend Kitchen" },
+          "recipeYield": "4 servings",
+          "prepTime": "PT15M",
+          "cookTime": "PT30M",
+          "recipeIngredient": [
+            "3 leeks, trimmed and sliced",
+            "500 g floury potatoes, peeled and diced",
+            "1 litre vegetable stock",
+            "2 tbsp butter"
+          ],
+          "recipeInstructions": [
+            {
+              "@type": "HowToStep",
+              "text": "Melt the butter and soften the leeks for ten minutes."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Add the potatoes and stock, and simmer for twenty minutes."
+            },
+            {
+              "@type": "HowToStep",
+              "text": "Blend until smooth and season."
+            }
+          ]
+        }
+      ]
+    </script>
+  </head>
+  <body>
+    <h1>Leek and Potato Soup</h1>
+    <p>A thick winter soup.</p>
+  </body>
+</html>

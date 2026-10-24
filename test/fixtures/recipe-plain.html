@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  A page with no ld+json at all - the case where the model is handed the
+  page's readable text instead of its markup. Carries the things that must
+  not survive the strip: a script whose source mentions a recipe, a style
+  block, a comment, and some navigation.
+
+  Written by hand; not a copy of any real page.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Buttermilk Pancakes &ndash; Old Blog</title>
+    <style>
+      .recipe-card {
+        color: #333;
+      }
+    </style>
+    <script>
+      window.recipeAnalytics = { name: "pancakes", tracked: true };
+    </script>
+  </head>
+  <body>
+    <nav><a href="/">Home</a> <a href="/recipes">Recipes</a></nav>
+    <!-- a comment that is not the recipe -->
+    <article>
+      <h1>Buttermilk Pancakes</h1>
+      <p>Makes about twelve, and the batter keeps overnight.</p>
+      <h2>Ingredients</h2>
+      <ul>
+        <li>250 g plain flour</li>
+        <li>2 tsp baking powder</li>
+        <li>350 ml buttermilk</li>
+        <li>2 eggs</li>
+        <li>1 tbsp caster sugar</li>
+      </ul>
+      <h2>Method</h2>
+      <ol>
+        <li>Whisk the dry ingredients together.</li>
+        <li>Beat the eggs into the buttermilk, then fold the two together.</li>
+        <li>
+          Cook ladlefuls in a buttered pan until the tops bubble &amp; set.
+        </li>
+      </ol>
+    </article>
+    <footer>&copy; Old Blog</footer>
+  </body>
+</html>
