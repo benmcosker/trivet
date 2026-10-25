@@ -1,18 +1,13 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
-import {
-  MACRO_KEYS,
-  type MacroKey,
-  type NutritionBasis,
-} from "@/lib/recipe-schema";
+import { MACRO_KEYS, type MacroKey } from "@/lib/recipe-schema";
 
 export type RecipeNutritionSource = {
   caloriesKcal?: number | null;
   proteinG?: number | null;
   carbsG?: number | null;
   fatG?: number | null;
-  nutritionBasis?: NutritionBasis | null;
 };
 
 const UNIT: Record<MacroKey, string> = {
@@ -23,57 +18,47 @@ const UNIT: Record<MacroKey, string> = {
 };
 
 /**
- * Macros for one serving, and - inseparably - where they came from.
+ * Macros for one serving, as the source stated them.
  *
- * The two bases are not a detail of the same thing. A printed figure is the
- * card's claim, which somebody can check against the card. An estimated one
- * is arithmetic Claude did over the ingredient list, and nothing in the
- * library can verify it. They are stored in the same four columns and they
- * would render identically if this component let them, which is why it does
- * not:
+ * No caption saying so. Every other field on this page is what the recipe
+ * said and none of them announces it, so a line here would imply the oven
+ * temperature is the less certain of the two - and it would be a caption,
+ * which is the part of a page a reader skips, so it would buy nothing where
+ * it mattered.
  *
- * - every estimated number wears a `~`, so the hedge is on the figure rather
- *   than in a line underneath it that a reader skips;
- * - the heading says `estimated`, so a glance at the section is enough;
- * - the sentence below names Claude, because "estimated" alone reads like the
- *   publisher estimated it.
+ * The heading stays. This page carries a servings scaler, and these figures
+ * deliberately do not move when it is used: per serving is per serving. A
+ * per-recipe total read as a per-serving figure is the error that makes two
+ * dishes uncomparable while neither looks wrong alone, and two words at the
+ * top are what rule it out.
  *
- * Three marks for one fact is not redundancy here. Somebody counting carbs is
- * reading the number and nothing else, and a caption is the part of a page
- * that gets skipped.
+ * Absent rather than empty when there is nothing to show. A heading that
+ * failed to fill is what would read as a gap, and most of the library is
+ * photographed cards, which rarely print any of this.
  */
 export function RecipeNutrition({ recipe }: { recipe: RecipeNutritionSource }) {
-  const basis = recipe.nutritionBasis;
-  if (!basis) return null;
-
-  const estimated = basis === "ESTIMATED";
   const parts = MACRO_KEYS.filter((key) => recipe[key] != null).map(
-    (key) => `${estimated ? "~" : ""}${recipe[key]} ${UNIT[key]}`,
+    (key) => `${recipe[key]} ${UNIT[key]}`,
   );
 
-  // The CHECK constraint makes this unreachable from the database, but this
-  // component also renders unsaved extractions on the review screen.
   if (parts.length === 0) return null;
 
   return (
-    <Box sx={{ mt: 2.5 }}>
+    /*
+     * 32px, not the 20 the blocks above use. This sits under the ingredient
+     * amounts and, on a scaled recipe, under the note explaining what
+     * scaling did not touch - at 20px it reads as a rider on that sentence,
+     * or unscaled, as a fourth ingredient row. The wider gap ends the
+     * ingredients before these begin. A rule would do the same job and
+     * weighs the same as the ingredient dividers; the air is enough.
+     */
+    <Box sx={{ mt: 4 }}>
       <Typography variant="overline" component="p" color="text.secondary">
-        Per serving{estimated ? ", estimated" : ""}
+        Per serving
       </Typography>
 
       <Typography variant="body2" sx={{ mt: 0.5 }}>
         {parts.join(" · ")}
-      </Typography>
-
-      <Typography
-        variant="caption"
-        component="p"
-        color="text.secondary"
-        sx={{ mt: 0.5 }}
-      >
-        {estimated
-          ? "Worked out by Claude from the ingredients. The recipe does not say, so treat these as a rough guide rather than a measurement."
-          : "As stated by the recipe."}
       </Typography>
     </Box>
   );

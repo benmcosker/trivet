@@ -37,9 +37,6 @@ export const OVEN_TEMP_RANGE: Record<
   CELSIUS: { min: 40, max: 315 },
 };
 
-export const NUTRITION_BASES = ["PRINTED", "ESTIMATED"] as const;
-export type NutritionBasis = (typeof NUTRITION_BASES)[number];
-
 /**
  * Per-serving bounds for each macro, mirroring the CHECK constraint.
  *
@@ -80,7 +77,6 @@ const recipeShape = z.object({
   proteinG: z.number().int().min(0).max(500).nullable().optional(),
   carbsG: z.number().int().min(0).max(1000).nullable().optional(),
   fatG: z.number().int().min(0).max(500).nullable().optional(),
-  nutritionBasis: z.enum(NUTRITION_BASES).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   instructions: z.array(z.string().trim().min(1)).max(100).default([]),
   ingredients: z.array(ingredientInput).max(200).default([]),
@@ -120,50 +116,7 @@ function checkOvenTemp(
   }
 }
 
-/**
- * A macro and its basis stand or fall together, the same bargain the oven
- * temperature strikes with its unit.
- *
- * The asymmetry in the two messages is deliberate. Macros without a basis is
- * a programming mistake - every path that sets them knows where they came
- * from - so it reads as one. A basis without macros is something a person can
- * do by clearing the fields on the edit form, so it reads as instruction.
- */
-function checkNutrition(
-  recipe: {
-    caloriesKcal?: number | null;
-    proteinG?: number | null;
-    carbsG?: number | null;
-    fatG?: number | null;
-    nutritionBasis?: NutritionBasis | null;
-  },
-  ctx: z.RefinementCtx,
-): void {
-  const hasMacro = MACRO_KEYS.some((key) => recipe[key] != null);
-
-  if (hasMacro && !recipe.nutritionBasis) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["nutritionBasis"],
-      message:
-        "Nutrition has to say where it came from: PRINTED if the source " +
-        "stated it, ESTIMATED if Claude worked it out.",
-    });
-    return;
-  }
-
-  if (!hasMacro && recipe.nutritionBasis) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["nutritionBasis"],
-      message: "Remove the nutrition basis, or give at least one figure.",
-    });
-  }
-}
-
-export const recipeInput = recipeShape
-  .superRefine(checkOvenTemp)
-  .superRefine(checkNutrition);
+export const recipeInput = recipeShape.superRefine(checkOvenTemp);
 
 export type RecipeInput = z.infer<typeof recipeInput>;
 export type IngredientInput = z.infer<typeof ingredientInput>;
@@ -174,7 +127,6 @@ export const extractedRecipe = recipeShape
     /** The model's own confidence that this PDF was a recipe at all. */
     confidence: z.enum(["high", "medium", "low"]).default("medium"),
   })
-  .superRefine(checkOvenTemp)
-  .superRefine(checkNutrition);
+  .superRefine(checkOvenTemp);
 
 export type ExtractedRecipe = z.infer<typeof extractedRecipe>;

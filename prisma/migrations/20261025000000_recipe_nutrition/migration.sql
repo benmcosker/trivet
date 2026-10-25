@@ -1,37 +1,28 @@
--- Macros per serving, and where they came from.
+-- Macros per serving, as the source stated them.
 --
--- The basis column is the point of this migration as much as the numbers are.
--- PRINTED and ESTIMATED are stored the same way and mean entirely different
--- things to somebody cooking from them, so the database refuses to hold a
--- macro that does not say which it is.
-CREATE TYPE "NutritionBasis" AS ENUM ('PRINTED', 'ESTIMATED');
-
+-- Transcribed, never calculated: if the card or the page does not say,
+-- Trivet does not say. There is deliberately no column recording where a
+-- figure came from. The only distinction worth drawing would have been
+-- stated versus computed, and nothing computes these - a figure on a card,
+-- a figure in a page's structured data and a figure a cook typed off their
+-- own scales are the same kind of claim, and the row already carries
+-- `source`, `sourceName` and `sourceUrl` for anybody who wants to know which.
 ALTER TABLE "recipe"
-  ADD COLUMN "caloriesKcal"   INTEGER,
-  ADD COLUMN "proteinG"       INTEGER,
-  ADD COLUMN "carbsG"         INTEGER,
-  ADD COLUMN "fatG"           INTEGER,
-  ADD COLUMN "nutritionBasis" "NutritionBasis";
+  ADD COLUMN "caloriesKcal" INTEGER,
+  ADD COLUMN "proteinG"     INTEGER,
+  ADD COLUMN "carbsG"       INTEGER,
+  ADD COLUMN "fatG"         INTEGER;
 
--- A macro with no basis is a number nobody can read, and a basis with no
--- macros is a claim about nothing. Either the row says both or it says
--- neither - the same bargain `ovenTemp` and `ovenTempUnit` already strike.
-ALTER TABLE "recipe"
-  ADD CONSTRAINT "recipe_nutrition_basis_present"
-  CHECK (
-    ("nutritionBasis" IS NULL) = (
-      "caloriesKcal" IS NULL
-      AND "proteinG" IS NULL
-      AND "carbsG" IS NULL
-      AND "fatG" IS NULL
-    )
-  );
-
--- A backstop, not a nutritional opinion. It exists to catch a per-recipe total
--- stored as a per-serving figure, which is the error that makes two dishes
--- uncomparable, and an extraction that has put grams in the calories column.
--- Generous on purpose: a rich single-serving dish can genuinely reach four
--- figures of calories, and these only refuse the impossible.
+-- A backstop, not a nutritional opinion. It exists to catch a per-recipe
+-- total stored as a per-serving figure, which is the error that makes two
+-- dishes uncomparable while neither of them looks wrong on its own, and an
+-- extraction that has put grams in the calories column. Generous on purpose:
+-- a rich single serving can genuinely reach four figures of calories, so
+-- these refuse only the impossible.
+--
+-- A partial set is not impossible. A card that prints protein and nothing
+-- else is a real card, and three nulls beside one figure is the honest
+-- record of it.
 ALTER TABLE "recipe"
   ADD CONSTRAINT "recipe_nutrition_plausible"
   CHECK (

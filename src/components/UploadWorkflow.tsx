@@ -300,15 +300,13 @@ export function UploadWorkflow() {
       ovenTempUnit: recipe.ovenTempUnit ?? null,
       yieldNote: recipe.yieldNote ?? null,
       equipment: recipe.equipment,
-      // Carried through with its basis, never without it. The review screen
-      // is where an estimate is most likely to be mistaken for the card's
-      // own figures, because everything beside it on this screen was read
-      // off the card.
+      // The review screen is the only check these figures get: nothing
+      // downstream can tell a misread 820 from a printed 620, so this is
+      // where a person has to see them beside the card they came off.
       caloriesKcal: recipe.caloriesKcal ?? null,
       proteinG: recipe.proteinG ?? null,
       carbsG: recipe.carbsG ?? null,
       fatG: recipe.fatG ?? null,
-      nutritionBasis: recipe.nutritionBasis ?? null,
       // Filled by the URL path, null from a file, which has no address to
       // carry. Provenance is editable data on the recipe and nothing in the
       // chrome: the person is not told which path read it, because the only

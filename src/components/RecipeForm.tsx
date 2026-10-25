@@ -70,37 +70,14 @@ export function RecipeForm({
     initial.ovenTempUnit ?? "FAHRENHEIT",
   );
   const [yieldNote, setYieldNote] = useState(initial.yieldNote ?? "");
-  /**
-   * The four macros, plus the basis they are now held on.
-   *
-   * Typing a figure here makes it PRINTED even if Claude had estimated it,
-   * because a person has just stated it and `ESTIMATED` means specifically
-   * "nobody checked this". The comparison is against what the form opened
-   * with rather than against the basis alone: editing a recipe's title must
-   * not quietly promote its estimates to printed figures, and that is what a
-   * flat `basis = PRINTED on submit` would do.
-   */
+  /** The four macros as numbers, or nulls where the field was left empty. */
   function macroFields() {
-    const values = Object.fromEntries(
+    return Object.fromEntries(
       MACRO_KEYS.map((key) => [
         key,
         macros[key] === "" ? null : Number(macros[key]),
       ]),
     ) as Record<MacroKey, number | null>;
-
-    const touched = MACRO_KEYS.some(
-      (key) => values[key] !== (initial[key] ?? null),
-    );
-    const hasAny = MACRO_KEYS.some((key) => values[key] != null);
-
-    return {
-      ...values,
-      nutritionBasis: !hasAny
-        ? null
-        : touched
-          ? ("PRINTED" as const)
-          : (initial.nutritionBasis ?? ("PRINTED" as const)),
-    };
   }
 
   const [macros, setMacros] = useState<Record<MacroKey, string>>(
@@ -310,24 +287,6 @@ export function RecipeForm({
                   ))}
                 </TextField>
               </Grid>
-              {MACRO_KEYS.map((key) => (
-                <Grid size={{ xs: 6, sm: 3 }} key={key}>
-                  <TextField
-                    label={MACRO_RANGE[key].label}
-                    type="number"
-                    value={macros[key]}
-                    onChange={(e) =>
-                      setMacros((m) => ({ ...m, [key]: e.target.value }))
-                    }
-                    helperText={
-                      key === "caloriesKcal"
-                        ? "Per serving, kcal"
-                        : "Per serving, g"
-                    }
-                    fullWidth
-                  />
-                </Grid>
-              ))}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Yield"
@@ -354,6 +313,24 @@ export function RecipeForm({
                   fullWidth
                 />
               </Grid>
+              {MACRO_KEYS.map((key) => (
+                <Grid size={{ xs: 6, sm: 3 }} key={key}>
+                  <TextField
+                    label={MACRO_RANGE[key].label}
+                    type="number"
+                    value={macros[key]}
+                    onChange={(e) =>
+                      setMacros((m) => ({ ...m, [key]: e.target.value }))
+                    }
+                    helperText={
+                      key === "caloriesKcal"
+                        ? "Per serving, kcal"
+                        : "Per serving, g"
+                    }
+                    fullWidth
+                  />
+                </Grid>
+              ))}
             </Grid>
 
             <Box>
