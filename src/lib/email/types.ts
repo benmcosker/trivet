@@ -14,9 +14,11 @@ export type EmailMessage = {
   /**
    * Plain text only, deliberately.
    *
-   * The one email this app sends is a link and two sentences around it. HTML
-   * would mean a second copy of the same words to keep in step, a template to
-   * render, and the part of email that most reliably lands in spam.
+   * Both emails this app sends - a password reset and an invitation - are a
+   * link and a few sentences around it. HTML would mean a second copy of the
+   * same words to keep in step, a template to render, and the part of email
+   * that most reliably lands in spam. An invitation from a stranger's address
+   * is already the mail most likely to be filtered; it does not need help.
    */
   text: string;
 };

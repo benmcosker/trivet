@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createInvite, inviteLink, revokeInvite } from "@/lib/invites";
+import {
+  createInvite,
+  emailInvite,
+  inviteLink,
+  revokeInvite,
+  type InviteEmailStatus,
+} from "@/lib/invites";
+import { prisma } from "@/lib/db";
 import {
   renameHousehold,
   saveOwnPhone,
@@ -35,6 +42,13 @@ export type CreatedInvite = {
   code: string;
   /** `/sign-up?code=...` on this deployment's own origin - see `inviteLink`. */
   link: string;
+  /** The address it was made for, when there is one. */
+  email: string | null;
+  /**
+   * What happened when it was mailed there. Null when no address was given,
+   * so there was nothing to send.
+   */
+  emailed: InviteEmailStatus | null;
   expiresAt: string;
   kind: InviteKind;
   /** The name the new household will take, when the sender chose one. */
@@ -85,17 +99,76 @@ export async function createInviteAction(
     };
   }
 
+  // Mailed only after the code exists, and never allowed to undo it: a
+  // provider that refuses is reported back beside a working code the person
+  // can still text or copy.
+  const emailed = trimmed
+    ? await emailInvite({
+        code: invite.code,
+        email: trimmed,
+        inviterName: user.name,
+        kind,
+        householdName: kind === "outside" ? householdName : null,
+      })
+    : null;
+
   revalidatePath("/household");
   return {
     ok: true,
     invite: {
       code: invite.code,
       link: inviteLink(invite.code),
+      email: trimmed || null,
+      emailed,
       expiresAt: invite.expiresAt.toISOString(),
       kind,
       householdName: kind === "outside" ? householdName?.trim() || null : null,
     },
   };
+}
+
+export type EmailAgainResult =
+  { ok: true; status: InviteEmailStatus } | { ok: false; error: string };
+
+/**
+ * Mail a pending invite again, for when the first one went to spam.
+ *
+ * Only your own invites, only ones still usable, and only to the address the
+ * invite was made for - never a new one. Changing the address would change
+ * who the code is pinned to, and that is a new invite, not a resend.
+ */
+export async function emailInviteAgainAction(
+  inviteId: string,
+): Promise<EmailAgainResult> {
+  const user = await requireHousehold();
+
+  const invite = await prisma.invite.findFirst({
+    where: {
+      id: inviteId,
+      createdById: user.id,
+      redeemedAt: null,
+      expiresAt: { gt: new Date() },
+      email: { not: null },
+    },
+    select: {
+      code: true,
+      email: true,
+      householdId: true,
+      householdName: true,
+    },
+  });
+  if (!invite?.email) {
+    return { ok: false, error: "That invite can no longer be emailed." };
+  }
+
+  const status = await emailInvite({
+    code: invite.code,
+    email: invite.email,
+    inviterName: user.name,
+    kind: invite.householdId ? "family" : "outside",
+    householdName: invite.householdName,
+  });
+  return { ok: true, status };
 }
 
 export type RenameResult =

@@ -1,5 +1,6 @@
 /**
- * The one email this app sends.
+ * The password reset email - one of two this app sends, beside the invitation
+ * in `invite.ts`.
  *
  * Kept apart from the transport for the same reason `sms/message.ts` is: what
  * the mail says is a question about this app, and it is the half worth testing
@@ -16,10 +17,10 @@ export const RESET_TOKEN_TTL_SECONDS = 60 * 60;
  *
  * The expiry is stated because a link that has quietly gone stale is
  * indistinguishable from one that never worked, and "it didn't work" is the
- * report you get either way. The did-not-ask line is there because this is the
- * one message the app sends to an address without the account holder having
- * done anything in the app first - the only mail here that a stranger could
- * cause to arrive.
+ * report you get either way. The did-not-ask line is there because this
+ * reaches an address without the account holder having done anything in the
+ * app first, so a stranger could cause it to arrive. The invitation is the
+ * other mail like that, and carries the same line for the same reason.
  */
 export function resetPasswordEmail({
   url,

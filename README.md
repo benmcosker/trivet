@@ -56,10 +56,11 @@ the same URL and this command does not need editing every time.
   and a phone number. A recipe belongs to the household that added it and is
   private to them until they share it; a shared one appears in every
   household's library.
-- **Invites by text.** A new code comes with **Text it**, which opens your own
-  Messages with the invite written in, and **Copy link** for anywhere else. The
-  link is `/sign-up?code=...`, so the person you invite taps once and lands on a
-  form with the code already filled in.
+- **Invites by text or email.** A new code comes with **Text it**, which opens
+  your own Messages with the invite written in, and **Copy link** for anywhere
+  else. Give their email address and Trivet sends the invitation itself, from
+  your name. Either way the link is `/sign-up?code=...`, so the person you
+  invite taps once and lands on a form with the code already filled in.
 - **Recipe library.** Create, edit and delete recipes with ingredients, method,
   servings, timings, oven temperature, resting time, yield, equipment and tags -
   everything a recipe card prints, so you never have to reopen the original.

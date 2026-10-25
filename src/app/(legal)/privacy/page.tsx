@@ -76,7 +76,9 @@ export default function PrivacyPage() {
       <Typography sx={{ mb: 1 }}>
         A member&apos;s name and email address, needed to sign in, their mobile
         number as described above, and the recipes, weekly plans, pantry
-        contents and notes they enter.
+        contents and notes they enter. If a member invites somebody by email,
+        that address is kept with the invitation and used only to send it and to
+        check that the person signs up with the address it was sent to.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         No location, no contacts, no browsing history, and no advertising
