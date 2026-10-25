@@ -12,6 +12,13 @@ export type EmailMessage = {
   to: string;
   subject: string;
   /**
+   * Who the mail says it is from, in front of the verified address. Defaults
+   * to the app's name. An invitation sets "Ben McOsker via Trivet", because a
+   * stranger trusts a person they know before they trust a product - see
+   * `from.ts`. Only the name varies; the address never does.
+   */
+  fromName?: string;
+  /**
    * Plain text only, deliberately.
    *
    * Both emails this app sends - a password reset and an invitation - are a

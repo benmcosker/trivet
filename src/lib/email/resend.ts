@@ -1,3 +1,6 @@
+import { APP_NAME } from "../legal";
+
+import { fromHeader } from "./from";
 import type { EmailSender, EmailSenderInfo } from "./types";
 
 /**
@@ -49,9 +52,15 @@ export const resendSender: EmailSender = {
     };
   },
 
-  async send({ to, subject, text }) {
-    const { key, from } = credentials();
-    if (!key || !from) return { ok: false, error: "Email is not configured." };
+  async send({ to, subject, text, fromName }) {
+    const { key, from: emailFrom } = credentials();
+    if (!key || !emailFrom) {
+      return { ok: false, error: "Email is not configured." };
+    }
+    // Every mail gets a display name, never a bare address: Gmail shows a
+    // bare `info@trivetbox.com` as "info". Defaults to the app's name, so the
+    // reset mail reads "Trivet" with nothing passed.
+    const from = fromHeader(emailFrom, fromName ?? APP_NAME);
 
     try {
       const response = await fetch(API, {
