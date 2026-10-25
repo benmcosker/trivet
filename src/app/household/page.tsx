@@ -3,7 +3,7 @@ import Typography from "@mui/material/Typography";
 import { AppShell } from "@/components/AppShell";
 import { HouseholdManager } from "@/components/HouseholdManager";
 import { getHousehold, MAX_HOUSEHOLD_NAME } from "@/lib/household";
-import { INVITE_TTL_DAYS, listPendingInvites } from "@/lib/invites";
+import { INVITE_TTL_DAYS, inviteLink, listPendingInvites } from "@/lib/invites";
 import { requireHousehold } from "@/lib/session";
 import { smsAvailable } from "@/lib/sms";
 
@@ -39,6 +39,7 @@ export default async function HouseholdPage() {
         invites={invites.map((invite) => ({
           id: invite.id,
           code: invite.code,
+          link: inviteLink(invite.code),
           email: invite.email,
           expiresAt: invite.expiresAt.toISOString(),
           joinsFamily: invite.joinsFamily,

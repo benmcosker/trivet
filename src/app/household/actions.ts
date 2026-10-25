@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { createInvite, revokeInvite } from "@/lib/invites";
+import { createInvite, inviteLink, revokeInvite } from "@/lib/invites";
 import {
   renameHousehold,
   saveOwnPhone,
@@ -33,6 +33,8 @@ function hint(error: unknown): string {
 
 export type CreatedInvite = {
   code: string;
+  /** `/sign-up?code=...` on this deployment's own origin - see `inviteLink`. */
+  link: string;
   expiresAt: string;
   kind: InviteKind;
   /** The name the new household will take, when the sender chose one. */
@@ -88,6 +90,7 @@ export async function createInviteAction(
     ok: true,
     invite: {
       code: invite.code,
+      link: inviteLink(invite.code),
       expiresAt: invite.expiresAt.toISOString(),
       kind,
       householdName: kind === "outside" ? householdName?.trim() || null : null,

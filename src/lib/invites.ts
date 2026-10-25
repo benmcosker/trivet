@@ -37,6 +37,29 @@ export const inviteRejectionMessage: Record<InviteRejection, string> = {
  * still being something you can read down the phone. Excludes I/L/O/U and 0/1
  * to avoid the characters people most often transcribe wrongly.
  */
+/**
+ * The address an invite code is shared as: `/sign-up?code=ABC123` on this
+ * deployment's own origin.
+ *
+ * Built from `BETTER_AUTH_URL`, the same variable password-reset links are
+ * built from, rather than a hard-coded trivetbox.com. In production the two
+ * are the same thing; on a preview deployment or a laptop this points at the
+ * database the code was actually minted in, where a hard-coded production
+ * address would send somebody to a sign-up page that has never heard of it.
+ * And if the variable is ever wrong, invite links and reset links break
+ * together - DEPLOYING.md already says how to fix it, once.
+ *
+ * Server-only: the client never sees the variable, so the link is built here
+ * and handed over finished.
+ */
+export function inviteLink(code: string): string {
+  const base = process.env.BETTER_AUTH_URL;
+  if (!base) throw new Error("BETTER_AUTH_URL is not set");
+  const url = new URL("/sign-up", base);
+  url.searchParams.set("code", code);
+  return url.toString();
+}
+
 export function generateInviteCode(): string {
   const alphabet = "ABCDEFGHJKMNPQRSTVWXYZ23456789";
   const bytes = randomBytes(16);
