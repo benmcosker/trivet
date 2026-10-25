@@ -97,14 +97,27 @@ async function main(): Promise<void> {
       password,
       name: "Browse Check",
       inviteCode: code,
+      /*
+       * Required to join since the phone became mandatory, and refused in
+       * the sign-up before-hook without one - which this script reported as
+       * "is the app running?", because a 400 here used to mean nothing else.
+       * A 555 number from the range reserved for fiction, with no consent
+       * ticked, so nothing could ever be texted to it.
+       */
+      phone: "(202) 555-0100",
     }),
   });
 
   if (!response.ok) {
+    // The app answered, so it is running - an app that is not throws from
+    // `fetch` above with ECONNREFUSED and never reaches here. This used to
+    // ask "Is the app running?" regardless, which sent the phone becoming
+    // required off to be debugged as a server that had not started.
     const body = await response.text();
     console.error(
       `Signup failed with ${response.status}: ${body}\n` +
-        `Is the app running at ${base}?`,
+        "The app answered, so the reason is in the body above - usually a " +
+        "field the sign-up hooks now require that this script does not send.",
     );
     process.exit(1);
   }
