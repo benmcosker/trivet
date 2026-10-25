@@ -30,7 +30,11 @@ export const inviteRejectionMessage: Record<InviteRejection, string> = {
   unknown: "That invite code is not valid.",
   already_redeemed: "That invite has already been used.",
   expired: "That invite has expired. Ask for a new one.",
-  wrong_email: "That invite was issued for a different email address.",
+  // Says what to do, not only that it failed: this arrives after somebody has
+  // filled in the whole form, password included. Deliberately does not name
+  // the address, so a forwarded code does not reveal whose it was.
+  wrong_email:
+    "That invite is for a different email address - use the one your invitation was sent to, or ask for a new code.",
 };
 
 /**

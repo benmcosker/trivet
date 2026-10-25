@@ -65,7 +65,7 @@ const KIND_COPY: Record<InviteKind, { label: string; detail: string }> = {
   outside: {
     label: "Outside the family",
     detail:
-      "They start a household of their own, with its own plan and shopping list. The recipe library is shared either way: everyone signed in reads and rates the same recipes.",
+      "They start a household of their own, with its own plan and shopping list. They see shared recipes, never your private ones.",
   },
 };
 
@@ -487,7 +487,18 @@ function InviteForm({
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             <TextField
               label="Their email (optional)"
-              placeholder="Pins the code to one address"
+              /*
+               * A helper rather than the placeholder it replaces. The field
+               * does two things - sends the invitation, and locks the code to
+               * that address - and a placeholder said only the second, only
+               * while the field had focus, and vanished at the first key.
+               * This is the one moment before an irreversible send, and the
+               * one place the lock can be explained before it turns away
+               * somebody who signs up with a different address. "Trivet
+               * emails it" also sets it apart from Text it, which opens your
+               * own phone.
+               */
+              helperText="Trivet emails it. Only that address can use it."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               type="email"
@@ -678,7 +689,15 @@ function PendingInvites({ invites }: { invites: InviteView[] }) {
                   {invite.code}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" noWrap>
-                  {invite.email ?? "Anyone with the code"}
+                  {/*
+                   * "Only ..." so the address reads as a lock, the pair of
+                   * "Anyone with the code" - beside an Email button a bare
+                   * address reads as where it was sent, which is the half
+                   * that does not matter after the fact.
+                   */}
+                  {invite.email
+                    ? `Only ${invite.email}`
+                    : "Anyone with the code"}
                 </Typography>
               </Box>
               <Stack

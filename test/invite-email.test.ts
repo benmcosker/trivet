@@ -58,6 +58,9 @@ describe("inviteEmail", () => {
     expect(text).toContain(link);
     expect(text).toMatch(/14 days/);
     expect(text).toMatch(/ignore this email/);
+    // An emailed invite is always locked to the address it went to; the mail
+    // has to say so, or a sign-up from another address is refused cold.
+    expect(text).toMatch(/only for this email address/);
   });
 
   it("does not sign a mail with an empty name", () => {

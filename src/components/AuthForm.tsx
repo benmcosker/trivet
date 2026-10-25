@@ -95,8 +95,16 @@ export function AuthForm({
                 color="text.secondary"
                 sx={{ mt: 0.5 }}
               >
+                {/*
+                 * Somebody who arrived from an invite link is holding a code
+                 * already, and telling them they need one is the wrong first
+                 * line - while nothing said what Trivet even is, which is the
+                 * one question a stranger has that copy alone can answer.
+                 */}
                 {isSignUp
-                  ? "Trivet is invite-only. You will need a code from someone already using it."
+                  ? initialInviteCode
+                    ? "A shared recipe box, weekly meal planner and shopping list. Your invite code is filled in."
+                    : "Trivet is invite-only. You will need a code from someone already using it."
                   : "Sign in to see the family recipe box."}
               </Typography>
             </Box>
@@ -134,7 +142,7 @@ export function AuthForm({
                   onChange={(e) => setPhone(e.target.value)}
                   required
                   autoComplete="tel"
-                  helperText="Nothing is texted to it unless you also tick the box to get the shopping list."
+                  helperText="Nothing is texted to it unless you also choose to get the shopping list by text."
                 />
                 {/*
                  * Shown only once there is a number to agree about. An opt-in
