@@ -1,7 +1,10 @@
 import { randomBytes } from "node:crypto";
 
 import { prisma } from "./db";
+import { emailAvailable, getEmailSender } from "./email";
+import { inviteEmail } from "./email/invite";
 import { defaultHouseholdName, MAX_HOUSEHOLD_NAME } from "./household";
+import { APP_NAME } from "./legal";
 
 /** How long a freshly minted invite stays redeemable. */
 export const INVITE_TTL_DAYS = 14;
@@ -58,6 +61,58 @@ export function inviteLink(code: string): string {
   const url = new URL("/sign-up", base);
   url.searchParams.set("code", code);
   return url.toString();
+}
+
+/**
+ * What happened when an invite was emailed. Three answers rather than a
+ * boolean, because "not sent" means two different things to the person who
+ * pressed the button: this deployment cannot send mail at all, or it tried
+ * and the provider said no. Only the second is worth trying again.
+ */
+export type InviteEmailStatus = "sent" | "unavailable" | "failed";
+
+/**
+ * Send the invitation to the address it was made for.
+ *
+ * Unlike a text, this goes from the app itself, and it can: an invitation one
+ * person sends another, to an address they chose, is transactional mail and
+ * needs no prior agreement from the recipient. The carrier registration that
+ * keeps invite texts on the inviter's own phone has no equivalent here.
+ *
+ * Never throws. The invite already exists by the time this runs, and a mail
+ * provider having a bad minute must not turn a working code into an error -
+ * the person can still text it or copy the link, and is told so.
+ */
+export async function emailInvite(params: {
+  code: string;
+  email: string;
+  inviterName: string;
+  kind: "family" | "outside";
+  householdName?: string | null;
+}): Promise<InviteEmailStatus> {
+  if (!emailAvailable()) return "unavailable";
+
+  try {
+    const { subject, text } = inviteEmail({
+      link: inviteLink(params.code),
+      brand: APP_NAME,
+      inviterName: params.inviterName,
+      kind: params.kind,
+      householdName: params.householdName,
+      expiresInDays: INVITE_TTL_DAYS,
+    });
+    const result = await getEmailSender().send({
+      to: params.email,
+      subject,
+      text,
+    });
+    if (result.ok) return "sent";
+    console.error("[invite] could not email the invitation:", result.error);
+    return "failed";
+  } catch (error) {
+    console.error("[invite] could not email the invitation:", error);
+    return "failed";
+  }
 }
 
 export function generateInviteCode(): string {

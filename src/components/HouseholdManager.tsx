@@ -17,6 +17,7 @@ import { useState, useTransition, type FormEvent } from "react";
 
 import {
   createInviteAction,
+  emailInviteAgainAction,
   renameHouseholdAction,
   setDefaultServingsAction,
   revokeInviteAction,
@@ -536,11 +537,66 @@ function InviteForm({
             >
               {created.code}
             </Typography>
+            <InviteEmailStatusLine created={created} />
             <InviteActions link={created.link} kind={created.kind} />
           </Alert>
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Whether the invite reached the address it was made for.
+ *
+ * Said every time an address was given, because the alternative - silence -
+ * reads as success. A failed send sits beside a working code, so the line
+ * says what to do instead rather than only that something went wrong.
+ */
+function InviteEmailStatusLine({ created }: { created: CreatedInvite }) {
+  if (!created.email || !created.emailed) return null;
+
+  const message =
+    created.emailed === "sent"
+      ? `Emailed to ${created.email}.`
+      : created.emailed === "unavailable"
+        ? "Email is not set up on this deployment, so text it or copy the link."
+        : `It could not be emailed to ${created.email} just now - text it or copy the link instead.`;
+
+  return (
+    <Typography variant="body2" sx={{ mt: 1 }}>
+      {message}
+    </Typography>
+  );
+}
+
+/**
+ * Mail a pending invite again, to the address it was made for.
+ *
+ * Answers in its own label rather than an alert, because there can be several
+ * of these on the page and an alert would not say which row it belonged to.
+ */
+function EmailAgainButton({ inviteId }: { inviteId: string }) {
+  const [pending, startTransition] = useTransition();
+  const [label, setLabel] = useState("Email");
+
+  return (
+    <Button
+      size="small"
+      color="inherit"
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          const result = await emailInviteAgainAction(inviteId);
+          setLabel(
+            result.ok && result.status === "sent" ? "Emailed" : "Not sent",
+          );
+          setTimeout(() => setLabel("Email"), 3000);
+        })
+      }
+    >
+      {label}
+    </Button>
   );
 }
 
@@ -641,6 +697,9 @@ function PendingInvites({ invites }: { invites: InviteView[] }) {
                  * and two more buttons would push this row onto two lines at
                  * phone width. The full pair is on the code when it is made.
                  */}
+                {invite.email ? (
+                  <EmailAgainButton inviteId={invite.id} />
+                ) : null}
                 <Button
                   size="small"
                   color="inherit"
