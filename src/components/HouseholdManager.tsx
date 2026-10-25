@@ -24,6 +24,7 @@ import {
   type CreatedInvite,
   type InviteKind,
 } from "@/app/household/actions";
+import { inviteMessage, smsHref } from "@/lib/invite-text";
 import { formatPhone } from "@/lib/phone";
 import { MAX_SERVINGS } from "@/lib/scale";
 
@@ -39,6 +40,7 @@ export type MemberView = {
 export type InviteView = {
   id: string;
   code: string;
+  link: string;
   email: string | null;
   expiresAt: string;
   joinsFamily: boolean;
@@ -534,10 +536,53 @@ function InviteForm({
             >
               {created.code}
             </Typography>
+            <InviteActions link={created.link} kind={created.kind} />
           </Alert>
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Hand a fresh code to the person it is for.
+ *
+ * `Text it` opens the inviter's own Messages with the link written in, and
+ * they choose who it goes to. It is deliberately not a phone field that
+ * Trivet texts from its own number - see `invite-text.ts` for why that would
+ * break the carrier registration the shopping-list texts depend on.
+ *
+ * `Copy link` is for everywhere `sms:` does nothing: a desktop without
+ * Messages set up, or an invite going out by WhatsApp or email instead.
+ */
+function InviteActions({ link, kind }: { link: string; kind: InviteKind }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Refused clipboard access (insecure context, denied permission). The
+      // code is on screen above either way, so not worth an error state.
+      setCopied(false);
+    }
+  }
+
+  return (
+    <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap", mt: 1.5 }}>
+      <Button
+        variant="contained"
+        size="small"
+        href={smsHref(inviteMessage(link, kind))}
+      >
+        Text it
+      </Button>
+      <Button variant="outlined" size="small" onClick={copy}>
+        {copied ? "Copied" : "Copy link"}
+      </Button>
+    </Stack>
   );
 }
 
@@ -556,10 +601,21 @@ function PendingInvites({ invites }: { invites: InviteView[] }) {
 
         <Stack divider={<Divider />}>
           {invites.map((invite) => (
+            /*
+             * Two lines on a phone, one from `sm` up. A code is sixteen
+             * characters of monospace that cannot wrap, and beside a chip and
+             * two buttons at 393px it lost the width it needed and ran
+             * underneath the chip. Stacked, the code and its email get the
+             * whole row and the controls sit beneath them.
+             */
             <Stack
               key={invite.id}
-              direction="row"
-              sx={{ py: 1.25, alignItems: "center", gap: 1.5 }}
+              direction={{ xs: "column", sm: "row" }}
+              sx={{
+                py: 1.25,
+                alignItems: { xs: "stretch", sm: "center" },
+                gap: { xs: 0.5, sm: 1.5 },
+              }}
             >
               <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                 <Typography sx={{ fontFamily: "monospace" }}>
@@ -569,24 +625,47 @@ function PendingInvites({ invites }: { invites: InviteView[] }) {
                   {invite.email ?? "Anyone with the code"}
                 </Typography>
               </Box>
-              <Chip
-                size="small"
-                label={invite.joinsFamily ? "Family" : "Outside"}
-                color={invite.joinsFamily ? "primary" : "default"}
-                variant={invite.joinsFamily ? "filled" : "outlined"}
-              />
-              <Button
-                size="small"
-                color="inherit"
-                disabled={pending}
-                onClick={() =>
-                  startTransition(async () => {
-                    await revokeInviteAction(invite.id);
-                  })
-                }
+              <Stack
+                direction="row"
+                sx={{ alignItems: "center", gap: 1.5, flexShrink: 0 }}
               >
-                Withdraw
-              </Button>
+                <Chip
+                  size="small"
+                  label={invite.joinsFamily ? "Family" : "Outside"}
+                  color={invite.joinsFamily ? "primary" : "default"}
+                  variant={invite.joinsFamily ? "filled" : "outlined"}
+                />
+                {/*
+                 * Text only, no Copy here: a pending row is somebody re-sending
+                 * a code whose first text went astray, which is a phone moment,
+                 * and two more buttons would push this row onto two lines at
+                 * phone width. The full pair is on the code when it is made.
+                 */}
+                <Button
+                  size="small"
+                  color="inherit"
+                  href={smsHref(
+                    inviteMessage(
+                      invite.link,
+                      invite.joinsFamily ? "family" : "outside",
+                    ),
+                  )}
+                >
+                  Text
+                </Button>
+                <Button
+                  size="small"
+                  color="inherit"
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      await revokeInviteAction(invite.id);
+                    })
+                  }
+                >
+                  Withdraw
+                </Button>
+              </Stack>
             </Stack>
           ))}
         </Stack>
