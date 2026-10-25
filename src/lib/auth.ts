@@ -127,6 +127,22 @@ export const auth = betterAuth({
           message: inviteRejectionMessage[result.reason],
         });
       }
+
+      // A phone number is required to join, and it is checked here, before
+      // the account exists, rather than in the after-hook where it is
+      // stored. Refused there, the account would already have been created
+      // and the invite consumed - the person would be turned away holding
+      // neither, and their email would be taken by an account they never
+      // got. Refused here, nothing has happened yet and they can simply fix
+      // the number and send the form again.
+      //
+      // Required means a number on file, never consent to be texted. That is
+      // still a separate, unticked box (`smsConsent`), and carrier rules do
+      // not allow agreeing to texts to be a condition of having an account.
+      const phone = parsePhone(readPhone(ctx.body));
+      if (!phone.ok) {
+        throw new APIError("BAD_REQUEST", { message: phone.reason });
+      }
     }),
 
     // Consume the invite once the account exists.
@@ -158,11 +174,9 @@ export const auth = betterAuth({
       }
 
       if (redeemed) {
-        // Optional, and stored after the account is safely its own. A number
-        // that will not parse is dropped rather than refused: it buys one
-        // convenience, and losing a whole signup over a typo in a field nobody
-        // had to fill in would be a poor trade. It can be set on the household
-        // page afterwards, where a mistake can actually be seen and corrected.
+        // Stored after the account is safely its own. The number was already
+        // checked by the before-hook, so it parses here; the `ok` test below
+        // is what lets TypeScript see that, not a second line of defence.
         const phone = parsePhone(readPhone(ctx.body));
         if (phone.ok) {
           // The tick is only honoured alongside a number that parsed. Consent
@@ -184,6 +198,9 @@ export const auth = betterAuth({
               },
             })
             .catch((error) => {
+              // A database fault, not a bad number - that was refused before
+              // the account existed. The account stands without its phone,
+              // and the household page asks for one before it will save.
               console.error("[signup] could not store phone", error);
             });
         }

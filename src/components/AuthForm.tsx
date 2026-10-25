@@ -121,13 +121,20 @@ export function AuthForm({
                   required
                   autoComplete="name"
                 />
+                {/*
+                 * Required to join - checked again in the sign-up before-hook,
+                 * which is the check that counts. The helper text says the one
+                 * thing somebody hesitating over the field needs to hear:
+                 * giving a number is not agreeing to be texted.
+                 */}
                 <TextField
-                  label="Phone (optional)"
+                  label="Phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  required
                   autoComplete="tel"
-                  helperText="Only used to text you the week's shopping list. You can add it later."
+                  helperText="Nothing is texted to it unless you also tick the box to get the shopping list."
                 />
                 {/*
                  * Shown only once there is a number to agree about. An opt-in

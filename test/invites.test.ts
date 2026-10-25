@@ -8,6 +8,7 @@ import { makeHousehold, resetDatabase as reset } from "./support/db";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
+const PHONE = "(202) 555-0143";
 const PASSWORD = "correct-horse-battery-staple";
 
 /**
@@ -21,6 +22,9 @@ async function signUpStatus(params: {
   inviteCode?: string;
   name?: string;
   password?: string;
+  /** Required to join. `null` leaves it out, to test the refusal. */
+  phone?: string | null;
+  smsConsent?: boolean;
 }): Promise<number> {
   try {
     const res = await auth.api.signUpEmail({
@@ -31,6 +35,10 @@ async function signUpStatus(params: {
         ...(params.inviteCode === undefined
           ? {}
           : { inviteCode: params.inviteCode }),
+        ...(params.phone === null ? {} : { phone: params.phone ?? PHONE }),
+        ...(params.smsConsent === undefined
+          ? {}
+          : { smsConsent: params.smsConsent }),
       },
       asResponse: true,
     });
@@ -74,6 +82,87 @@ describe.skipIf(!hasDb)("invite-gated signup", () => {
     });
     expect(status).toBe(403);
     expect(await userCount("nobody@example.com")).toBe(0);
+  });
+
+  it("refuses signup with no phone, before any account exists", async () => {
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+
+    const status = await signUpStatus({
+      email: "nophone@example.com",
+      inviteCode: code,
+      phone: null,
+    });
+
+    expect(status).toBe(400);
+    expect(await userCount("nophone@example.com")).toBe(0);
+    // Refused in the before-hook, so the invite was never spent: the person
+    // can fix the form and use the same code again.
+    expect(
+      (await prisma.invite.findUnique({ where: { code } }))?.redeemedAt,
+    ).toBeNull();
+    expect(
+      await signUpStatus({ email: "nophone@example.com", inviteCode: code }),
+    ).toBe(200);
+  });
+
+  it("refuses a phone that will not parse", async () => {
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+
+    expect(
+      await signUpStatus({
+        email: "badphone@example.com",
+        inviteCode: code,
+        phone: "555-EAT-FOOD",
+      }),
+    ).toBe(400);
+    expect(await userCount("badphone@example.com")).toBe(0);
+  });
+
+  it("stores the required phone without treating it as consent", async () => {
+    // The property this change could most easily break without anybody
+    // noticing: every member now has a number, and having a number must not
+    // mean being texted. Carrier rules forbid agreeing to texts being a
+    // condition of an account, so consent stays its own unticked box.
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+
+    await signUpStatus({ email: "quiet@example.com", inviteCode: code });
+
+    const user = await prisma.user.findUnique({
+      where: { email: "quiet@example.com" },
+      select: { phone: true, smsConsentAt: true, smsConsentSource: true },
+    });
+    expect(user?.phone).toBe("+12025550143");
+    expect(user?.smsConsentAt).toBeNull();
+    expect(user?.smsConsentSource).toBeNull();
+  });
+
+  it("records consent only when the box was ticked", async () => {
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+
+    await signUpStatus({
+      email: "agreed@example.com",
+      inviteCode: code,
+      smsConsent: true,
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { email: "agreed@example.com" },
+      select: { smsConsentAt: true, smsConsentSource: true },
+    });
+    expect(user?.smsConsentAt).not.toBeNull();
+    expect(user?.smsConsentSource).toBe("CHECKBOX");
   });
 
   it("accepts signup with a valid invite and marks it redeemed", async () => {

@@ -313,7 +313,7 @@ function MyPhone({
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 2 }}>
           {smsConfigured
-            ? "Used to text you the week's shopping list. Clear it to stop."
+            ? "Every member has one on file. You're texted the week's shopping list only while the box below is ticked - untick it to stop."
             : "Texting is not set up on this deployment yet, so a number here does nothing for now."}
         </Typography>
 

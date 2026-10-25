@@ -143,34 +143,37 @@ export type SavePhoneResult =
   | { ok: false; error: string };
 
 /**
- * Set or clear your own number, and say whether you agree to be texted.
+ * Change your own number, and say whether you agree to be texted.
  *
  * Only ever your own: a phone number is the one thing here that reaches a
  * person outside the app, and somebody else in the household typing it wrongly
- * sends the week's shopping to a stranger. Blank clears it, which is how
- * somebody stops receiving the texts without leaving the household.
+ * sends the week's shopping to a stranger.
  *
- * The number and the agreement are stored as two facts rather than one. A
- * number on file is not consent - it is only an address - and US carriers
- * require the agreement itself to be recorded and producible. Keeping them
- * apart also gives people the milder option: untick the box and the texts stop
- * while the number stays, instead of having to delete it and type it again
- * later.
+ * Every member has a number, so it can be changed but not cleared. That would
+ * be a problem if clearing were the only way to stop the texts - it is not.
+ * The number and the agreement are stored as two facts rather than one: a
+ * number on file is not consent, only an address, and US carriers require the
+ * agreement itself to be recorded and producible. Untick the box and the texts
+ * stop while the number stays.
  */
 export async function saveOwnPhone(
   userId: string,
   input: string,
   consent: boolean,
 ): Promise<SavePhoneResult> {
+  // A number is required, so it can be changed here but not removed.
+  //
+  // Clearing the field used to be one of the ways to stop the texts. It no
+  // longer needs to be: unticking the box does exactly that, and keeps the
+  // number. The refusal says so, because somebody blanking the field is
+  // almost always somebody trying to stop messages, and a bare "required"
+  // would leave them thinking they cannot.
   if (!input.trim()) {
-    // Removing the number withdraws the agreement with it. Keeping a consent
-    // record for a number the app no longer holds would be a claim about
-    // somebody who has just told you to stop.
-    await prisma.user.update({
-      where: { id: userId },
-      data: { phone: null, smsConsentAt: null, smsConsentSource: null },
-    });
-    return { ok: true, phone: null, consented: false };
+    return {
+      ok: false,
+      error:
+        "A phone number is required. To stop the texts, untick the box instead.",
+    };
   }
 
   const parsed = parsePhone(input);
