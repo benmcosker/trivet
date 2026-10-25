@@ -32,7 +32,19 @@ jobs:
 
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@v1
+        # Pinned, not `@v1`. `v1` is a floating tag, which made it a
+        # suspect in #122 when this job went red with nothing changing here.
+        # It was not the cause - the token was - but a dependency that can
+        # change under every pull request without anybody deciding to is
+        # worth nailing down either way. v1.0.262 is what `v1` resolved to
+        # on 2026-10-25, so this pins today's behaviour rather than altering
+        # it, and an upgrade becomes a commit somebody made on purpose.
+        #
+        # The marketplace below cannot be pinned the same way. The action
+        # passes it verbatim to `claude plugin marketplace add`, which clones
+        # the default branch; the input takes a bare URL and no ref. So that
+        # one stays floating until the action offers somewhere to put a commit.
+        uses: anthropics/claude-code-action@v1.0.262
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
