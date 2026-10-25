@@ -50,35 +50,33 @@ export default function PrivacyPage() {
         <strong>{SMS_NO_SHARING}</strong>
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        Every member gives a mobile number when they join. Giving a number is
-        not agreeing to receive text messages: a member is texted only if they
-        also tick a separate box agreeing to it, and that box starts unticked.
-        We store each member&apos;s number, and for members who agree, the date
-        consent was given and how it was given. A number is used for one purpose
-        only: sending a member who has agreed their own household&apos;s weekly
-        grocery shopping list, when a member of that household asks for it to be
-        sent. The number of a member who has not agreed is stored and never
-        used. No number is ever used to market anything.
+        Members may optionally give a mobile number and tick a box agreeing to
+        receive text messages. We store the number, the date consent was given,
+        and how it was given. That information is used for one purpose only:
+        sending that member their own household&apos;s weekly grocery shopping
+        list, when a member of that household asks for it to be sent. It is
+        never used to market anything.
       </Typography>
       <Typography sx={{ mb: 1 }}>
         Message frequency: {SMS_FREQUENCY}. {SMS_RATES}
       </Typography>
       <Typography sx={{ mb: 1 }}>{SMS_PROVIDER}</Typography>
       <Typography sx={{ mb: 3 }}>
-        Members can stop the messages at any time by unticking the agreement on
-        the Household page, or by replying STOP to any message. Reply HELP for
-        help, or email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+        Members can stop the messages at any time by unticking the agreement or
+        clearing their number on the Household page, or by replying STOP to any
+        message. Reply HELP for help, or email{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
         What else is collected
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        A member&apos;s name and email address, needed to sign in, their mobile
-        number as described above, and the recipes, weekly plans, pantry
-        contents and notes they enter. If a member invites somebody by email,
-        that address is kept with the invitation and used only to send it and to
-        check that the person signs up with the address it was sent to.
+        A member&apos;s name and email address, needed to sign in, and the
+        recipes, weekly plans, pantry contents and notes they enter. If a member
+        invites somebody by email, that address is kept with the invitation and
+        used only to send it and to check that the person signs up with the
+        address it was sent to.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         No location, no contacts, no browsing history, and no advertising

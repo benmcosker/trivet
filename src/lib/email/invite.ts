@@ -64,7 +64,12 @@ export function inviteEmail({
       "Open this link to create your account:",
       link,
       "",
-      `The invitation works once, and stops working after ${expiresInDays} ` +
+      // "Only for this email address" because an emailed invite is always
+      // locked to the address it went to - the same field does both - and
+      // somebody signing up from another one is otherwise turned away after
+      // filling in the whole form.
+      "The invitation works once, only for this email address, and stops " +
+        `working after ${expiresInDays} ` +
         `day${expiresInDays === 1 ? "" : "s"}.`,
       "",
       `If you don't know ${who === "Someone" ? "who sent this" : who}, ` +

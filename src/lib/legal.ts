@@ -84,7 +84,7 @@ export const SMS_RATES =
 /** How to get help and how to stop. Twilio answers both automatically. */
 export const SMS_HELP_STOP =
   "Reply HELP for help or STOP to cancel at any time. " +
-  `You can also untick the box on the Household page, or email ${CONTACT_EMAIL}.`;
+  `You can also clear your number on the Household page, or email ${CONTACT_EMAIL}.`;
 
 /**
  * The non-sharing promise, in the words the vetting reviewer looks for.

@@ -134,3 +134,60 @@ describe("which sender a deployment gets", () => {
     expect(emailAvailable()).toBe(true);
   });
 });
+
+describe("what is actually sent to Resend", () => {
+  /**
+   * Nothing here called `send` before, so the request body - the thing a
+   * recipient's mail client actually renders - had never been asserted. It
+   * was wrong in a way only a real inbox showed: a bare EMAIL_FROM arrived in
+   * Gmail as a sender called "info".
+   */
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function captureSend() {
+    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    return () =>
+      JSON.parse(
+        (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1]
+          .body as string,
+      ) as { from: string; to: string[]; subject: string };
+  }
+
+  it("signs a mail with no sender name as the app, never a bare address", async () => {
+    withEnv({ RESEND_API_KEY: "re_x", EMAIL_FROM: "info@trivetbox.com" });
+    const body = captureSend();
+
+    await resendSender.send({ to: "a@example.com", subject: "s", text: "t" });
+
+    expect(body().from).toBe('"Trivet" <info@trivetbox.com>');
+  });
+
+  it("sends an invitation as the person who sent it", async () => {
+    withEnv({ RESEND_API_KEY: "re_x", EMAIL_FROM: "info@trivetbox.com" });
+    const body = captureSend();
+
+    await resendSender.send({
+      to: "a@example.com",
+      subject: "s",
+      text: "t",
+      fromName: "Ben McOsker via Trivet",
+    });
+
+    expect(body().from).toBe('"Ben McOsker via Trivet" <info@trivetbox.com>');
+  });
+
+  it("keeps the verified address when EMAIL_FROM already carries a name", async () => {
+    withEnv({
+      RESEND_API_KEY: "re_x",
+      EMAIL_FROM: "Old Name <info@trivetbox.com>",
+    });
+    const body = captureSend();
+
+    await resendSender.send({ to: "a@example.com", subject: "s", text: "t" });
+
+    expect(body().from).toBe('"Trivet" <info@trivetbox.com>');
+  });
+});

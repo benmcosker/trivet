@@ -8,7 +8,6 @@ import { makeHousehold, resetDatabase as reset } from "./support/db";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
-const PHONE = "(202) 555-0143";
 const PASSWORD = "correct-horse-battery-staple";
 
 /**
@@ -22,8 +21,8 @@ async function signUpStatus(params: {
   inviteCode?: string;
   name?: string;
   password?: string;
-  /** Required to join. `null` leaves it out, to test the refusal. */
-  phone?: string | null;
+  /** Optional to join; left out unless a test gives one. */
+  phone?: string;
   smsConsent?: boolean;
 }): Promise<number> {
   try {
@@ -35,7 +34,7 @@ async function signUpStatus(params: {
         ...(params.inviteCode === undefined
           ? {}
           : { inviteCode: params.inviteCode }),
-        ...(params.phone === null ? {} : { phone: params.phone ?? PHONE }),
+        ...(params.phone === undefined ? {} : { phone: params.phone }),
         ...(params.smsConsent === undefined
           ? {}
           : { smsConsent: params.smsConsent }),
@@ -84,31 +83,21 @@ describe.skipIf(!hasDb)("invite-gated signup", () => {
     expect(await userCount("nobody@example.com")).toBe(0);
   });
 
-  it("refuses signup with no phone, before any account exists", async () => {
+  it("accepts a signup with no phone - giving one is optional", async () => {
     const { code } = await createInvite({
       createdById: inviterId,
       householdId,
     });
 
-    const status = await signUpStatus({
-      email: "nophone@example.com",
-      inviteCode: code,
-      phone: null,
-    });
-
-    expect(status).toBe(400);
-    expect(await userCount("nophone@example.com")).toBe(0);
-    // Refused in the before-hook, so the invite was never spent: the person
-    // can fix the form and use the same code again.
-    expect(
-      (await prisma.invite.findUnique({ where: { code } }))?.redeemedAt,
-    ).toBeNull();
     expect(
       await signUpStatus({ email: "nophone@example.com", inviteCode: code }),
     ).toBe(200);
+    expect(await userCount("nophone@example.com")).toBe(1);
   });
 
-  it("refuses a phone that will not parse", async () => {
+  it("drops a phone that will not parse rather than refusing the signup", async () => {
+    // It buys one convenience; losing a whole signup over a typo in a field
+    // nobody had to fill in would be a poor trade.
     const { code } = await createInvite({
       createdById: inviterId,
       householdId,
@@ -119,22 +108,33 @@ describe.skipIf(!hasDb)("invite-gated signup", () => {
         email: "badphone@example.com",
         inviteCode: code,
         phone: "555-EAT-FOOD",
+        smsConsent: true,
       }),
-    ).toBe(400);
-    expect(await userCount("badphone@example.com")).toBe(0);
+    ).toBe(200);
+    const user = await prisma.user.findUnique({
+      where: { email: "badphone@example.com" },
+      select: { phone: true, smsConsentAt: true },
+    });
+    expect(user?.phone).toBeNull();
+    // A tick beside a number that was never stored is consent to text
+    // nobody, and must not be recorded as an opt-in.
+    expect(user?.smsConsentAt).toBeNull();
   });
 
-  it("stores the required phone without treating it as consent", async () => {
-    // The property this change could most easily break without anybody
-    // noticing: every member now has a number, and having a number must not
-    // mean being texted. Carrier rules forbid agreeing to texts being a
-    // condition of an account, so consent stays its own unticked box.
+  it("stores a phone without treating it as consent", async () => {
+    // A number on file is an address, not an agreement. Carrier rules forbid
+    // agreeing to texts being a condition of an account, so consent stays
+    // its own unticked box.
     const { code } = await createInvite({
       createdById: inviterId,
       householdId,
     });
 
-    await signUpStatus({ email: "quiet@example.com", inviteCode: code });
+    await signUpStatus({
+      email: "quiet@example.com",
+      inviteCode: code,
+      phone: "(202) 555-0143",
+    });
 
     const user = await prisma.user.findUnique({
       where: { email: "quiet@example.com" },
@@ -154,6 +154,7 @@ describe.skipIf(!hasDb)("invite-gated signup", () => {
     await signUpStatus({
       email: "agreed@example.com",
       inviteCode: code,
+      phone: "(202) 555-0143",
       smsConsent: true,
     });
 

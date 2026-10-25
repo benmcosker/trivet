@@ -42,21 +42,19 @@ export default function SmsPolicyPage() {
       </Typography>
       <Typography sx={{ mb: 1 }}>
         Members join by invitation and sign in with an email address and
-        password. Every member gives their own phone number when they join - but
-        giving a number is not agreeing to be texted, and nobody is texted
-        because of it.
+        password. Giving a phone number is optional, and an account works fully
+        without one.
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        A member who wants the shopping list by text says so with a separate
-        checkbox beside their number - their own number only, never anybody
-        else&apos;s - either when they create their account or afterwards on the
-        Household page. The checkbox is unticked. Nobody is sent anything until
-        that box is ticked: a number on file with the box unticked is stored and
-        never used.
+        A member who wants the shopping list by text enters their own number -
+        their own only, never anybody else&apos;s - either when they create
+        their account or afterwards on the Household page. Beside the field is
+        an unticked checkbox. Nobody is sent anything until that box is ticked:
+        a number on file with the box unticked is stored and never used.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         The date of the agreement is recorded against the account. Unticking the
-        box or replying STOP stops the messages.
+        box, clearing the number, or replying STOP all stop the messages.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>

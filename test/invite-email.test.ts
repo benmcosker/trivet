@@ -58,6 +58,9 @@ describe("inviteEmail", () => {
     expect(text).toContain(link);
     expect(text).toMatch(/14 days/);
     expect(text).toMatch(/ignore this email/);
+    // An emailed invite is always locked to the address it went to; the mail
+    // has to say so, or a sign-up from another address is refused cold.
+    expect(text).toMatch(/only for this email address/);
   });
 
   it("does not sign a mail with an empty name", () => {
@@ -108,12 +111,22 @@ describe("emailInvite", () => {
     expect(send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "sister@example.com",
+        fromName: "Ben via Trivet",
         subject: "Ben invited you to Trivet",
         text: expect.stringContaining(
           "https://trivetbox.com/sign-up?code=ABC123",
         ),
       }),
     );
+  });
+
+  it("sends as plain Trivet, not 'via Trivet' from nobody, with no name", async () => {
+    vi.stubEnv("EMAIL_LOG_ONLY", "true");
+    const send = vi.spyOn(consoleEmailSender, "send");
+
+    await emailInvite({ ...params, inviterName: "   " });
+
+    expect(send.mock.calls[0][0].fromName).toBeUndefined();
   });
 
   it("reports a refused send instead of throwing", async () => {

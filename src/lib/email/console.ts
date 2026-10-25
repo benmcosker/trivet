@@ -1,3 +1,4 @@
+import { APP_NAME } from "../legal";
 import type { EmailSender, EmailSenderInfo } from "./types";
 
 /**
@@ -26,8 +27,12 @@ export const consoleEmailSender: EmailSender = {
     };
   },
 
-  async send({ to, subject, text }) {
-    console.log(`[email] to ${to}\nsubject: ${subject}\n\n${text}\n`);
+  async send({ to, subject, text, fromName }) {
+    // The display name is logged too: it is half of what a recipient sees
+    // before opening the mail, and the half a log of only the body would hide.
+    console.log(
+      `[email] from ${fromName ?? APP_NAME}, to ${to}\nsubject: ${subject}\n\n${text}\n`,
+    );
     return { ok: true };
   },
 };

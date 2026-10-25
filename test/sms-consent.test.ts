@@ -80,24 +80,22 @@ describe.skipIf(!hasDb)("agreeing to be texted", () => {
       expect(stored.smsConsentAt).toBeNull();
     });
 
-    it("refuses to clear the number, and says how to stop instead", async () => {
-      // A number is required, so blanking the field is refused - but the
-      // person doing it is almost always trying to stop the texts, and the
-      // refusal has to tell them the box does that, or they will think they
-      // cannot. Nothing about their consent changes on a refused save.
+    it("treats removing the number as withdrawing the agreement", async () => {
+      // A consent record for a number the app no longer holds is a claim about
+      // somebody who has just asked it to stop.
       await saveOwnPhone(userId, "(508) 555-1212", true);
       const result = await saveOwnPhone(userId, "", true);
 
-      expect(result.ok).toBe(false);
-      expect(!result.ok && result.error).toMatch(/untick/i);
+      expect(result).toEqual({ ok: true, phone: null, consented: false });
       const stored = await consentOf(userId);
-      expect(stored.phone).toBe("+15085551212");
-      expect(stored.smsConsentAt).not.toBeNull();
+      expect(stored.phone).toBeNull();
+      expect(stored.smsConsentAt).toBeNull();
+      expect(stored.smsConsentSource).toBeNull();
     });
 
     it("stops the texts by unticking, keeping the number", async () => {
-      // The one way left to withdraw consent from the household page, so it
-      // has to work without touching the number.
+      // The milder of the two ways to stop: the number stays, so agreeing
+      // again later is a tick rather than typing it in again.
       await saveOwnPhone(userId, "(508) 555-1212", true);
       const result = await saveOwnPhone(userId, "(508) 555-1212", false);
 
@@ -109,7 +107,6 @@ describe.skipIf(!hasDb)("agreeing to be texted", () => {
       const stored = await consentOf(userId);
       expect(stored.phone).toBe("+15085551212");
       expect(stored.smsConsentAt).toBeNull();
-      expect(stored.smsConsentSource).toBeNull();
     });
 
     it("keeps the date of the first agreement, not the last save", async () => {

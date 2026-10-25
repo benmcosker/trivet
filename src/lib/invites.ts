@@ -30,7 +30,11 @@ export const inviteRejectionMessage: Record<InviteRejection, string> = {
   unknown: "That invite code is not valid.",
   already_redeemed: "That invite has already been used.",
   expired: "That invite has expired. Ask for a new one.",
-  wrong_email: "That invite was issued for a different email address.",
+  // Says what to do, not only that it failed: this arrives after somebody has
+  // filled in the whole form, password included. Deliberately does not name
+  // the address, so a forwarded code does not reveal whose it was.
+  wrong_email:
+    "That invite is for a different email address - use the one your invitation was sent to, or ask for a new code.",
 };
 
 /**
@@ -101,10 +105,15 @@ export async function emailInvite(params: {
       householdName: params.householdName,
       expiresInDays: INVITE_TTL_DAYS,
     });
+    // "Ben McOsker via Trivet", the pattern person-initiated mail uses, so
+    // the sender column names somebody the recipient knows. A blank name
+    // falls back to plain "Trivet" rather than "via Trivet" from nobody.
+    const inviter = params.inviterName.trim();
     const result = await getEmailSender().send({
       to: params.email,
       subject,
       text,
+      fromName: inviter ? `${inviter} via ${APP_NAME}` : undefined,
     });
     if (result.ok) return "sent";
     console.error("[invite] could not email the invitation:", result.error);
