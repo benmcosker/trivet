@@ -26,7 +26,7 @@ planned, grouped by aisle, with the dish each line came from underneath it.
 
 ![The weekly planner](docs/screenshots/planner.png)
 
-Upload takes a PDF or a photograph of a card.
+Add a recipe from a link to one online, a PDF, or a photograph of a card.
 
 ![Uploading a recipe card](docs/screenshots/upload.png)
 
@@ -39,7 +39,16 @@ afternoon:
 npm run browse:seed   # once, with the app running
 npm run seed:demo
 npm run browse -- /recipes --shot=docs/screenshots/recipes.png
+npm run browse -- /recipes/zuni-chicken-with-bread-salad-03a14891 --shot=docs/screenshots/recipe.png
+npm run browse -- /plan --shot=docs/screenshots/planner.png
+npm run browse -- /upload --shot=docs/screenshots/upload.png
+npm run browse -- /pantry --shot=docs/screenshots/pantry.png
+npm run browse -- /household --shot=docs/screenshots/household.png
 ```
+
+The recipe's address is stable across reseeds: `seed:demo` derives each
+`publicId` from a hash of the title rather than at random, so the hero keeps
+the same URL and this command does not need editing every time.
 
 ## What works
 
