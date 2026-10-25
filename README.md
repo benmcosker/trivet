@@ -1,9 +1,9 @@
 # Trivet
 
 Recipe box, weekly meal planner and grocery list for one household.
-Upload a recipe card - a PDF, or a photograph of a printed or handwritten one -
-plan a dinner for each night from your library, and take the resulting shopping
-list to the shop.
+Add a recipe from a link, a PDF, or a photograph of a printed or handwritten
+card, plan a dinner for each night from your library, and take the resulting
+shopping list to the shop.
 
 ## Demo video
 
@@ -52,18 +52,27 @@ the same URL and this command does not need editing every time.
 
 ## What works
 
-- **Invite-only accounts.** Signup requires a code minted by an existing user.
-  A recipe belongs to the household that added it and is private to them until
-  they share it; a shared one appears in every household's library.
+- **Invite-only accounts.** Signup requires a code minted by an existing user,
+  and a phone number. A recipe belongs to the household that added it and is
+  private to them until they share it; a shared one appears in every
+  household's library.
+- **Invites by text.** A new code comes with **Text it**, which opens your own
+  Messages with the invite written in, and **Copy link** for anywhere else. The
+  link is `/sign-up?code=...`, so the person you invite taps once and lands on a
+  form with the code already filled in.
 - **Recipe library.** Create, edit and delete recipes with ingredients, method,
   servings, timings, oven temperature, resting time, yield, equipment and tags -
   everything a recipe card prints, so you never have to reopen the original.
+  Calories, protein, carbs and fat per serving are recorded when the source
+  states them, and never worked out when it does not.
 - **Search.** Full-text plus substring matching across titles, descriptions,
   method text, ingredients and tags, with tag filters. Search state lives in the
   URL, so a filtered view is linkable.
-- **Card upload, PDF or photograph.** Signed-in users upload a recipe card and
-  Claude reads it into fields, landing on a review screen before anything is
-  saved. A PDF also gives up its dish photo, which is pulled out and attached.
+- **Adding a recipe: a link, a PDF or a photograph.** Paste the address of a
+  recipe page, or upload a card, and Claude reads it into fields, landing on a
+  review screen before anything is saved. A site that only answers a real
+  browser is named as such, with a way round it: print the page to a PDF and
+  bring that in instead. A PDF also gives up its dish photo, which is pulled out and attached.
   Photographs are accepted as JPEG, PNG, GIF or WebP - the four formats the
   model itself accepts - so a picture of a card stuck to the fridge, or of a
   page in a book, works as well as an exported file. HEIC, which is what an
@@ -99,9 +108,10 @@ the same URL and this command does not need editing every time.
   using the planner, and how many cards they have uploaded. Counts and dates
   only. Reachable by the addresses in `ADMIN_EMAILS` and answering 404 to
   everybody else.
-- **Texting the list.** Everyone in the household who has given a number and
-  agreed to be texted gets the week's shopping as an SMS, split into readable
-  parts. Live: registered with the carriers and delivering.
+- **Texting the list.** Everyone in the household who has agreed to be texted
+  gets the week's shopping as an SMS, split into readable parts. Every member
+  gives a number when they join; only those who ticked the box are sent
+  anything. Live: registered with the carriers and delivering.
 
 ## Stack
 
@@ -239,6 +249,15 @@ that reads as over-engineering until a carrier asks to see it:
 - A number is not consent. `smsConsentAt` and `smsConsentSource` are stored
   separately, because being reachable and having agreed are two different
   facts, and a carrier asking to see the opt-in is asking about the second.
+  That matters more now every member must give a number to join: the number is
+  required, the agreement never is, because carrier rules do not allow agreeing
+  to texts to be a condition of having an account.
+- Invites are texted from the inviter's own phone, never from this app's
+  number. The campaign is registered for one purpose - the shopping list, to
+  members who agreed - and an invitee has agreed to nothing. Sending from the
+  app's number would break the registration that the shopping lists depend on.
+  From the inviter's phone it is one person texting another, which needs
+  neither, and it arrives from someone they know.
 - The checkbox is never pre-ticked, and there is no prop that would let it be.
 - `/privacy`, `/terms` and `/sms` are public, deliberately outside the login,
   because a policy nobody can read without an account is a policy a reviewer
