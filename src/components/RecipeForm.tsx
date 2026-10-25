@@ -17,7 +17,13 @@ import Typography from "@mui/material/Typography";
 import { useState, type FormEvent } from "react";
 
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
-import { TEMPERATURE_UNITS, type RecipeInput } from "@/lib/recipe-schema";
+import {
+  MACRO_KEYS,
+  MACRO_RANGE,
+  TEMPERATURE_UNITS,
+  type MacroKey,
+  type RecipeInput,
+} from "@/lib/recipe-schema";
 
 export type RecipeFormValues = RecipeInput;
 
@@ -64,6 +70,25 @@ export function RecipeForm({
     initial.ovenTempUnit ?? "FAHRENHEIT",
   );
   const [yieldNote, setYieldNote] = useState(initial.yieldNote ?? "");
+  /** The four macros as numbers, or nulls where the field was left empty. */
+  function macroFields() {
+    return Object.fromEntries(
+      MACRO_KEYS.map((key) => [
+        key,
+        macros[key] === "" ? null : Number(macros[key]),
+      ]),
+    ) as Record<MacroKey, number | null>;
+  }
+
+  const [macros, setMacros] = useState<Record<MacroKey, string>>(
+    () =>
+      Object.fromEntries(
+        MACRO_KEYS.map((key) => [
+          key,
+          initial[key] == null ? "" : String(initial[key]),
+        ]),
+      ) as Record<MacroKey, string>,
+  );
   const [equipment, setEquipment] = useState<string[]>(initial.equipment);
   const [equipmentDraft, setEquipmentDraft] = useState("");
   const [sourceUrl, setSourceUrl] = useState(initial.sourceUrl ?? "");
@@ -148,6 +173,7 @@ export function RecipeForm({
       ovenTemp: ovenTemp === "" ? null : Number(ovenTemp),
       ovenTempUnit: ovenTemp === "" ? null : ovenTempUnit,
       yieldNote: yieldNote || null,
+      ...macroFields(),
       equipment,
       sourceUrl: sourceUrl || null,
       sourceName: sourceName || null,
@@ -287,6 +313,24 @@ export function RecipeForm({
                   fullWidth
                 />
               </Grid>
+              {MACRO_KEYS.map((key) => (
+                <Grid size={{ xs: 6, sm: 3 }} key={key}>
+                  <TextField
+                    label={MACRO_RANGE[key].label}
+                    type="number"
+                    value={macros[key]}
+                    onChange={(e) =>
+                      setMacros((m) => ({ ...m, [key]: e.target.value }))
+                    }
+                    helperText={
+                      key === "caloriesKcal"
+                        ? "Per serving, kcal"
+                        : "Per serving, g"
+                    }
+                    fullWidth
+                  />
+                </Grid>
+              ))}
             </Grid>
 
             <Box>

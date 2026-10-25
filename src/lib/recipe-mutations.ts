@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "./db";
 import { visibleRecipes } from "./recipe-visibility";
 import type { RecipeInput } from "./recipe-schema";
-import { upsertTags } from "./recipes";
+import { upsertTags, type RecipeWithRelations } from "./recipes";
 
 /**
  * A fresh public id: eight hex characters.
@@ -18,6 +18,72 @@ import { upsertTags } from "./recipes";
  */
 function newPublicId(): string {
   return randomBytes(4).toString("hex");
+}
+
+/**
+ * A saved recipe, as the edit form's starting values.
+ *
+ * This exists because the edit page built the same object by hand and left
+ * the four macros out of it. The form opened with those fields empty on a
+ * recipe that had them, the update wrote every column it knows about, and
+ * changing a description silently deleted a recipe's nutrition - on the one
+ * screen somebody would use to correct a misread figure. It typechecked
+ * throughout, because the fields are optional and nullable.
+ *
+ * A comment on the call site would have fixed that instance and left the
+ * trap for the next column. This does not: the read path and the write path
+ * now name their fields in one place, so a new column is either in both or
+ * in neither.
+ */
+export function toRecipeInput(recipe: RecipeWithRelations): RecipeInput {
+  return {
+    title: recipe.title,
+    description: recipe.description,
+    servings: recipe.servings,
+    prepMinutes: recipe.prepMinutes,
+    cookMinutes: recipe.cookMinutes,
+    restMinutes: recipe.restMinutes,
+    ovenTemp: recipe.ovenTemp,
+    ovenTempUnit: recipe.ovenTempUnit,
+    yieldNote: recipe.yieldNote,
+    equipment: recipe.equipment,
+    caloriesKcal: recipe.caloriesKcal,
+    proteinG: recipe.proteinG,
+    carbsG: recipe.carbsG,
+    fatG: recipe.fatG,
+    sourceUrl: recipe.sourceUrl,
+    sourceName: recipe.sourceName,
+    notes: recipe.notes,
+    instructions: recipe.instructions,
+    ingredients: recipe.ingredients.map((i) => ({
+      name: i.name,
+      quantity: i.quantity,
+      unit: i.unit,
+      note: i.note,
+    })),
+    tags: recipe.tags.map(({ tag }) => tag.name),
+  };
+}
+
+/**
+ * The four macro columns, written as a set.
+ *
+ * One helper rather than four lines at each call site, so the create path
+ * and the edit path cannot drift apart on which four they are - and because
+ * the edit path forgetting them is exactly the bug this feature shipped with
+ * first time round: the form opened without them, wrote four nulls, and
+ * emptied a recipe's nutrition on a change to its description.
+ *
+ * `?? null` throughout, not `undefined`: on update, undefined leaves a column
+ * alone, and somebody deliberately clearing a figure needs it to empty.
+ */
+function nutritionColumns(input: RecipeInput) {
+  return {
+    caloriesKcal: input.caloriesKcal ?? null,
+    proteinG: input.proteinG ?? null,
+    carbsG: input.carbsG ?? null,
+    fatG: input.fatG ?? null,
+  };
 }
 
 function emptyToNull(value: string | null | undefined): string | null {
@@ -59,6 +125,7 @@ export async function createRecipe(
       restMinutes: input.restMinutes ?? null,
       yieldNote: emptyToNull(input.yieldNote),
       equipment: input.equipment,
+      ...nutritionColumns(input),
       notes: emptyToNull(input.notes),
       instructions: input.instructions,
       source: assets.source ?? "MANUAL",
@@ -130,6 +197,7 @@ export async function updateRecipe(
         restMinutes: input.restMinutes ?? null,
         yieldNote: emptyToNull(input.yieldNote),
         equipment: input.equipment,
+        ...nutritionColumns(input),
         notes: emptyToNull(input.notes),
         instructions: input.instructions,
         ingredients: {

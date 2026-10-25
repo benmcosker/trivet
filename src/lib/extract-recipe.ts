@@ -5,7 +5,12 @@ import { z } from "zod";
 import { COLLECTION_SLUGS } from "./collections";
 import type { SupportedImageType } from "./image-inspect";
 import { hostLabel } from "./recipe-address";
-import { OVEN_TEMP_RANGE, type ExtractedRecipe } from "./recipe-schema";
+import {
+  MACRO_KEYS,
+  OVEN_TEMP_RANGE,
+  type ExtractedRecipe,
+  type MacroKey,
+} from "./recipe-schema";
 
 /**
  * The collections row's vocabulary, in the words a tag is written in.
@@ -126,6 +131,22 @@ const extractionSchema = z.object({
         "finds. Do not force them: a recipe that is none of these gets none " +
         "of them, and an untrue label is worse than a missing one.",
     ),
+  nutrition: z
+    .object({
+      caloriesKcal: z.number().nullable(),
+      proteinG: z.number().nullable(),
+      carbsG: z.number().nullable(),
+      fatG: z.number().nullable(),
+    })
+    .nullable()
+    .describe(
+      "Macros for ONE serving, transcribed from the source. Null unless the " +
+        "card or the page states them - do not calculate them from the " +
+        "ingredients. Transcribe only what is stated and leave the rest " +
+        "null: a card that prints protein and nothing else gives one figure " +
+        "and three nulls. If the source gives totals for the whole dish, " +
+        "divide by the servings.",
+    ),
   notes: z.string().nullable().describe("Any tips or storage notes"),
   confidence: z
     .enum(["high", "medium", "low"])
@@ -147,6 +168,7 @@ Rules:
 - Oven temperature is often printed only inside a step ("bake at 375F for 20 minutes"). Read the steps for it, not just the header block.
 - Give the temperature in the unit the card printed. Do not convert between Fahrenheit and Celsius.
 - If the card is not a recipe, or too little of it can be read, still return your best reading and set confidence to "low".
+- Nutrition is transcribed like everything else. If the source states macros, record them per serving, dividing by the servings count where it gives totals for the whole dish. If the source does not state them, return null - do not work them out from the ingredients. Somebody may count carbs against these, and a figure nobody can check against a source is worse here than no figure at all.
 
 Rules for a web page:
 - Markup is a claim about the page, not the page. Read it the same way you read a card: transcribe what is there and invent nothing.
@@ -352,6 +374,70 @@ async function extract(
 }
 
 /** Normalise the model's looser shape into what the form and schema expect. */
+/**
+ * Macros, rounded and checked here rather than taken on trust.
+ *
+ * The prompt asks for whole numbers rounded to 5 g and 10 kcal and for a
+ * PRINTED set never to be topped up with guesses. Both are restated here
+ * because a prompt is a request and this is the last place that can still
+ * say no: a model that returns `31.4` or quietly estimates two of four
+ * values has not malfunctioned in any way the API reports, and the result
+ * reaches the person as an authoritative-looking number either way.
+ *
+ * Rounding is applied only to estimates. A card that prints "31 g protein"
+ * means 31, and rounding it to 30 would be this function editing the
+ * source.
+ */
+/**
+ * Exported for tests, where `readOvenTemp` beside it is not.
+ *
+ * The difference is what the two protect. A mangled oven temperature is
+ * caught by the CHECK constraint, and past it, by a cook who can see that
+ * 180F is not a roast. A macro has no such reader: 23 g of protein and 32 g
+ * are equally plausible on the page, and nothing downstream can tell which
+ * the card said. The rules that keep this honest live in this function, so
+ * the test for them has to as well.
+ */
+export function readNutrition(
+  nutrition: z.infer<typeof extractionSchema>["nutrition"],
+): Pick<ExtractedRecipe, MacroKey> {
+  const none = {
+    caloriesKcal: null,
+    proteinG: null,
+    carbsG: null,
+    fatG: null,
+  };
+
+  if (!nutrition) return none;
+
+  const macros = {
+    caloriesKcal: readMacro(nutrition.caloriesKcal),
+    proteinG: readMacro(nutrition.proteinG),
+    carbsG: readMacro(nutrition.carbsG),
+    fatG: readMacro(nutrition.fatG),
+  };
+
+  // A partial set is kept, because a card that prints protein and nothing
+  // else is a real card. Only an empty one collapses to nothing.
+  return MACRO_KEYS.every((key) => macros[key] == null) ? none : macros;
+}
+
+/**
+ * One macro: a non-negative whole number, or nothing.
+ *
+ * Rounded to an integer because the column is one, and because a
+ * transcription carrying a decimal the card did not print is the model
+ * elaborating rather than reading.
+ *
+ * Negatives and NaN are not clamped to zero - zero grams of fat is a claim
+ * about the dish, and a model that returned `-4` has not told us the dish is
+ * fat free. It has told us nothing, which is what null means.
+ */
+function readMacro(value: number | null): number | null {
+  if (value == null || !Number.isFinite(value) || value < 0) return null;
+  return Math.round(value);
+}
+
 function toExtractedRecipe(
   parsed: z.infer<typeof extractionSchema>,
 ): ExtractedRecipe {
@@ -364,6 +450,7 @@ function toExtractedRecipe(
     cookMinutes: parsed.cookMinutes ?? null,
     restMinutes: parsed.restMinutes ?? null,
     ...readOvenTemp(parsed.ovenTemp, parsed.ovenTempUnit),
+    ...readNutrition(parsed.nutrition),
     equipment: parsed.equipment.map((e) => e.trim()).filter(Boolean),
     sourceUrl: null,
     sourceName: parsed.sourceName?.trim() || null,

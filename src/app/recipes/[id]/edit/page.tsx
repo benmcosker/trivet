@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
 import { EditRecipeForm } from "@/components/EditRecipeForm";
+import { toRecipeInput } from "@/lib/recipe-mutations";
 import { getRecipe } from "@/lib/recipes";
 import { recipePath } from "@/lib/recipe-url";
 import { requireHousehold } from "@/lib/session";
@@ -28,32 +29,7 @@ export default async function EditRecipePage({
       <Typography variant="h1" sx={{ mb: 3 }}>
         Edit recipe
       </Typography>
-      <EditRecipeForm
-        id={recipe.id}
-        initial={{
-          title: recipe.title,
-          description: recipe.description,
-          servings: recipe.servings,
-          prepMinutes: recipe.prepMinutes,
-          cookMinutes: recipe.cookMinutes,
-          restMinutes: recipe.restMinutes,
-          ovenTemp: recipe.ovenTemp,
-          ovenTempUnit: recipe.ovenTempUnit,
-          yieldNote: recipe.yieldNote,
-          equipment: recipe.equipment,
-          sourceUrl: recipe.sourceUrl,
-          sourceName: recipe.sourceName,
-          notes: recipe.notes,
-          instructions: recipe.instructions,
-          ingredients: recipe.ingredients.map((i) => ({
-            name: i.name,
-            quantity: i.quantity,
-            unit: i.unit,
-            note: i.note,
-          })),
-          tags: recipe.tags.map(({ tag }) => tag.name),
-        }}
-      />
+      <EditRecipeForm id={recipe.id} initial={toRecipeInput(recipe)} />
     </AppShell>
   );
 }

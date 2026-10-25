@@ -208,6 +208,7 @@ enum TemperatureUnit {
   CELSIUS
 }
 
+
 /// Where a person's agreement to be texted came from.
 ///
 /// Recorded rather than inferred from the presence of a number, because these
@@ -273,6 +274,29 @@ model Recipe {
   /// "9x13 pan", "Dutch oven", "Stand mixer". Worth knowing before you start
   /// rather than at step four.
   equipment    String[]         @default([])
+
+  /// Macros for one serving, as the source stated them.
+  ///
+  /// Transcribed, never calculated. If the card or the page does not say,
+  /// Trivet does not say - these are the source's claim about the dish, the
+  /// same kind of thing as the cook time, and a reader who doubts one can go
+  /// and look at the thing it was read from. An earlier draft had Claude
+  /// estimate them from the ingredient list when the source was silent; that
+  /// came out, because a figure somebody may count carbs against should not
+  /// be arithmetic nobody can check.
+  ///
+  /// Per serving, always, divided by the `servings` column above - not the
+  /// yield note. A source quoting per-recipe totals is converted on the way
+  /// in, because two recipes whose numbers mean different things are worse
+  /// than no numbers, and that error is invisible in the row.
+  ///
+  /// A partial set is normal and left alone: a card that prints protein and
+  /// nothing else gives one figure and three nulls. The CHECK constraint
+  /// only refuses the impossible.
+  caloriesKcal Int?
+  proteinG     Int?
+  carbsG       Int?
+  fatG         Int?
 
   /// The card this recipe was read from: a PDF, or a photograph of one.
   ///

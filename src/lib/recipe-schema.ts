@@ -37,6 +37,25 @@ export const OVEN_TEMP_RANGE: Record<
   CELSIUS: { min: 40, max: 315 },
 };
 
+/**
+ * Per-serving bounds for each macro, mirroring the CHECK constraint.
+ *
+ * A backstop rather than a nutritional opinion: these catch a per-recipe
+ * total stored as a per-serving figure, and grams landing in the calories
+ * column. Deliberately generous - a rich single serving really can reach
+ * four figures of calories, and refusing it would be this file having a
+ * view about dinner.
+ */
+export const MACRO_RANGE = {
+  caloriesKcal: { min: 0, max: 5000, label: "Calories" },
+  proteinG: { min: 0, max: 500, label: "Protein" },
+  carbsG: { min: 0, max: 1000, label: "Carbohydrate" },
+  fatG: { min: 0, max: 500, label: "Fat" },
+} as const;
+
+export type MacroKey = keyof typeof MACRO_RANGE;
+export const MACRO_KEYS = Object.keys(MACRO_RANGE) as MacroKey[];
+
 const recipeShape = z.object({
   title: z.string().trim().min(1, "Give the recipe a title").max(200),
   description: z.string().trim().max(2000).nullable().optional(),
@@ -54,6 +73,10 @@ const recipeShape = z.object({
   restMinutes: z.number().int().min(0).max(10_000).nullable().optional(),
   yieldNote: z.string().trim().max(200).nullable().optional(),
   equipment: z.array(z.string().trim().min(1).max(120)).max(30).default([]),
+  caloriesKcal: z.number().int().min(0).max(5000).nullable().optional(),
+  proteinG: z.number().int().min(0).max(500).nullable().optional(),
+  carbsG: z.number().int().min(0).max(1000).nullable().optional(),
+  fatG: z.number().int().min(0).max(500).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   instructions: z.array(z.string().trim().min(1)).max(100).default([]),
   ingredients: z.array(ingredientInput).max(200).default([]),
