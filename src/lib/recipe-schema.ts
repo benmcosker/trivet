@@ -37,6 +37,28 @@ export const OVEN_TEMP_RANGE: Record<
   CELSIUS: { min: 40, max: 315 },
 };
 
+export const NUTRITION_BASES = ["PRINTED", "ESTIMATED"] as const;
+export type NutritionBasis = (typeof NUTRITION_BASES)[number];
+
+/**
+ * Per-serving bounds for each macro, mirroring the CHECK constraint.
+ *
+ * A backstop rather than a nutritional opinion: these catch a per-recipe
+ * total stored as a per-serving figure, and grams landing in the calories
+ * column. Deliberately generous - a rich single serving really can reach
+ * four figures of calories, and refusing it would be this file having a
+ * view about dinner.
+ */
+export const MACRO_RANGE = {
+  caloriesKcal: { min: 0, max: 5000, label: "Calories" },
+  proteinG: { min: 0, max: 500, label: "Protein" },
+  carbsG: { min: 0, max: 1000, label: "Carbohydrate" },
+  fatG: { min: 0, max: 500, label: "Fat" },
+} as const;
+
+export type MacroKey = keyof typeof MACRO_RANGE;
+export const MACRO_KEYS = Object.keys(MACRO_RANGE) as MacroKey[];
+
 const recipeShape = z.object({
   title: z.string().trim().min(1, "Give the recipe a title").max(200),
   description: z.string().trim().max(2000).nullable().optional(),
@@ -54,6 +76,11 @@ const recipeShape = z.object({
   restMinutes: z.number().int().min(0).max(10_000).nullable().optional(),
   yieldNote: z.string().trim().max(200).nullable().optional(),
   equipment: z.array(z.string().trim().min(1).max(120)).max(30).default([]),
+  caloriesKcal: z.number().int().min(0).max(5000).nullable().optional(),
+  proteinG: z.number().int().min(0).max(500).nullable().optional(),
+  carbsG: z.number().int().min(0).max(1000).nullable().optional(),
+  fatG: z.number().int().min(0).max(500).nullable().optional(),
+  nutritionBasis: z.enum(NUTRITION_BASES).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   instructions: z.array(z.string().trim().min(1)).max(100).default([]),
   ingredients: z.array(ingredientInput).max(200).default([]),
@@ -93,7 +120,50 @@ function checkOvenTemp(
   }
 }
 
-export const recipeInput = recipeShape.superRefine(checkOvenTemp);
+/**
+ * A macro and its basis stand or fall together, the same bargain the oven
+ * temperature strikes with its unit.
+ *
+ * The asymmetry in the two messages is deliberate. Macros without a basis is
+ * a programming mistake - every path that sets them knows where they came
+ * from - so it reads as one. A basis without macros is something a person can
+ * do by clearing the fields on the edit form, so it reads as instruction.
+ */
+function checkNutrition(
+  recipe: {
+    caloriesKcal?: number | null;
+    proteinG?: number | null;
+    carbsG?: number | null;
+    fatG?: number | null;
+    nutritionBasis?: NutritionBasis | null;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const hasMacro = MACRO_KEYS.some((key) => recipe[key] != null);
+
+  if (hasMacro && !recipe.nutritionBasis) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["nutritionBasis"],
+      message:
+        "Nutrition has to say where it came from: PRINTED if the source " +
+        "stated it, ESTIMATED if Claude worked it out.",
+    });
+    return;
+  }
+
+  if (!hasMacro && recipe.nutritionBasis) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["nutritionBasis"],
+      message: "Remove the nutrition basis, or give at least one figure.",
+    });
+  }
+}
+
+export const recipeInput = recipeShape
+  .superRefine(checkOvenTemp)
+  .superRefine(checkNutrition);
 
 export type RecipeInput = z.infer<typeof recipeInput>;
 export type IngredientInput = z.infer<typeof ingredientInput>;
@@ -104,6 +174,7 @@ export const extractedRecipe = recipeShape
     /** The model's own confidence that this PDF was a recipe at all. */
     confidence: z.enum(["high", "medium", "low"]).default("medium"),
   })
-  .superRefine(checkOvenTemp);
+  .superRefine(checkOvenTemp)
+  .superRefine(checkNutrition);
 
 export type ExtractedRecipe = z.infer<typeof extractedRecipe>;

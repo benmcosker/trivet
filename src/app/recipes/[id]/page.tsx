@@ -15,6 +15,7 @@ import { formatAmount } from "@/lib/quantity";
 import { DeleteRecipeButton } from "@/components/DeleteRecipeButton";
 import { ShareRecipeToggle } from "@/components/ShareRecipeToggle";
 import { IconChip } from "@/components/IconChip";
+import { RecipeNutrition } from "@/components/RecipeNutrition";
 import { LinkButton } from "@/components/LinkButton";
 import { RecipeImageUploader } from "@/components/RecipeImageUploader";
 import { RecipePhoto } from "@/components/RecipePhoto";
@@ -382,6 +383,14 @@ export default async function RecipePage({
                     written for {recipe.servings}.
                   </Typography>
                 ) : null}
+
+                {/*
+                 * Under the ingredients, not in the meta row at the top.
+                 * The meta row is what you read deciding whether to cook
+                 * this; these are per serving and only mean anything beside
+                 * the servings count and the amounts they were derived from.
+                 */}
+                <RecipeNutrition recipe={recipe} />
               </CardContent>
             </Card>
           </Grid>

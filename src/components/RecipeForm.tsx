@@ -17,7 +17,13 @@ import Typography from "@mui/material/Typography";
 import { useState, type FormEvent } from "react";
 
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
-import { TEMPERATURE_UNITS, type RecipeInput } from "@/lib/recipe-schema";
+import {
+  MACRO_KEYS,
+  MACRO_RANGE,
+  TEMPERATURE_UNITS,
+  type MacroKey,
+  type RecipeInput,
+} from "@/lib/recipe-schema";
 
 export type RecipeFormValues = RecipeInput;
 
@@ -64,6 +70,48 @@ export function RecipeForm({
     initial.ovenTempUnit ?? "FAHRENHEIT",
   );
   const [yieldNote, setYieldNote] = useState(initial.yieldNote ?? "");
+  /**
+   * The four macros, plus the basis they are now held on.
+   *
+   * Typing a figure here makes it PRINTED even if Claude had estimated it,
+   * because a person has just stated it and `ESTIMATED` means specifically
+   * "nobody checked this". The comparison is against what the form opened
+   * with rather than against the basis alone: editing a recipe's title must
+   * not quietly promote its estimates to printed figures, and that is what a
+   * flat `basis = PRINTED on submit` would do.
+   */
+  function macroFields() {
+    const values = Object.fromEntries(
+      MACRO_KEYS.map((key) => [
+        key,
+        macros[key] === "" ? null : Number(macros[key]),
+      ]),
+    ) as Record<MacroKey, number | null>;
+
+    const touched = MACRO_KEYS.some(
+      (key) => values[key] !== (initial[key] ?? null),
+    );
+    const hasAny = MACRO_KEYS.some((key) => values[key] != null);
+
+    return {
+      ...values,
+      nutritionBasis: !hasAny
+        ? null
+        : touched
+          ? ("PRINTED" as const)
+          : (initial.nutritionBasis ?? ("PRINTED" as const)),
+    };
+  }
+
+  const [macros, setMacros] = useState<Record<MacroKey, string>>(
+    () =>
+      Object.fromEntries(
+        MACRO_KEYS.map((key) => [
+          key,
+          initial[key] == null ? "" : String(initial[key]),
+        ]),
+      ) as Record<MacroKey, string>,
+  );
   const [equipment, setEquipment] = useState<string[]>(initial.equipment);
   const [equipmentDraft, setEquipmentDraft] = useState("");
   const [sourceUrl, setSourceUrl] = useState(initial.sourceUrl ?? "");
@@ -148,6 +196,7 @@ export function RecipeForm({
       ovenTemp: ovenTemp === "" ? null : Number(ovenTemp),
       ovenTempUnit: ovenTemp === "" ? null : ovenTempUnit,
       yieldNote: yieldNote || null,
+      ...macroFields(),
       equipment,
       sourceUrl: sourceUrl || null,
       sourceName: sourceName || null,
@@ -261,6 +310,24 @@ export function RecipeForm({
                   ))}
                 </TextField>
               </Grid>
+              {MACRO_KEYS.map((key) => (
+                <Grid size={{ xs: 6, sm: 3 }} key={key}>
+                  <TextField
+                    label={MACRO_RANGE[key].label}
+                    type="number"
+                    value={macros[key]}
+                    onChange={(e) =>
+                      setMacros((m) => ({ ...m, [key]: e.target.value }))
+                    }
+                    helperText={
+                      key === "caloriesKcal"
+                        ? "Per serving, kcal"
+                        : "Per serving, g"
+                    }
+                    fullWidth
+                  />
+                </Grid>
+              ))}
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Yield"

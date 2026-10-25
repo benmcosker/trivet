@@ -5,7 +5,12 @@ import { z } from "zod";
 import { COLLECTION_SLUGS } from "./collections";
 import type { SupportedImageType } from "./image-inspect";
 import { hostLabel } from "./recipe-address";
-import { OVEN_TEMP_RANGE, type ExtractedRecipe } from "./recipe-schema";
+import {
+  MACRO_KEYS,
+  OVEN_TEMP_RANGE,
+  type ExtractedRecipe,
+  type MacroKey,
+} from "./recipe-schema";
 
 /**
  * The collections row's vocabulary, in the words a tag is written in.
@@ -126,6 +131,30 @@ const extractionSchema = z.object({
         "finds. Do not force them: a recipe that is none of these gets none " +
         "of them, and an untrue label is worse than a missing one.",
     ),
+  nutrition: z
+    .object({
+      caloriesKcal: z.number().nullable(),
+      proteinG: z.number().nullable(),
+      carbsG: z.number().nullable(),
+      fatG: z.number().nullable(),
+      basis: z.enum(["PRINTED", "ESTIMATED"]),
+    })
+    .nullable()
+    .describe(
+      "Macros for ONE serving, and where they came from. Null if the " +
+        "ingredient list is too vague to work from and the source states " +
+        "nothing. " +
+        "Set basis to PRINTED when the card or page states them: transcribe " +
+        "only what is stated, leave the rest null, and never fill the gaps " +
+        "with your own figures - a row where three numbers are measured and " +
+        "one is guessed cannot be told apart by the person reading it. " +
+        "Set basis to ESTIMATED only when the source states none of them, " +
+        "and then work out all four from the ingredients. " +
+        "Per serving: if the source gives totals for the whole dish, divide " +
+        "by the servings. Round estimates to the nearest 5 g and the nearest " +
+        "10 kcal - the decimal place is where a guess starts to look like a " +
+        "measurement.",
+    ),
   notes: z.string().nullable().describe("Any tips or storage notes"),
   confidence: z
     .enum(["high", "medium", "low"])
@@ -147,6 +176,13 @@ Rules:
 - Oven temperature is often printed only inside a step ("bake at 375F for 20 minutes"). Read the steps for it, not just the header block.
 - Give the temperature in the unit the card printed. Do not convert between Fahrenheit and Celsius.
 - If the card is not a recipe, or too little of it can be read, still return your best reading and set confidence to "low".
+
+Nutrition is the one field you may calculate rather than read, and it is fenced off from everything above:
+- Everywhere else on this card, inventing a number is a defect. Here it is the job - but only when the source states no macros at all, and only with basis ESTIMATED, which is what tells the reader they are looking at your arithmetic rather than the card's claim.
+- If the source states macros, transcribe them and set basis PRINTED. Do not top up a partial set with figures of your own. Three measured numbers and one invented one, displayed identically, is the failure this field is shaped to prevent.
+- Estimate from quantities you can actually see. "2 lb chicken thighs, bone in" is enough to work from; "chicken, some rice, oil" is not, and neither is a card whose quantities are mostly missing. When the ingredients will not support arithmetic, return null for the whole object rather than a number you cannot stand behind.
+- Per serving, divided by the servings count - not the yield note, and not the whole dish.
+- Round to the nearest 5 g and the nearest 10 kcal. False precision is how an estimate passes itself off as a measurement.
 
 Rules for a web page:
 - Markup is a claim about the page, not the page. Read it the same way you read a card: transcribe what is there and invent nothing.
@@ -352,6 +388,74 @@ async function extract(
 }
 
 /** Normalise the model's looser shape into what the form and schema expect. */
+/**
+ * Macros, rounded and checked here rather than taken on trust.
+ *
+ * The prompt asks for whole numbers rounded to 5 g and 10 kcal and for a
+ * PRINTED set never to be topped up with guesses. Both are restated here
+ * because a prompt is a request and this is the last place that can still
+ * say no: a model that returns `31.4` or quietly estimates two of four
+ * values has not malfunctioned in any way the API reports, and the result
+ * reaches the person as an authoritative-looking number either way.
+ *
+ * Rounding is applied only to estimates. A card that prints "31 g protein"
+ * means 31, and rounding it to 30 would be this function editing the
+ * source.
+ */
+/**
+ * Exported for tests, where `readOvenTemp` beside it is not.
+ *
+ * The difference is what the two protect. A mangled oven temperature is
+ * caught by the CHECK constraint, and past it, by a cook who can see that
+ * 180F is not a roast. Nothing downstream catches a partial estimate or a
+ * figure carrying a decimal place of false precision: both are valid rows,
+ * and they reach the person looking exactly like the card's own numbers.
+ * The rules live in this function, so the test for them has to as well.
+ */
+export function readNutrition(
+  nutrition: z.infer<typeof extractionSchema>["nutrition"],
+): Pick<ExtractedRecipe, MacroKey | "nutritionBasis"> {
+  const none = {
+    caloriesKcal: null,
+    proteinG: null,
+    carbsG: null,
+    fatG: null,
+    nutritionBasis: null,
+  };
+
+  if (!nutrition) return none;
+
+  const estimated = nutrition.basis === "ESTIMATED";
+  const macros = {
+    caloriesKcal: readMacro(nutrition.caloriesKcal, estimated ? 10 : 1),
+    proteinG: readMacro(nutrition.proteinG, estimated ? 5 : 1),
+    carbsG: readMacro(nutrition.carbsG, estimated ? 5 : 1),
+    fatG: readMacro(nutrition.fatG, estimated ? 5 : 1),
+  };
+
+  // An estimate is all four or it is nothing. A partial estimate is the
+  // model having run out of confidence partway through the ingredient list,
+  // and three figures with a gap invites the reader to assume the gap is a
+  // zero rather than a silence.
+  if (estimated && MACRO_KEYS.some((key) => macros[key] == null)) return none;
+
+  if (MACRO_KEYS.every((key) => macros[key] == null)) return none;
+
+  return { ...macros, nutritionBasis: nutrition.basis };
+}
+
+/**
+ * One macro: a non-negative whole number, or nothing.
+ *
+ * Negatives and NaN are not clamped to zero - zero grams of fat is a claim
+ * about the dish, and a model that returned `-4` has not told us the dish is
+ * fat free. It has told us nothing, which is what null means.
+ */
+function readMacro(value: number | null, step: number): number | null {
+  if (value == null || !Number.isFinite(value) || value < 0) return null;
+  return Math.round(value / step) * step;
+}
+
 function toExtractedRecipe(
   parsed: z.infer<typeof extractionSchema>,
 ): ExtractedRecipe {
@@ -364,6 +468,7 @@ function toExtractedRecipe(
     cookMinutes: parsed.cookMinutes ?? null,
     restMinutes: parsed.restMinutes ?? null,
     ...readOvenTemp(parsed.ovenTemp, parsed.ovenTempUnit),
+    ...readNutrition(parsed.nutrition),
     equipment: parsed.equipment.map((e) => e.trim()).filter(Boolean),
     sourceUrl: null,
     sourceName: parsed.sourceName?.trim() || null,

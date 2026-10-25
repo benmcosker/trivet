@@ -20,6 +20,29 @@ function newPublicId(): string {
   return randomBytes(4).toString("hex");
 }
 
+/**
+ * The five nutrition columns, written as a set.
+ *
+ * Spread rather than listed inline at both call sites, because they are only
+ * correct together: the CHECK constraint refuses a macro without a basis and
+ * a basis without macros, so a create that copied four of the five would
+ * fail at the database rather than in review. One helper means the edit path
+ * and the create path cannot drift apart on which five they are.
+ *
+ * `?? null` throughout, not `undefined`: on update, undefined leaves a column
+ * alone, and somebody clearing the nutrition off a recipe needs those columns
+ * to actually empty.
+ */
+function nutritionColumns(input: RecipeInput) {
+  return {
+    caloriesKcal: input.caloriesKcal ?? null,
+    proteinG: input.proteinG ?? null,
+    carbsG: input.carbsG ?? null,
+    fatG: input.fatG ?? null,
+    nutritionBasis: input.nutritionBasis ?? null,
+  };
+}
+
 function emptyToNull(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
@@ -59,6 +82,7 @@ export async function createRecipe(
       restMinutes: input.restMinutes ?? null,
       yieldNote: emptyToNull(input.yieldNote),
       equipment: input.equipment,
+      ...nutritionColumns(input),
       notes: emptyToNull(input.notes),
       instructions: input.instructions,
       source: assets.source ?? "MANUAL",
@@ -130,6 +154,7 @@ export async function updateRecipe(
         restMinutes: input.restMinutes ?? null,
         yieldNote: emptyToNull(input.yieldNote),
         equipment: input.equipment,
+        ...nutritionColumns(input),
         notes: emptyToNull(input.notes),
         instructions: input.instructions,
         ingredients: {
