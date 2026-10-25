@@ -52,10 +52,9 @@ the same URL and this command does not need editing every time.
 
 ## What works
 
-- **Invite-only accounts.** Signup requires a code minted by an existing user,
-  and a phone number. A recipe belongs to the household that added it and is
-  private to them until they share it; a shared one appears in every
-  household's library.
+- **Invite-only accounts.** Signup requires a code minted by an existing user.
+  A recipe belongs to the household that added it and is private to them until
+  they share it; a shared one appears in every household's library.
 - **Invites by text or email.** A new code comes with **Text it**, which opens
   your own Messages with the invite written in, and **Copy link** for anywhere
   else. Give their email address and Trivet sends the invitation itself, from
@@ -110,9 +109,9 @@ the same URL and this command does not need editing every time.
   only. Reachable by the addresses in `ADMIN_EMAILS` and answering 404 to
   everybody else.
 - **Texting the list.** Everyone in the household who has agreed to be texted
-  gets the week's shopping as an SMS, split into readable parts. Every member
-  gives a number when they join; only those who ticked the box are sent
-  anything. Live: registered with the carriers and delivering.
+  gets the week's shopping as an SMS, split into readable parts. Giving a number
+  is optional, and a number alone sends nothing - only those who ticked the box
+  are texted. Live: registered with the carriers and delivering.
 
 ## Stack
 
@@ -250,9 +249,10 @@ that reads as over-engineering until a carrier asks to see it:
 - A number is not consent. `smsConsentAt` and `smsConsentSource` are stored
   separately, because being reachable and having agreed are two different
   facts, and a carrier asking to see the opt-in is asking about the second.
-  That matters more now every member must give a number to join: the number is
-  required, the agreement never is, because carrier rules do not allow agreeing
-  to texts to be a condition of having an account.
+  Agreeing to texts is never a condition of having an account; carrier rules do
+  not allow it. (A phone was briefly required to join and was made optional
+  again: it bought no way of reaching anybody, since only members who tick the
+  box can be texted, and gave a stranger signing up nothing to say yes to.)
 - Invites are texted from the inviter's own phone, never from this app's
   number. The campaign is registered for one purpose - the shopping list, to
   members who agreed - and an invitee has agreed to nothing. Sending from the
