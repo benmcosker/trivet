@@ -127,8 +127,7 @@ export async function createShoppingListPage(
       ok: false,
       error:
         "Instacart is not available: they are not accepting new developer " +
-        "applications, so there is no key to configure yet. Use Amazon Fresh " +
-        "or Whole Foods in the meantime.",
+        "applications, so there is no key to configure yet.",
     };
   }
 

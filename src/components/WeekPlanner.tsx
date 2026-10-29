@@ -1615,47 +1615,51 @@ export function WeekPlanner({
           </Box>
 
           {/*
-           * On the baseline beside the heading. The icons are gone: three
-           * buttons that all carried a shopping trolley said nothing about
-           * which one does what, and the labels already do.
+           * On the baseline beside the heading: a shop that builds a cart,
+           * when one is configured, and texting the list. Often neither -
+           * Instacart has no key to be had and texting needs Twilio - and
+           * then the row is not rendered at all, so an empty one does not
+           * leave its gap under the heading on a phone.
            */}
-          <Stack
-            direction="row"
-            sx={{ flexWrap: "wrap", gap: 1.75, pb: { md: 0.75 } }}
-          >
-            {providers.map((provider) => (
-              <Button
-                key={provider.id}
-                variant={provider.kind === "cart" ? "contained" : "outlined"}
-                color={provider.kind === "cart" ? "ink" : "primary"}
-                // `available` was computed but never used, so a provider
-                // that cannot possibly succeed still invited a click and
-                // answered with an error.
-                disabled={
-                  !provider.available ||
-                  sendingTo !== null ||
-                  groceries.length === 0
-                }
-                onClick={() => sendTo(provider.id)}
-              >
-                {sendingTo === provider.id ? "Working…" : provider.label}
-              </Button>
-            ))}
+          {providers.length > 0 || smsAudience ? (
+            <Stack
+              direction="row"
+              sx={{ flexWrap: "wrap", gap: 1.75, pb: { md: 0.75 } }}
+            >
+              {providers.map((provider) => (
+                <Button
+                  key={provider.id}
+                  variant={provider.kind === "cart" ? "contained" : "outlined"}
+                  color={provider.kind === "cart" ? "ink" : "primary"}
+                  // `available` was computed but never used, so a provider
+                  // that cannot possibly succeed still invited a click and
+                  // answered with an error.
+                  disabled={
+                    !provider.available ||
+                    sendingTo !== null ||
+                    groceries.length === 0
+                  }
+                  onClick={() => sendTo(provider.id)}
+                >
+                  {sendingTo === provider.id ? "Working…" : provider.label}
+                </Button>
+              ))}
 
-            {smsAudience ? (
-              <Button
-                variant="outlined"
-                disabled={
-                  texting ||
-                  groceries.length === 0 ||
-                  smsAudience.names.length === 0
-                }
-                onClick={textList}
-              >
-                {texting ? "Sending…" : "Text the list"}
-              </Button>
-            ) : null}
-          </Stack>
+              {smsAudience ? (
+                <Button
+                  variant="outlined"
+                  disabled={
+                    texting ||
+                    groceries.length === 0 ||
+                    smsAudience.names.length === 0
+                  }
+                  onClick={textList}
+                >
+                  {texting ? "Sending…" : "Text the list"}
+                </Button>
+              ) : null}
+            </Stack>
+          ) : null}
         </Stack>
 
         {smsAudience ? (
@@ -1690,10 +1694,7 @@ export function WeekPlanner({
 
         {/*
          * Notes rather than banners, and one per thing worth saying rather
-         * than one per provider. The two kinds of provider behave very
-         * differently and one paragraph over a row of similar buttons would
-         * hide that - but Amazon Fresh and Whole Foods are one Amazon with one
-         * constraint, and saying it twice reads as a mistake.
+         * than one per provider - see `provider-notes.ts`.
          *
          * Stacked with their hairlines pulled together, so a column of notes
          * reads as ruled paper instead of as a set of boxes.
@@ -1712,10 +1713,8 @@ export function WeekPlanner({
 
           {/*
            * The standing note for a provider steps aside once that provider
-           * has answered for itself. The two say much the same thing - both
-           * are about Amazon having no ordering API - and as banners that
-           * overlap was a caption under an alert. As two full paragraphs of
-           * serif it is the same sentence twice.
+           * has answered for itself, so its result is not followed by a
+           * paragraph saying much the same thing.
            */}
           {providerNotes(
             providers.filter(

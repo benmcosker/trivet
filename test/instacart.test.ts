@@ -32,7 +32,6 @@ describe("createShoppingListPage", () => {
     // "set INSTACART_API_KEY" would send someone off to find a key that
     // Instacart is not currently issuing to anyone.
     expect(error).toMatch(/not accepting new developer applications/i);
-    expect(error).toMatch(/Amazon Fresh or Whole Foods/i);
   });
 
   it("posts to the products_link endpoint with bearer auth and JSON", async () => {

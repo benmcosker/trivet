@@ -137,12 +137,7 @@ export async function setDayServingsAction(input: {
 }
 
 /**
- * Hand this week's list to a shop.
- *
- * What comes back depends on the provider: Instacart returns a prepared cart,
- * Amazon returns per-ingredient search links because it has no ordering API.
- * The result type keeps those distinct so the UI cannot present one as the
- * other.
+ * Hand this week's list to a shop, which returns a prepared cart to check out.
  */
 export async function sendWeekToProviderAction(
   weekStartIso: string,
@@ -160,7 +155,14 @@ export async function sendWeekToProviderAction(
     };
   }
 
-  const result = await getProvider(providerId).handoff(lines, weekStart);
+  // The id comes from the browser, and a page left open from before a shop
+  // was removed can still send one that is no longer offered.
+  const provider = getProvider(providerId);
+  if (!provider) {
+    return { ok: false, error: "That shop is no longer offered." };
+  }
+
+  const result = await provider.handoff(lines, weekStart);
   if (!result.ok) return result;
 
   // Record the hand-off. The shop owns everything after this point, so this is
@@ -169,7 +171,7 @@ export async function sendWeekToProviderAction(
     data: {
       provider: providerId,
       weekStart,
-      url: result.kind === "cart" ? result.url : null,
+      url: result.url,
       itemCount: lines.length,
       householdId: user.householdId,
       createdById: user.id,

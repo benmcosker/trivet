@@ -1,31 +1,30 @@
 import type { ShoppingProvider } from "@/generated/prisma/enums";
 
-import { amazonFreshProvider, wholeFoodsProvider } from "./amazon";
 import { instacartProvider } from "./instacart";
 import type { ProviderInfo, ShoppingProviderAdapter } from "./types";
 
-const providers: Record<ShoppingProvider, ShoppingProviderAdapter> = {
+/**
+ * The shops a list can be handed to.
+ *
+ * Instacart only. Amazon Fresh and Whole Foods were here as a search link per
+ * ingredient - Amazon has no ordering API - and nobody adds a week's shopping
+ * to a basket one search at a time, so they went. Their enum values stay:
+ * past hand-offs in `ShoppingHandoff` are recorded against them.
+ */
+const providers: Partial<Record<ShoppingProvider, ShoppingProviderAdapter>> = {
   INSTACART: instacartProvider,
-  AMAZON_FRESH: amazonFreshProvider,
-  WHOLE_FOODS: wholeFoodsProvider,
 };
 
-export function getProvider(id: ShoppingProvider): ShoppingProviderAdapter {
+/** The adapter for a shop, or undefined for one no longer offered. */
+export function getProvider(
+  id: ShoppingProvider,
+): ShoppingProviderAdapter | undefined {
   return providers[id];
 }
 
-/**
- * Every provider, in the order they should appear in the UI.
- *
- * The ones that work come first. Instacart builds a real cart and would
- * otherwise lead, but it cannot be switched on while Instacart is refusing new
- * developer applications - and putting a dead option above two working ones
- * reads as though the working ones are the fallback.
- */
+/** Every registered provider, in the order they should appear in the UI. */
 export function listProviders(): ProviderInfo[] {
-  return (
-    ["AMAZON_FRESH", "WHOLE_FOODS", "INSTACART"] as ShoppingProvider[]
-  ).map((id) => providers[id].info());
+  return Object.values(providers).map((provider) => provider.info());
 }
 
 /**

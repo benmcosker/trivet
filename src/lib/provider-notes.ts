@@ -1,10 +1,10 @@
 /**
  * One note per thing worth saying, rather than one per provider.
  *
- * Amazon Fresh and Whole Foods are both Amazon storefronts built by the same
- * factory in `shopping/amazon.ts`, so they carry the same sentence: Amazon has
- * no public ordering API. As captions under an alert that read as repetition;
- * as two full paragraphs of serif it reads as a mistake.
+ * Written for Amazon Fresh and Whole Foods, two storefronts of one Amazon
+ * that carried the same sentence - Amazon has no public ordering API. They
+ * have since been removed, but the rule stands for any two shops that would
+ * say the same thing: as two full paragraphs of serif it reads as a mistake.
  *
  * Grouping rather than rewriting, because the sentence is true of both and the
  * honest fix is to say it once. Inventing a difference between them to fill
