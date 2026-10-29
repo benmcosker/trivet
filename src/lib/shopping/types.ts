@@ -2,37 +2,17 @@ import type { ShoppingProvider } from "@/generated/prisma/enums";
 import type { GroceryLine } from "../grocery";
 
 /**
- * How a provider hands a shopping list over.
+ * How a provider hands a shopping list over: `cart`, an API that builds a real
+ * basket and returns one URL to it. Instacart works this way.
  *
- * Two shapes, because the shops genuinely differ:
- *
- * - `cart` — the provider has an API that builds a real basket and returns one
- *   URL to it. Instacart works this way.
- * - `links` — no ordering API exists, so the best available is a search link
- *   per ingredient plus a list to paste. Amazon works this way; see
- *   ./amazon.ts for why.
- *
- * Keeping these distinct in the type means the UI cannot accidentally present
- * a pile of search links as though a cart had been built.
+ * There used to be a second kind, a search link per ingredient for shops with
+ * no ordering API. It was removed with Amazon, the only shop that used it - a
+ * hand-off that does not build a basket is not worth a button.
  */
-export type HandoffKind = "cart" | "links";
-
-export type ProviderLine = {
-  name: string;
-  /** Human-readable amount, e.g. "2 tbsp". Empty when unquantified. */
-  amount: string;
-  url: string;
-};
+export type HandoffKind = "cart";
 
 export type HandoffResult =
   | { ok: true; kind: "cart"; url: string; itemCount: number }
-  | {
-      ok: true;
-      kind: "links";
-      lines: ProviderLine[];
-      text: string;
-      storeUrl: string;
-    }
   | { ok: false; error: string };
 
 export type ProviderInfo = {

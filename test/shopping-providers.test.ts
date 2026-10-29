@@ -1,12 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  amazonFreshProvider,
-  buildSearchUrl,
-  buildStoreUrl,
-  wholeFoodsProvider,
-} from "@/lib/shopping/amazon";
-import {
   formatAmount,
   formatAsPlainText,
   getProvider,
@@ -32,100 +26,18 @@ const lines: GroceryLine[] = [
   },
 ];
 
-describe("buildSearchUrl", () => {
-  it("scopes the search to the Amazon Fresh storefront", () => {
-    const url = new URL(buildSearchUrl("butter", "AMAZON_FRESH"));
-    expect(url.origin + url.pathname).toBe("https://www.amazon.com/s");
-    expect(url.searchParams.get("k")).toBe("butter");
-    expect(url.searchParams.get("i")).toBe("amazonfresh");
-  });
-
-  it("scopes the search to the Whole Foods storefront", () => {
-    const url = new URL(buildSearchUrl("butter", "WHOLE_FOODS"));
-    expect(url.searchParams.get("i")).toBe("wholefoods");
-  });
-
-  it("encodes names that would otherwise break the query string", () => {
-    const url = new URL(buildSearchUrl("salt & pepper", "AMAZON_FRESH"));
-    // Round-trips rather than splitting the query on the ampersand.
-    expect(url.searchParams.get("k")).toBe("salt & pepper");
-    expect(url.searchParams.get("i")).toBe("amazonfresh");
-  });
-
-  it("searches the ingredient only, not the amount", () => {
-    // "2 tbsp butter" as a search term matches far worse than "butter".
-    const url = new URL(buildSearchUrl("  butter  ", "AMAZON_FRESH"));
-    expect(url.searchParams.get("k")).toBe("butter");
-  });
-});
-
-describe("buildStoreUrl", () => {
-  it("points at the right storefront", () => {
-    expect(new URL(buildStoreUrl("WHOLE_FOODS")).searchParams.get("i")).toBe(
-      "wholefoods",
-    );
-  });
-});
-
-describe("amazon provider handoff", () => {
-  it("returns links rather than claiming to have built a cart", async () => {
-    const result = await amazonFreshProvider.handoff(lines, new Date());
-    expect(result.ok).toBe(true);
-    expect(result.ok && result.kind).toBe("links");
-  });
-
-  it("produces one link per ingredient", async () => {
-    const result = await amazonFreshProvider.handoff(lines, new Date());
-    if (!result.ok || result.kind !== "links")
-      throw new Error("expected links");
-
-    expect(result.lines.map((l) => l.name)).toEqual(["chicken breast", "salt"]);
-    expect(result.lines[0].amount).toBe("2 lb");
-    expect(result.lines[1].amount).toBe("");
-  });
-
-  it("includes a pasteable text list, grouped by aisle", async () => {
-    const result = await amazonFreshProvider.handoff(lines, new Date());
-    if (!result.ok || result.kind !== "links")
-      throw new Error("expected links");
-    // This is the version that goes round the shop, so it is laid out the way
-    // the shop is rather than in one alphabetical run.
-    expect(result.text).toBe(
-      "Meat & fish:\n2 lb chicken breast\n\nSpices & seasoning:\nsalt",
-    );
-  });
-
-  it("refuses an empty list", async () => {
-    const result = await amazonFreshProvider.handoff([], new Date());
-    expect(result.ok).toBe(false);
-  });
-
-  it("needs no configuration to be usable", () => {
-    expect(amazonFreshProvider.info().available).toBe(true);
-    expect(wholeFoodsProvider.info().available).toBe(true);
-  });
-
-  it("declares itself a link provider, not a cart provider", () => {
-    expect(amazonFreshProvider.info().kind).toBe("links");
-    expect(wholeFoodsProvider.info().kind).toBe("links");
-  });
-});
-
 describe("listProviders", () => {
   const originalEnv = { ...process.env };
   afterEach(() => {
     process.env = { ...originalEnv };
   });
 
-  it("lists the shops that work before the one that cannot", () => {
-    // Instacart builds a real cart and would otherwise lead, but it cannot be
-    // enabled at all right now; listing it first implies the others are a
-    // fallback rather than the only working path.
-    expect(listProviders().map((p) => p.id)).toEqual([
-      "AMAZON_FRESH",
-      "WHOLE_FOODS",
-      "INSTACART",
-    ]);
+  it("lists Instacart and nothing else", () => {
+    // Amazon Fresh and Whole Foods were search links per ingredient, not a
+    // basket, and were removed. Their ids stay in the enum for old records.
+    expect(listProviders().map((p) => p.id)).toEqual(["INSTACART"]);
+    expect(getProvider("AMAZON_FRESH")).toBeUndefined();
+    expect(getProvider("WHOLE_FOODS")).toBeUndefined();
   });
 
   it("marks Instacart unavailable and explains that no key can be had", () => {
@@ -145,12 +57,6 @@ describe("listProviders", () => {
       true,
     );
   });
-
-  it("keeps Amazon usable even when Instacart is not configured", () => {
-    delete process.env.INSTACART_API_KEY;
-    const amazon = listProviders().filter((p) => p.id !== "INSTACART");
-    expect(amazon.every((p) => p.available)).toBe(true);
-  });
 });
 
 describe("what the planner is offered", () => {
@@ -160,10 +66,7 @@ describe("what the planner is offered", () => {
     // never work is a notice, not an option, and it would sit on the page
     // every week saying the same thing.
     delete process.env.INSTACART_API_KEY;
-    expect(listUsableProviders().map((p) => p.id)).toEqual([
-      "AMAZON_FRESH",
-      "WHOLE_FOODS",
-    ]);
+    expect(listUsableProviders()).toEqual([]);
   });
 
   it("brings it back on its own the day a key is set", () => {

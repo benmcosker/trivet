@@ -38,7 +38,7 @@ export function PaperNote({
   onDismiss,
   children,
 }: {
-  /** Names the note: "A note on Amazon Fresh", "Text sent". */
+  /** Names the note: "Your cart is ready", "Text sent". */
   label: string;
   tone?: "note" | "good";
   /** Announce it when it appears. For anything that answers a button press. */
