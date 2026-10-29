@@ -13,7 +13,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 
 import {
   sendWeekToProviderAction,
@@ -23,6 +23,7 @@ import {
   type TextListActionResult,
 } from "@/app/plan/actions";
 import type { MealSlot, ShoppingProvider } from "@/generated/prisma/enums";
+import type { EveningContext, RankableRecipe } from "@/lib/dinner-ranking";
 import { groupBySection } from "@/lib/grocery-sections";
 import { DINNER_SLOTS, FIRST_DINNER, SIDE_SLOTS } from "@/lib/meal-slots";
 import { providerNotes } from "@/lib/provider-notes";
@@ -628,11 +629,12 @@ export function WeekPlanner({
   thisWeekIso: string;
   /** "The McMullens" - the eyebrow says whose week this is. */
   householdName: string;
-  recipes: (TileRecipe & {
-    servings: number;
-    prepMinutes: number | null;
-    cookMinutes: number | null;
-  })[];
+  recipes: (TileRecipe &
+    RankableRecipe & {
+      servings: number;
+      prepMinutes: number | null;
+      cookMinutes: number | null;
+    })[];
   meals: PlannedMeal[];
   groceries: GroceryLine[];
   skips: WeeklySkipRecord[];
@@ -652,6 +654,26 @@ export function WeekPlanner({
     day: string;
     slot: MealSlot;
   } | null>(null);
+  /*
+   * The evening the picker is open for, and the dinners already in the week
+   * around it - what the ranking needs to put a quick dish first on a
+   * Tuesday and keep a second pasta off the night after the first.
+   */
+  const evening = useMemo<EveningContext | null>(
+    () =>
+      picking
+        ? {
+            dateIso: picking.date,
+            slot: picking.slot,
+            plannedThisWeek: meals.flatMap((m) =>
+              m.recipeId && (DINNER_SLOTS as readonly string[]).includes(m.slot)
+                ? [{ dateIso: m.date, slot: m.slot, recipeId: m.recipeId }]
+                : [],
+            ),
+          }
+        : null,
+    [picking, meals],
+  );
   const [handoff, setHandoff] = useState<HandoffResult | null>(null);
   /*
    * Which button produced the result on screen, so that provider's standing
@@ -1490,6 +1512,7 @@ export function WeekPlanner({
             : ""
         }
         recipes={recipes}
+        evening={evening}
         selectedId={
           picking
             ? (byKey.get(`${picking.date}|${picking.slot}`)?.recipeId ?? null)

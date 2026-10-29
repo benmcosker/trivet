@@ -2,6 +2,7 @@ import { AppShell } from "@/components/AppShell";
 import { WeekPlanner } from "@/components/WeekPlanner";
 import { prisma } from "@/lib/db";
 import { listExtraItems } from "@/lib/extras";
+import { DINNER_SLOTS } from "@/lib/meal-slots";
 import {
   addDays,
   getWeekPlan,
@@ -27,32 +28,63 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
     weekParam ? new Date(`${weekParam}T00:00:00.000Z`) : new Date(),
   );
 
-  const [meals, recipes, skips, pantry, extras] = await Promise.all([
-    getWeekPlan(weekStart, householdId),
-    // The picker offers this household's recipes and whatever others have
-    // shared - the same library the recipes page shows, so a dish cannot be
-    // planned from a list it is not in.
-    prisma.recipe.findMany({
-      where: visibleRecipes(householdId),
-      // The times are here for the planner's meta line, "Serves 4 / 1 hr 30";
-      // the picker tiles ignore them.
-      select: {
-        id: true,
-        // The planner links to a recipe, so it needs what an address is made
-        // of - see `recipe-url.ts`.
-        publicId: true,
-        title: true,
-        servings: true,
-        imageUrl: true,
-        prepMinutes: true,
-        cookMinutes: true,
-      },
-      orderBy: { title: "asc" },
-    }),
-    getWeeklySkips(weekStart, householdId),
-    listPantryItems(householdId),
-    listExtraItems(weekStart, householdId),
-  ]);
+  const [meals, recipes, skips, pantry, extras, history, vetoes] =
+    await Promise.all([
+      getWeekPlan(weekStart, householdId),
+      // The picker offers this household's recipes and whatever others have
+      // shared - the same library the recipes page shows, so a dish cannot be
+      // planned from a list it is not in.
+      prisma.recipe.findMany({
+        where: visibleRecipes(householdId),
+        // The times are here for the planner's meta line, "Serves 4 / 1 hr 30";
+        // the picker tiles ignore them.
+        select: {
+          id: true,
+          // The planner links to a recipe, so it needs what an address is made
+          // of - see `recipe-url.ts`.
+          publicId: true,
+          title: true,
+          servings: true,
+          imageUrl: true,
+          prepMinutes: true,
+          cookMinutes: true,
+          // What the picker ranks on - see `dinner-ranking.ts`. Course so only
+          // dinners are offered, rest so a dish that needs an hour's rest is
+          // not mistaken for a quick one, tags for the variety nudge.
+          restMinutes: true,
+          course: true,
+          tags: { select: { tag: { select: { slug: true } } } },
+        },
+        orderBy: { title: "asc" },
+      }),
+      getWeeklySkips(weekStart, householdId),
+      listPantryItems(householdId),
+      listExtraItems(weekStart, householdId),
+      // This household's dinner history before the week on screen: how often
+      // each dish was planned, and when last. Nothing prunes old weeks, so
+      // this is every plan since the household started.
+      prisma.plannedMeal.groupBy({
+        by: ["recipeId"],
+        where: {
+          householdId,
+          slot: { in: [...DINNER_SLOTS] },
+          date: { lt: weekStart },
+          recipeId: { not: null },
+        },
+        _count: { _all: true },
+        _max: { date: true },
+      }),
+      // One or two stars from anybody in this household sends a dish to the
+      // bottom of the picker. This household's own ratings, not the shared
+      // average, which for a shared recipe includes other families.
+      prisma.recipeReview.findMany({
+        where: { stars: { lte: 2 }, user: { householdId } },
+        select: { recipeId: true },
+      }),
+    ]);
+
+  const historyById = new Map(history.map((h) => [h.recipeId, h]));
+  const vetoed = new Set(vetoes.map((v) => v.recipeId));
 
   // Who a text would actually reach. Fetched even when texting is switched off
   // so the shape of the page does not depend on a code path, but only used
@@ -83,10 +115,31 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
         // Read here rather than in the browser for the same reason todayIso is.
         thisWeekIso={weekStartOf(new Date()).toISOString().slice(0, 10)}
         householdName={householdName}
-        recipes={recipes.map((recipe) => ({
-          ...recipe,
-          reviews: summaries.get(recipe.id) ?? NO_REVIEWS,
-        }))}
+        recipes={recipes.map(({ tags, restMinutes, ...recipe }) => {
+          const past = historyById.get(recipe.id);
+          const minutes =
+            (recipe.prepMinutes ?? 0) +
+            (recipe.cookMinutes ?? 0) +
+            (restMinutes ?? 0);
+          return {
+            ...recipe,
+            reviews: summaries.get(recipe.id) ?? NO_REVIEWS,
+            // Null rather than 0 when no time is recorded at all, so the
+            // ranking reads it as unknown rather than as instant.
+            totalMinutes:
+              recipe.prepMinutes == null &&
+              recipe.cookMinutes == null &&
+              restMinutes == null
+                ? null
+                : minutes,
+            restMinutes,
+            timesPlanned: past?._count._all ?? 0,
+            lastPlannedIso: past?._max.date?.toISOString().slice(0, 10) ?? null,
+            vetoed: vetoed.has(recipe.id),
+            averageStars: summaries.get(recipe.id)?.average ?? null,
+            tagSlugs: tags.map(({ tag }) => tag.slug),
+          };
+        })}
         meals={meals.map((meal) => ({
           date: meal.date.toISOString().slice(0, 10),
           slot: meal.slot,

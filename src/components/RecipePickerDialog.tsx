@@ -11,8 +11,14 @@ import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import {
+  rankForEvening,
+  type EveningContext,
+  type RankableRecipe,
+} from "@/lib/dinner-ranking";
 import {
   PICKER_PAGE_SIZE,
   pageCount,
@@ -31,23 +37,31 @@ import { RecipeTile, type TileRecipe } from "./RecipeTile";
 /**
  * Pick a recipe for one day.
  *
- * Filtering is a plain substring match on the title, done in the browser over
- * the recipes already loaded for the planner. The proper search - stemming,
- * ingredients, tags - lives on /recipes and needs the server; reaching for it
- * here would mean a round trip per keystroke to choose between the handful of
- * recipes a household actually cooks.
+ * Browsing shows dinners only, best first for this evening - see
+ * `dinner-ranking.ts`. It used to show the whole library alphabetically, so
+ * the first answer to "What are we eating on Monday?" was Buttermilk
+ * Pancakes. Each tile carries the one reason it is where it is.
+ *
+ * Typing searches everything, dinners or not. Somebody who types "pancakes"
+ * wants pancakes, and a filter that hid them would be the app deciding. It is
+ * a plain substring match on the title, done in the browser over the recipes
+ * already loaded for the planner; the proper search - stemming, ingredients,
+ * tags - lives on /recipes and needs the server.
  */
 export function RecipePickerDialog({
   open,
   dayLabel,
   recipes,
+  evening,
   selectedId,
   onPick,
   onClose,
 }: {
   open: boolean;
   dayLabel: string;
-  recipes: TileRecipe[];
+  recipes: (TileRecipe & RankableRecipe)[];
+  /** The evening being planned and the week around it, for the ranking. */
+  evening: EveningContext | null;
   selectedId: string | null;
   onPick: (recipeId: string | null) => void;
   onClose: () => void;
@@ -55,11 +69,48 @@ export function RecipePickerDialog({
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
 
+  const ranked = useMemo(
+    () => (evening ? rankForEvening(recipes, evening) : []),
+    [recipes, evening],
+  );
+  const reasonOf = useMemo(
+    () => new Map(ranked.map((r) => [r.recipe.id, r.reason])),
+    [ranked],
+  );
+  const rankOf = useMemo(
+    () => new Map(ranked.map((r, i) => [r.recipe.id, i])),
+    [ranked],
+  );
+
   const matches = useMemo(() => {
     const needle = filter.trim().toLowerCase();
-    if (!needle) return recipes;
-    return recipes.filter((r) => r.title.toLowerCase().includes(needle));
-  }, [filter, recipes]);
+    if (needle) {
+      // Everything that matches, dinners first in ranked order, then the
+      // rest by name.
+      return recipes
+        .filter((r) => r.title.toLowerCase().includes(needle))
+        .sort(
+          (a, b) =>
+            (rankOf.get(a.id) ?? Infinity) - (rankOf.get(b.id) ?? Infinity) ||
+            a.title.localeCompare(b.title),
+        );
+    }
+    const dinners = ranked.map((r) => r.recipe);
+    // Not yet sorted comes after the dinners, by name, so a recipe nobody
+    // has classified is still in reach while browsing - a hand-made recipe
+    // starts unsorted. Breakfasts, desserts and the rest stay out.
+    const unsorted = recipes
+      .filter((r) => r.course === null)
+      .sort((a, b) => a.title.localeCompare(b.title));
+    // The evening's current choice stays in view even when it is not sorted
+    // as a dinner, so the highlight never points at something hidden.
+    const current =
+      selectedId && !rankOf.has(selectedId)
+        ? recipes.find((r) => r.id === selectedId)
+        : undefined;
+    const browse = [...dinners, ...unsorted];
+    return current && !browse.includes(current) ? [current, ...browse] : browse;
+  }, [filter, recipes, ranked, rankOf, selectedId]);
 
   const totalPages = pageCount(matches.length, PICKER_PAGE_SIZE);
   /*
@@ -97,11 +148,15 @@ export function RecipePickerDialog({
       <DialogTitle sx={{ pb: 1 }}>{dayLabel}</DialogTitle>
 
       <DialogContent dividers>
+        {/*
+         * Not autofocused. With the list ranked, browsing it is the main way
+         * in, and on a phone autofocus opened the keyboard straight over the
+         * dishes the ranking had just put first.
+         */}
         <TextField
-          autoFocus
           fullWidth
           size="small"
-          placeholder="Filter by name…"
+          placeholder="Search all recipes by name…"
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
@@ -113,9 +168,16 @@ export function RecipePickerDialog({
 
         {shown.length === 0 ? (
           <Typography color="text.secondary" sx={{ py: 3 }} align="center">
-            {recipes.length === 0
-              ? "No recipes in the library yet."
-              : "Nothing matches that."}
+            {recipes.length === 0 ? (
+              "No recipes in the library yet."
+            ) : filter.trim() ? (
+              "Nothing matches that."
+            ) : (
+              <>
+                No recipes are sorted as dinners yet. Search above for any
+                recipe, or <Link href="/recipes/sort">sort them</Link>.
+              </>
+            )}
           </Typography>
         ) : (
           <Grid container spacing={2}>
@@ -134,7 +196,14 @@ export function RecipePickerDialog({
                       recipe.id === selectedId ? "primary.main" : "transparent",
                   }}
                 >
-                  <RecipeTile recipe={recipe} height={110} />
+                  <RecipeTile
+                    recipe={recipe}
+                    height={110}
+                    note={
+                      reasonOf.get(recipe.id) ??
+                      (recipe.course === null ? "Not sorted yet" : null)
+                    }
+                  />
                 </CardActionArea>
               </Grid>
             ))}

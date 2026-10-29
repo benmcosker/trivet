@@ -8,6 +8,7 @@ import type { ReviewSummary } from "@/lib/review-schema";
 import { RecipePhoto } from "./RecipePhoto";
 import { RecipePlaceholder } from "./RecipePlaceholder";
 import { ReviewStars } from "./ReviewStars";
+import { fonts } from "@/theme/theme";
 
 export type TileRecipe = {
   id: string;
@@ -29,9 +30,17 @@ export type TileRecipe = {
 export function RecipeTile({
   recipe,
   height = 96,
+  note,
 }: {
   recipe: TileRecipe;
   height?: number;
+  /**
+   * Why this tile is where it is, from the picker's ranking: "Last planned
+   * seven weeks ago". Shown in place of the stars when present - a picker
+   * full of "No reviews yet" says nothing, and the order needs explaining
+   * more than the score does.
+   */
+  note?: string | null;
 }) {
   return (
     <Box sx={{ width: "100%" }}>
@@ -67,7 +76,27 @@ export function RecipeTile({
        * what to cook the score is the useful half - the sample size is one
        * click away on the recipe itself.
        */}
-      {recipe.reviews ? (
+      {note ? (
+        // The library's voice, small and italic: a remark about the dish,
+        // not a control, so it cannot be mistaken for one.
+        <Typography
+          variant="body2"
+          sx={{
+            mt: 0.25,
+            fontFamily: fonts.serif,
+            fontStyle: "italic",
+            fontSize: "0.875rem",
+            lineHeight: 1.3,
+            color: "text.secondary",
+          }}
+        >
+          {note}
+        </Typography>
+      ) : recipe.reviews &&
+        // On a ranked tile - `note` passed, even as null - stars only when
+        // there are some. "No reviews yet" on every tile of a sparse library
+        // is the noise the reason line replaced.
+        (note === undefined || recipe.reviews.count > 0) ? (
         <Box sx={{ mt: 0.25 }}>
           <ReviewStars summary={recipe.reviews} showCount={false} />
         </Box>
