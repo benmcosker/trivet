@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 import { AppShell } from "@/components/AppShell";
 import { WeekPlanner } from "@/components/WeekPlanner";
 import { prisma } from "@/lib/db";
@@ -22,11 +24,23 @@ import { shoppingListAudience } from "@/lib/sms/shopping-list";
 export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
   const { householdId, householdName } = await requireHousehold();
 
+  /*
+   * This week or next, and nothing else. Those are the only two the page
+   * links to and the only two anybody plans, so any other `?week=` - an old
+   * bookmark, a typo - comes back to this week rather than opening a week
+   * with no name and no way out.
+   */
   const params = await searchParams;
-  const weekParam = typeof params.week === "string" ? params.week : null;
-  const weekStart = weekStartOf(
-    weekParam ? new Date(`${weekParam}T00:00:00.000Z`) : new Date(),
-  );
+  const thisWeek = weekStartOf(new Date());
+  const nextWeek = addDays(thisWeek, 7);
+  if (params.week !== undefined) {
+    const asked =
+      typeof params.week === "string"
+        ? weekStartOf(new Date(`${params.week}T00:00:00.000Z`))
+        : null;
+    if (asked?.getTime() !== nextWeek.getTime()) redirect("/plan");
+  }
+  const weekStart = params.week === undefined ? thisWeek : nextWeek;
 
   const [meals, recipes, skips, pantry, extras, history, vetoes, unsorted] =
     await Promise.all([
@@ -109,15 +123,13 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
        */}
       <WeekPlanner
         weekStartIso={weekStart.toISOString().slice(0, 10)}
-        prevWeekIso={addDays(weekStart, -7).toISOString().slice(0, 10)}
-        nextWeekIso={addDays(weekStart, 7).toISOString().slice(0, 10)}
         // Today by the same UTC clock the week itself was chosen with, so the
         // marked cell and the seven days on screen cannot disagree - and so
         // that the server and the browser render the same thing.
         todayIso={new Date().toISOString().slice(0, 10)}
         // Which Monday counts as "this week", so the nav can mark itself.
         // Read here rather than in the browser for the same reason todayIso is.
-        thisWeekIso={weekStartOf(new Date()).toISOString().slice(0, 10)}
+        thisWeekIso={thisWeek.toISOString().slice(0, 10)}
         householdName={householdName}
         unsortedCount={unsorted}
         recipes={recipes.map(({ tags, restMinutes, ...recipe }) => {
