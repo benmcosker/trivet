@@ -51,6 +51,7 @@ export function toRecipeInput(recipe: RecipeWithRelations): RecipeInput {
     proteinG: recipe.proteinG,
     carbsG: recipe.carbsG,
     fatG: recipe.fatG,
+    course: recipe.course,
     sourceUrl: recipe.sourceUrl,
     sourceName: recipe.sourceName,
     notes: recipe.notes,
@@ -126,6 +127,8 @@ export async function createRecipe(
       yieldNote: emptyToNull(input.yieldNote),
       equipment: input.equipment,
       ...nutritionColumns(input),
+      // `?? null`, not undefined: clearing it on the form has to clear it.
+      course: input.course ?? null,
       notes: emptyToNull(input.notes),
       instructions: input.instructions,
       source: assets.source ?? "MANUAL",
@@ -198,6 +201,8 @@ export async function updateRecipe(
         yieldNote: emptyToNull(input.yieldNote),
         equipment: input.equipment,
         ...nutritionColumns(input),
+        // `?? null`, not undefined: clearing it on the form has to clear it.
+        course: input.course ?? null,
         notes: emptyToNull(input.notes),
         instructions: input.instructions,
         ingredients: {

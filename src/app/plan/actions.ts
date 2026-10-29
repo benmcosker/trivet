@@ -291,6 +291,7 @@ export async function acceptSideAction(
           ovenTempUnit: side.ovenTempUnit ?? null,
           equipment: side.equipment,
           sourceName: marker,
+          course: "SIDE",
           instructions: side.instructions,
           ingredients: side.ingredients,
           tags: side.tags,

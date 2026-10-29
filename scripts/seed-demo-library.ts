@@ -395,6 +395,10 @@ async function main() {
         yieldNote: seed.yieldNote ?? null,
         notes: seed.notes ?? null,
         instructions: seed.instructions,
+        // Every demo dish is a dinner except the one that proves why the
+        // field exists: Buttermilk Pancakes is tagged Weeknight, so anything
+        // trusting the tags would plan it for a Tuesday night.
+        course: seed.title === "Buttermilk Pancakes" ? "BREAKFAST" : "DINNER",
         householdId,
         createdById: user.id,
         isShared: true,

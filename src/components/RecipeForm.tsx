@@ -18,10 +18,13 @@ import { useState, type FormEvent } from "react";
 
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
 import {
+  COURSE_LABEL,
   MACRO_KEYS,
   MACRO_RANGE,
+  RECIPE_COURSES,
   TEMPERATURE_UNITS,
   type MacroKey,
+  type RecipeCourse,
   type RecipeInput,
 } from "@/lib/recipe-schema";
 
@@ -70,6 +73,7 @@ export function RecipeForm({
     initial.ovenTempUnit ?? "FAHRENHEIT",
   );
   const [yieldNote, setYieldNote] = useState(initial.yieldNote ?? "");
+  const [course, setCourse] = useState<RecipeCourse | "">(initial.course ?? "");
   /** The four macros as numbers, or nulls where the field was left empty. */
   function macroFields() {
     return Object.fromEntries(
@@ -173,6 +177,7 @@ export function RecipeForm({
       ovenTemp: ovenTemp === "" ? null : Number(ovenTemp),
       ovenTempUnit: ovenTemp === "" ? null : ovenTempUnit,
       yieldNote: yieldNote || null,
+      course: course || null,
       ...macroFields(),
       equipment,
       sourceUrl: sourceUrl || null,
@@ -283,6 +288,30 @@ export function RecipeForm({
                   {TEMPERATURE_UNITS.map((unit) => (
                     <MenuItem key={unit} value={unit}>
                       {unit === "FAHRENHEIT" ? "°F" : "°C"}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                {/*
+                 * No default. "Not sorted" is a real answer and the honest one
+                 * for a recipe nobody has looked at; a default of Dinner would
+                 * put pancakes on the planner's shortlist on the strength of
+                 * nobody having said otherwise.
+                 */}
+                <TextField
+                  select
+                  label="Course"
+                  value={course}
+                  onChange={(e) =>
+                    setCourse(e.target.value as RecipeCourse | "")
+                  }
+                  fullWidth
+                >
+                  <MenuItem value="">Not sorted</MenuItem>
+                  {RECIPE_COURSES.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {COURSE_LABEL[option]}
                     </MenuItem>
                   ))}
                 </TextField>

@@ -46,6 +46,31 @@ export const OVEN_TEMP_RANGE: Record<
  * four figures of calories, and refusing it would be this file having a
  * view about dinner.
  */
+/**
+ * What kind of dish a recipe is. Mirrors the `RecipeCourse` enum; the order is
+ * the order the sorting view and the form offer them in, dinner first because
+ * that is the one the planner needs to know.
+ */
+export const RECIPE_COURSES = [
+  "DINNER",
+  "SIDE",
+  "BREAKFAST",
+  "DESSERT",
+  "SNACK",
+  "OTHER",
+] as const;
+export type RecipeCourse = (typeof RECIPE_COURSES)[number];
+
+/** How each course is said in the interface. */
+export const COURSE_LABEL: Record<RecipeCourse, string> = {
+  DINNER: "Dinner",
+  SIDE: "Side",
+  BREAKFAST: "Breakfast",
+  DESSERT: "Dessert",
+  SNACK: "Snack",
+  OTHER: "Other",
+};
+
 export const MACRO_RANGE = {
   caloriesKcal: { min: 0, max: 5000, label: "Calories" },
   proteinG: { min: 0, max: 500, label: "Protein" },
@@ -77,6 +102,7 @@ const recipeShape = z.object({
   proteinG: z.number().int().min(0).max(500).nullable().optional(),
   carbsG: z.number().int().min(0).max(1000).nullable().optional(),
   fatG: z.number().int().min(0).max(500).nullable().optional(),
+  course: z.enum(RECIPE_COURSES).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   instructions: z.array(z.string().trim().min(1)).max(100).default([]),
   ingredients: z.array(ingredientInput).max(200).default([]),

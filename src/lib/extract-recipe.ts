@@ -147,6 +147,18 @@ const extractionSchema = z.object({
         "and three nulls. If the source gives totals for the whole dish, " +
         "divide by the servings.",
     ),
+  course: z
+    .enum(["DINNER", "SIDE", "BREAKFAST", "DESSERT", "SNACK", "OTHER"])
+    .nullable()
+    .describe(
+      "What kind of dish this is. DINNER for a main meal eaten in the " +
+        "evening; SIDE for something served alongside a main; BREAKFAST, " +
+        "DESSERT and SNACK as they say; OTHER for things that are not a " +
+        "dish on their own - a sauce, a dressing, a stock, a drink. Judge " +
+        "by the dish, not by the card's labels: pancakes are BREAKFAST even " +
+        "on a card marked quick or weeknight. Null if you genuinely cannot " +
+        "tell - a person will sort it, and a wrong guess is worse than none.",
+    ),
   notes: z.string().nullable().describe("Any tips or storage notes"),
   confidence: z
     .enum(["high", "medium", "low"])
@@ -451,6 +463,7 @@ function toExtractedRecipe(
     restMinutes: parsed.restMinutes ?? null,
     ...readOvenTemp(parsed.ovenTemp, parsed.ovenTempUnit),
     ...readNutrition(parsed.nutrition),
+    course: parsed.course ?? null,
     equipment: parsed.equipment.map((e) => e.trim()).filter(Boolean),
     sourceUrl: null,
     sourceName: parsed.sourceName?.trim() || null,

@@ -307,6 +307,9 @@ export function UploadWorkflow() {
       proteinG: recipe.proteinG ?? null,
       carbsG: recipe.carbsG ?? null,
       fatG: recipe.fatG ?? null,
+      // What the importer read the dish as. Shown on the review form so a
+      // wrong guess is corrected before it is saved, not after.
+      course: recipe.course ?? null,
       // Filled by the URL path, null from a file, which has no address to
       // carry. Provenance is editable data on the recipe and nothing in the
       // chrome: the person is not told which path read it, because the only
