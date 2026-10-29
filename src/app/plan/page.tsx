@@ -28,7 +28,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
     weekParam ? new Date(`${weekParam}T00:00:00.000Z`) : new Date(),
   );
 
-  const [meals, recipes, skips, pantry, extras, history, vetoes] =
+  const [meals, recipes, skips, pantry, extras, history, vetoes, unsorted] =
     await Promise.all([
       getWeekPlan(weekStart, householdId),
       // The picker offers this household's recipes and whatever others have
@@ -81,6 +81,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
         where: { stars: { lte: 2 }, user: { householdId } },
         select: { recipeId: true },
       }),
+      // This household's own recipes nobody has sorted yet, which the
+      // suggestion sheet cannot pick from and says so. Only its own: another
+      // household's shared recipe is theirs to sort.
+      prisma.recipe.count({ where: { householdId, course: null } }),
     ]);
 
   const historyById = new Map(history.map((h) => [h.recipeId, h]));
@@ -115,6 +119,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
         // Read here rather than in the browser for the same reason todayIso is.
         thisWeekIso={weekStartOf(new Date()).toISOString().slice(0, 10)}
         householdName={householdName}
+        unsortedCount={unsorted}
         recipes={recipes.map(({ tags, restMinutes, ...recipe }) => {
           const past = historyById.get(recipe.id);
           const minutes =

@@ -40,6 +40,7 @@ import { fonts } from "@/theme/theme";
 
 import { RecipePickerDialog } from "./RecipePickerDialog";
 import { SideSuggestionDialog } from "./SideSuggestionDialog";
+import { SuggestDinnersDialog } from "./SuggestDinnersDialog";
 import { RecipePhoto } from "./RecipePhoto";
 import { PaperNote } from "./PaperNote";
 import { RecipePlaceholder } from "./RecipePlaceholder";
@@ -595,6 +596,7 @@ export function WeekPlanner({
   todayIso,
   thisWeekIso,
   householdName,
+  unsortedCount,
   recipes,
   meals,
   groceries,
@@ -629,6 +631,8 @@ export function WeekPlanner({
   thisWeekIso: string;
   /** "The McMullens" - the eyebrow says whose week this is. */
   householdName: string;
+  /** This household's recipes not yet sorted into a course. */
+  unsortedCount: number;
   recipes: (TileRecipe &
     RankableRecipe & {
       servings: number;
@@ -655,25 +659,37 @@ export function WeekPlanner({
     slot: MealSlot;
   } | null>(null);
   /*
-   * The evening the picker is open for, and the dinners already in the week
-   * around it - what the ranking needs to put a quick dish first on a
-   * Tuesday and keep a second pasta off the night after the first.
+   * The dinners already in the week - what the ranking needs to put a quick
+   * dish first on a Tuesday and keep a second pasta off the night after the
+   * first, in the picker and in the suggestion sheet alike.
    */
+  const weekDinners = useMemo<EveningContext["plannedThisWeek"]>(
+    () =>
+      meals.flatMap((m) =>
+        m.recipeId && (DINNER_SLOTS as readonly string[]).includes(m.slot)
+          ? [{ dateIso: m.date, slot: m.slot, recipeId: m.recipeId }]
+          : [],
+      ),
+    [meals],
+  );
+  /* The evening the picker is open for, and the week around it. */
   const evening = useMemo<EveningContext | null>(
     () =>
       picking
         ? {
             dateIso: picking.date,
             slot: picking.slot,
-            plannedThisWeek: meals.flatMap((m) =>
-              m.recipeId && (DINNER_SLOTS as readonly string[]).includes(m.slot)
-                ? [{ dateIso: m.date, slot: m.slot, recipeId: m.recipeId }]
-                : [],
-            ),
+            plannedThisWeek: weekDinners,
           }
         : null,
-    [picking, meals],
+    [picking, weekDinners],
   );
+  /*
+   * The suggestion sheet, remounted on each opening so every press is a new
+   * draw. Zero means it has never been opened and is not mounted at all.
+   */
+  const [suggestDraw, setSuggestDraw] = useState(0);
+  const [suggesting, setSuggesting] = useState(false);
   const [handoff, setHandoff] = useState<HandoffResult | null>(null);
   /*
    * Which button produced the result on screen, so that provider's standing
@@ -714,6 +730,19 @@ export function WeekPlanner({
     const date = addDaysIso(weekStartIso, index);
     return !DINNER_SLOTS.some((slot) => byKey.get(`${date}|${slot}`));
   }).length;
+
+  /*
+   * What the suggestion sheet may fill: evenings with no dinner at all, from
+   * today on. A past evening is history, not a plan, and an evening with only
+   * a second dinner already has somebody's choice on it.
+   */
+  const suggestable = DAY_NAMES.flatMap((day, index) => {
+    const date = addDaysIso(weekStartIso, index);
+    const open = !DINNER_SLOTS.some((slot) => byKey.get(`${date}|${slot}`));
+    return open && date >= todayIso
+      ? [{ dateIso: date, label: `${day.slice(0, 3)} ${dayOfMonth(date)}` }]
+      : [];
+  });
 
   /*
    * "From six dinners and three sides" - what the list below was built out
@@ -1188,6 +1217,56 @@ export function WeekPlanner({
           }}
         >
           {summariseWeek(dinnerCount, openEvenings)}
+          {/*
+           * Right after the sentence that counts the open evenings, because
+           * it is the answer to it. Says suggest, not fill: nothing goes on
+           * the week until the sheet's own button is pressed.
+           */}
+          {suggestable.length > 0 ? (
+            <>
+              {" "}
+              <Box
+                component="button"
+                type="button"
+                data-print="hide"
+                onClick={() => {
+                  setSuggestDraw((n) => n + 1);
+                  setSuggesting(true);
+                }}
+                sx={{
+                  /*
+                   * Its own line on a phone, where the sentence fills the
+                   * width anyway and a wrapped inline link would start with
+                   * the gap meant to sit between the two. Inline beside it
+                   * from md, where there is room.
+                   */
+                  display: { xs: "block", md: "inline" },
+                  width: { xs: "fit-content", md: "auto" },
+                  mt: { xs: 1, md: 0 },
+                  ml: { xs: 0, md: 1.5 },
+                  p: 0,
+                  pb: "2px",
+                  background: "none",
+                  border: 0,
+                  borderBottom: 1,
+                  borderColor: "primary.main",
+                  cursor: "pointer",
+                  verticalAlign: "baseline",
+                  whiteSpace: "nowrap",
+                  fontFamily: fonts.sans,
+                  fontStyle: "normal",
+                  fontWeight: 700,
+                  fontSize: "10.5px",
+                  lineHeight: 1.4,
+                  letterSpacing: "0.13em",
+                  textTransform: "uppercase",
+                  color: "primary.main",
+                }}
+              >
+                Suggest dinners
+              </Box>
+            </>
+          ) : null}
         </Typography>
       </Box>
 
@@ -1501,6 +1580,19 @@ export function WeekPlanner({
           router.refresh();
         }}
       />
+
+      {suggestDraw > 0 ? (
+        <SuggestDinnersDialog
+          key={suggestDraw}
+          open={suggesting}
+          recipes={recipes}
+          evenings={suggestable}
+          plannedThisWeek={weekDinners}
+          unsortedCount={unsortedCount}
+          onClose={() => setSuggesting(false)}
+          onAdded={() => router.refresh()}
+        />
+      ) : null}
 
       <RecipePickerDialog
         open={picking !== null}
