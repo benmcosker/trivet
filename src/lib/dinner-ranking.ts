@@ -35,8 +35,8 @@
  * rather than disappearing - the picker is a person choosing.
  *
  * Deterministic on purpose - no randomness. A list that reshuffled every
- * time the dialog opened could not be browsed. The suggestion sheet will add
- * its own variety on top.
+ * time the dialog opened could not be browsed. The suggestion sheet adds its
+ * own variety on top - see `suggest-dinners.ts`.
  *
  * Import-free, so it runs in the browser and tests without a database.
  */
@@ -119,7 +119,8 @@ const NUMBER_WORDS = [
   "twelve",
 ];
 
-function inWords(n: number): string {
+/** "seven", "ten" - counts in a sentence read better as words. */
+export function inWords(n: number): string {
   return NUMBER_WORDS[n] ?? String(n);
 }
 
