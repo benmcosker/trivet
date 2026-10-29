@@ -664,9 +664,10 @@ export function WeekPlanner({
       picking
         ? {
             dateIso: picking.date,
+            slot: picking.slot,
             plannedThisWeek: meals.flatMap((m) =>
               m.recipeId && (DINNER_SLOTS as readonly string[]).includes(m.slot)
-                ? [{ dateIso: m.date, recipeId: m.recipeId }]
+                ? [{ dateIso: m.date, slot: m.slot, recipeId: m.recipeId }]
                 : [],
             ),
           }

@@ -132,6 +132,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
               restMinutes == null
                 ? null
                 : minutes,
+            restMinutes,
             timesPlanned: past?._count._all ?? 0,
             lastPlannedIso: past?._max.date?.toISOString().slice(0, 10) ?? null,
             vetoed: vetoed.has(recipe.id),

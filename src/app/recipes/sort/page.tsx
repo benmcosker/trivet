@@ -40,7 +40,7 @@ export default async function SortRecipesPage() {
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         {unsorted === 0
           ? "Everything is sorted."
-          : `${unsorted} not sorted yet. Tap what each one is - the planner only ever suggests dinners.`}
+          : `${unsorted} not sorted yet. Tap what each one is, since the planner only ever suggests dinners.`}
       </Typography>
       <CourseSorter recipes={ordered} />
     </AppShell>

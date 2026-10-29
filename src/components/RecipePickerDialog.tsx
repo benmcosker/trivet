@@ -11,6 +11,7 @@ import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
@@ -95,13 +96,20 @@ export function RecipePickerDialog({
         );
     }
     const dinners = ranked.map((r) => r.recipe);
+    // Not yet sorted comes after the dinners, by name, so a recipe nobody
+    // has classified is still in reach while browsing - a hand-made recipe
+    // starts unsorted. Breakfasts, desserts and the rest stay out.
+    const unsorted = recipes
+      .filter((r) => r.course === null)
+      .sort((a, b) => a.title.localeCompare(b.title));
     // The evening's current choice stays in view even when it is not sorted
     // as a dinner, so the highlight never points at something hidden.
     const current =
       selectedId && !rankOf.has(selectedId)
         ? recipes.find((r) => r.id === selectedId)
         : undefined;
-    return current ? [current, ...dinners] : dinners;
+    const browse = [...dinners, ...unsorted];
+    return current && !browse.includes(current) ? [current, ...browse] : browse;
   }, [filter, recipes, ranked, rankOf, selectedId]);
 
   const totalPages = pageCount(matches.length, PICKER_PAGE_SIZE);
@@ -148,7 +156,7 @@ export function RecipePickerDialog({
         <TextField
           fullWidth
           size="small"
-          placeholder="Search all recipes…"
+          placeholder="Search all recipes by name…"
           value={filter}
           onChange={(e) => {
             setFilter(e.target.value);
@@ -160,11 +168,16 @@ export function RecipePickerDialog({
 
         {shown.length === 0 ? (
           <Typography color="text.secondary" sx={{ py: 3 }} align="center">
-            {recipes.length === 0
-              ? "No recipes in the library yet."
-              : filter.trim()
-                ? "Nothing matches that."
-                : "No recipes are sorted as dinners yet. Search above to find any recipe."}
+            {recipes.length === 0 ? (
+              "No recipes in the library yet."
+            ) : filter.trim() ? (
+              "Nothing matches that."
+            ) : (
+              <>
+                No recipes are sorted as dinners yet. Search above for any
+                recipe, or <Link href="/recipes/sort">sort them</Link>.
+              </>
+            )}
           </Typography>
         ) : (
           <Grid container spacing={2}>
@@ -186,7 +199,10 @@ export function RecipePickerDialog({
                   <RecipeTile
                     recipe={recipe}
                     height={110}
-                    note={reasonOf.get(recipe.id) ?? null}
+                    note={
+                      reasonOf.get(recipe.id) ??
+                      (recipe.course === null ? "Not sorted yet" : null)
+                    }
                   />
                 </CardActionArea>
               </Grid>
