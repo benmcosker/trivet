@@ -30,6 +30,7 @@ import { providerNotes } from "@/lib/provider-notes";
 import { recipeMetaParts, splitTitle } from "@/lib/recipe-meta";
 import { recipePath } from "@/lib/recipe-url";
 import { servingChoices } from "@/lib/scale";
+import { formatWeekRange, weekName } from "@/lib/week-name";
 import type { GroceryLine, WeeklySkipRecord } from "@/lib/grocery";
 import type { HandoffResult, ProviderInfo } from "@/lib/shopping";
 
@@ -90,42 +91,6 @@ type PlannedMeal = {
  * different things rather than as one week.
  */
 const DAY_PHOTO_HEIGHT = 126;
-
-/**
- * Month names spelled out here rather than read from `toLocaleDateString`.
- *
- * The page is rendered twice, once on the server and once in the browser, and
- * the two only agree about `Intl` if they were built against the same ICU
- * data. A header that says "September" on one pass and "Sept" on the other is
- * a hydration mismatch, and this app has exactly one locale.
- */
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-/** "14-20 September", or "28 September - 4 October" when it straddles one. */
-function formatWeekRange(startIso: string): string {
-  const endIso = addDaysIso(startIso, 6);
-  const [, startMonth, startDay] = startIso.split("-").map(Number);
-  const [, endMonth, endDay] = endIso.split("-").map(Number);
-
-  // The year is left off on purpose: the page is about the week you are in,
-  // and "2026" in an eyebrow is the sort of precision nobody asked for.
-  return startMonth === endMonth
-    ? `${startDay}–${endDay} ${MONTHS[endMonth - 1]}`
-    : `${startDay} ${MONTHS[startMonth - 1]} – ${endDay} ${MONTHS[endMonth - 1]}`;
-}
 
 /**
  * Small counts as words, because the summary line is a sentence.
@@ -351,8 +316,12 @@ function PrintSheets({
       </Box>
 
       <Box>
+        {/*
+         * "Dinners", not the week's name: a sheet on the fridge is read
+         * during the week it plans, when "Next week" would already be wrong.
+         */}
         <PrintHeading
-          title="This week"
+          title="Dinners"
           subtitle={formatWeekRange(weekStartIso)}
         />
 
@@ -606,16 +575,6 @@ export function WeekPlanner({
   smsAudience,
 }: {
   weekStartIso: string;
-  /**
-   * Kept in the props though nothing reads them any more.
-   *
-   * The week nav is two labels rather than a pair of arrows, so there is no
-   * control that steps backwards - but `?week=` still accepts any Monday, and
-   * these are what a "previous week" link would be built from on the day one
-   * is wanted.
-   */
-  prevWeekIso: string;
-  nextWeekIso: string;
   /**
    * Which day to mark as today, decided on the server.
    *
@@ -1143,7 +1102,7 @@ export function WeekPlanner({
              * to be part of the same block.
              */}
             <Typography variant="h1" component="h1">
-              This week
+              {weekName(weekStartIso, thisWeekIso)}
             </Typography>
           </Box>
 
@@ -1159,9 +1118,8 @@ export function WeekPlanner({
             {/*
              * Two labels rather than a pair of arrows. Stepping one week at a
              * time is how you get to a week you did not mean to be on; these
-             * name the two weeks anybody plans. Deep history is still a URL -
-             * `?week=` takes any Monday - which is the right shape for
-             * something wanted once a year.
+             * name the only two weeks there are: the page sends any other
+             * `?week=` back to this one.
              */}
             <Stack
               direction="row"
