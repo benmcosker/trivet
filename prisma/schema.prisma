@@ -203,11 +203,21 @@ model Invite {
 /// Oven temperatures are stored in the unit the card printed them in.
 /// Converting on the way in would turn a clean 180C into 356F, and the cook
 /// reading the card wants to see the number they can dial.
+/// What a recipe is, for anything that has to know a dinner from a dessert.
+enum RecipeCourse {
+  DINNER
+  SIDE
+  BREAKFAST
+  DESSERT
+  SNACK
+  /// Sauces, dressings, stocks, drinks - real recipes that are not a dish.
+  OTHER
+}
+
 enum TemperatureUnit {
   FAHRENHEIT
   CELSIUS
 }
-
 
 /// Where a person's agreement to be texted came from.
 ///
@@ -293,6 +303,20 @@ model Recipe {
   /// A partial set is normal and left alone: a card that prints protein and
   /// nothing else gives one figure and three nulls. The CHECK constraint
   /// only refuses the impossible.
+  /// What kind of dish this is: a dinner, a side, a breakfast, a dessert, a
+  /// snack, or something else (a sauce, a stock, a drink).
+  ///
+  /// Recorded rather than inferred, because nothing else in the row says it.
+  /// Tags are minted by the extractor and lean on the collection words -
+  /// Buttermilk Pancakes is tagged Weeknight - so a planner trusting them
+  /// would put pancakes on a Tuesday. Null means nobody has said yet, and is
+  /// deliberately not read as "probably dinner": a suggestion feature that
+  /// guessed wrong would be wrong in the most visible way it can be, while
+  /// one that leaves an unsorted recipe out is wrong invisibly.
+  ///
+  /// SNACK matches `MealSlot.SNACK`, so the dish and the slot share a word.
+  course RecipeCourse?
+
   caloriesKcal Int?
   proteinG     Int?
   carbsG       Int?
