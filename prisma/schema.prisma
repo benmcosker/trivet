@@ -42,6 +42,7 @@ model Household {
   extras   ExtraItem[]
   handoffs ShoppingHandoff[]
   texts    ShoppingText[]
+  cooked   CookedMeal[]
 
   @@map("household")
 }
@@ -379,6 +380,7 @@ model Recipe {
   ingredients  Ingredient[]
   tags         RecipeTag[]
   plannedMeals PlannedMeal[]
+  cookedMeals  CookedMeal[]
   reviews      RecipeReview[]
 
   /// Maintained by a trigger (see the recipe_search migration), not by Prisma.
@@ -650,6 +652,36 @@ model ShoppingText {
   @@index([householdId, weekStart])
   @@index([createdById])
   @@map("shopping_text")
+}
+
+/// A dish cooked through to the end in cook mode.
+///
+/// The planner's history only knows what was planned, and a dinner cooked
+/// straight from a recipe never reaches it - so the ranking would go on
+/// calling it long missed. This is the other half: written when Done is
+/// pressed on the last step, which is the one tap that means it was made.
+/// Opening cook mode is not enough; that is also how a recipe is read ahead.
+///
+/// No user: who cooked it is not a question anything asks, and a member
+/// leaving should not take the household's history with them.
+model CookedMeal {
+  id        String   @id @default(cuid())
+  /// The cook's own calendar day, as the browser reported it - the evening
+  /// in question, not the UTC date, which in the Americas turns over during
+  /// dinner and would count a planned Tuesday cooked at nine as Wednesday too.
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  /// Once a day per dish: pressing Done twice, or on two phones, is one meal.
+  @@unique([householdId, recipeId, date])
+  @@index([recipeId])
+  @@map("cooked_meal")
 }
 
 /// A record of each list handed off to a shop. Checkout happens on their side,

@@ -37,6 +37,8 @@ import { getMyReview, listReviews } from "@/lib/reviews";
 import { formatMinutes, formatOvenTemp } from "@/lib/temperature";
 import { getRecipe } from "@/lib/recipes";
 import { requireHousehold } from "@/lib/session";
+import { historyLine, mealHistory } from "@/lib/meal-history";
+import { fonts } from "@/theme/theme";
 
 export default async function RecipePage({
   params,
@@ -51,10 +53,19 @@ export default async function RecipePage({
   // that it exists.
   if (!recipe) notFound();
 
-  const [reviews, myReview] = await Promise.all([
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const [reviews, myReview, history] = await Promise.all([
     listReviews(recipe.id),
     getMyReview(recipe.id, user.id),
+    // Up to today: next week's plan is not something already eaten.
+    mealHistory(user.householdId, {
+      plannedBefore: new Date(
+        Date.parse(`${todayIso}T00:00:00.000Z`) + 86_400_000,
+      ),
+      recipeId: recipe.id,
+    }),
   ]);
+  const madeLine = historyLine(history.get(recipe.id), todayIso);
 
   /*
    * How many this reading of the recipe is for.
@@ -209,7 +220,10 @@ export default async function RecipePage({
           </Box>
         ) : null}
 
-        <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1, mb: 3 }}>
+        <Stack
+          direction="row"
+          sx={{ flexWrap: "wrap", gap: 1, mb: madeLine ? 1.5 : 3 }}
+        >
           {/*
            * The count moves into the control when there is one, so it is not
            * printed twice. A yield note is not a count - "Makes 12 muffins" is
@@ -268,6 +282,27 @@ export default async function RecipePage({
             />
           ) : null}
         </Stack>
+
+        {/*
+         * A line, not a chip: how often this household has made it is not a
+         * property of the recipe. Planned days and dishes cooked through in
+         * cook mode both count - see `meal-history.ts`.
+         */}
+        {madeLine ? (
+          <Typography
+            sx={{
+              mb: 3,
+              fontFamily: fonts.serif,
+              fontStyle: "italic",
+              fontWeight: 300,
+              fontSize: "16px",
+              lineHeight: 1.4,
+              color: "text.secondary",
+            }}
+          >
+            {madeLine}
+          </Typography>
+        ) : null}
 
         <Box sx={{ mb: 3 }}>
           {recipe.imageUrl ? (

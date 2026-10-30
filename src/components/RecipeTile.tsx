@@ -35,7 +35,7 @@ export function RecipeTile({
   recipe: TileRecipe;
   height?: number;
   /**
-   * Why this tile is where it is, from the picker's ranking: "Last planned
+   * Why this tile is where it is, from the picker's ranking: "Last made
    * seven weeks ago". Shown in place of the stars when present - a picker
    * full of "No reviews yet" says nothing, and the order needs explaining
    * more than the score does.
