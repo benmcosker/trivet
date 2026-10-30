@@ -22,6 +22,7 @@ import {
 
 import { useRouter } from "next/navigation";
 
+import { markCookedAction } from "@/app/recipes/[id]/cook/actions";
 import { clampStep } from "@/lib/cooking";
 
 /**
@@ -175,6 +176,30 @@ export function CookingView({
   const { held, unavailable } = useWakeLock();
   const router = useRouter();
 
+  /*
+   * Done on the last step means the dish was made, so it is recorded - the
+   * one place a dinner cooked without being planned reaches the history the
+   * ranking and the recipe page read. Recorded against today where the
+   * cooking happened, not the server's UTC date.
+   *
+   * Never in the way: if the record cannot be written, the cook still gets
+   * back to the recipe, which is all the button promises.
+   */
+  async function finish() {
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+    try {
+      await markCookedAction(recipeId, today);
+    } catch {
+      // Offline, or signed out mid-recipe. Nothing to tell anybody here.
+    }
+    router.push(recipeHref);
+  }
+
   // Per recipe, so cooking something else does not drop you into the middle
   // of it. Session rather than local: a place in a recipe is worth keeping
   // across a reload, not across a week.
@@ -317,7 +342,7 @@ export function CookingView({
           size="large"
           variant="contained"
           endIcon={last ? undefined : <NavigateNextIcon />}
-          onClick={() => (last ? router.push(recipeHref) : goTo(current + 1))}
+          onClick={() => (last ? finish() : goTo(current + 1))}
           sx={{ py: 1.5 }}
         >
           {last ? "Done" : "Next"}

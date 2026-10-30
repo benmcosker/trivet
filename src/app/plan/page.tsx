@@ -4,7 +4,6 @@ import { AppShell } from "@/components/AppShell";
 import { WeekPlanner } from "@/components/WeekPlanner";
 import { prisma } from "@/lib/db";
 import { listExtraItems } from "@/lib/extras";
-import { DINNER_SLOTS } from "@/lib/meal-slots";
 import {
   addDays,
   getWeekPlan,
@@ -12,6 +11,7 @@ import {
   weekStartOf,
 } from "@/lib/grocery";
 import { listPantryItems } from "@/lib/pantry";
+import { mealHistory } from "@/lib/meal-history";
 import { visibleRecipes } from "@/lib/recipe-visibility";
 import { buildShoppingList } from "@/lib/week-list";
 import { NO_REVIEWS } from "@/lib/review-schema";
@@ -74,20 +74,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
       getWeeklySkips(weekStart, householdId),
       listPantryItems(householdId),
       listExtraItems(weekStart, householdId),
-      // This household's dinner history before the week on screen: how often
-      // each dish was planned, and when last. Nothing prunes old weeks, so
-      // this is every plan since the household started.
-      prisma.plannedMeal.groupBy({
-        by: ["recipeId"],
-        where: {
-          householdId,
-          slot: { in: [...DINNER_SLOTS] },
-          date: { lt: weekStart },
-          recipeId: { not: null },
-        },
-        _count: { _all: true },
-        _max: { date: true },
-      }),
+      // What this household has had, and when: dinners planned before the
+      // week on screen, and anything cooked through in cook mode up to
+      // today. Nothing prunes either, so this is the whole history.
+      mealHistory(householdId, { plannedBefore: weekStart }),
       // One or two stars from anybody in this household sends a dish to the
       // bottom of the picker. This household's own ratings, not the shared
       // average, which for a shared recipe includes other families.
@@ -101,7 +91,7 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
       prisma.recipe.count({ where: { householdId, course: null } }),
     ]);
 
-  const historyById = new Map(history.map((h) => [h.recipeId, h]));
+  const historyById = history;
   const vetoed = new Set(vetoes.map((v) => v.recipeId));
 
   // Who a text would actually reach. Fetched even when texting is switched off
@@ -150,8 +140,8 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
                 ? null
                 : minutes,
             restMinutes,
-            timesPlanned: past?._count._all ?? 0,
-            lastPlannedIso: past?._max.date?.toISOString().slice(0, 10) ?? null,
+            timesPlanned: past?.count ?? 0,
+            lastPlannedIso: past?.lastIso ?? null,
             vetoed: vetoed.has(recipe.id),
             averageStars: summaries.get(recipe.id)?.average ?? null,
             tagSlugs: tags.map(({ tag }) => tag.slug),

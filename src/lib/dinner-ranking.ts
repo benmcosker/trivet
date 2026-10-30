@@ -50,9 +50,13 @@ export type RankableRecipe = {
   totalMinutes: number | null;
   /** Rest alone, so an overnight one can be said as such. */
   restMinutes: number | null;
-  /** Times this household has planned it as a dinner, before this week. */
+  /**
+   * Times this household has had it: planned before this week, or cooked
+   * through in cook mode - see `meal-history.ts`. Named for the planner,
+   * which was its only source once.
+   */
   timesPlanned: number;
-  /** The last evening it was planned as a dinner, before this week. */
+  /** The last day it was had, by the same count. */
   lastPlannedIso: string | null;
   /** Rated one or two stars by someone in this household. */
   vetoed: boolean;
@@ -174,21 +178,21 @@ function varietyTags(recipe: RankableRecipe): string[] {
   return recipe.tagSlugs.filter((slug) => !OCCASION_TAGS.has(slug));
 }
 
-/** "Last planned seven weeks ago", "in July", "in November 2025". */
+/** "Last made seven weeks ago", "in July", "in November 2025". */
 function lastPlannedText(lastIso: string, dateIso: string): string | null {
   const days = daysBetween(lastIso, dateIso);
   if (days < 21) return null;
   // Weeks up to the cap, then the month: past twelve weeks "a while ago" is
   // all it needs to say, and the switch keeps the number in words.
   if (days < RECENCY_CAP_DAYS) {
-    return `Last planned ${inWords(Math.round(days / 7))} weeks ago`;
+    return `Last made ${inWords(Math.round(days / 7))} weeks ago`;
   }
   const when = new Date(`${lastIso}T00:00:00Z`).toLocaleString("en-US", {
     month: "long",
     ...(days >= SAY_THE_YEAR_DAYS ? { year: "numeric" } : {}),
     timeZone: "UTC",
   });
-  return `Last planned in ${when}`;
+  return `Last made in ${when}`;
 }
 
 /**
@@ -215,7 +219,7 @@ function reasonFor(
   if (recipe.timesPlanned >= 4) {
     candidates.push({
       weight: 1 * parts.regular + 0.5,
-      text: `A regular, planned ${inWords(recipe.timesPlanned)} times`,
+      text: `A regular, made ${inWords(recipe.timesPlanned)} times`,
     });
   }
 

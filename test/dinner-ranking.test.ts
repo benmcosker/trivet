@@ -154,7 +154,7 @@ describe("rankForEvening", () => {
       [dish({ title: "A", lastPlannedIso: "2026-09-15", totalMinutes: 200 })],
       tuesday,
     );
-    expect(weeks.reason).toBe("Last planned seven weeks ago");
+    expect(weeks.reason).toBe("Last made seven weeks ago");
 
     const [quick] = rankForEvening(
       [dish({ title: "B", lastPlannedIso: "2026-10-30", totalMinutes: 25 })],
@@ -173,7 +173,7 @@ describe("rankForEvening", () => {
       ],
       tuesday,
     );
-    expect(regular.reason).toBe("A regular, planned nine times");
+    expect(regular.reason).toBe("A regular, made nine times");
   });
 
   it("flags the evening's own first dinner when picking a second", () => {
@@ -247,7 +247,7 @@ describe("rankForEvening", () => {
       [dish({ title: "E", lastPlannedIso: "2026-08-10", totalMinutes: 200 })],
       tuesday,
     );
-    expect(late.reason).toBe("Last planned in August");
+    expect(late.reason).toBe("Last made in August");
   });
 
   it("names the year once a month alone would read as this one", () => {
@@ -255,7 +255,7 @@ describe("rankForEvening", () => {
       [dish({ title: "F", lastPlannedIso: "2025-11-20", totalMinutes: 200 })],
       tuesday,
     );
-    expect(old.reason).toBe("Last planned in November 2025");
+    expect(old.reason).toBe("Last made in November 2025");
   });
 
   it("leaves a high star average to the stars, not a reason line", () => {
