@@ -20,6 +20,11 @@ import {
   readablePageText,
 } from "@/lib/recipe-markup";
 import { getCurrentHousehold } from "@/lib/session";
+import {
+  INSTAGRAM_ADVICE,
+  fetchTikTokCaption,
+  socialSite,
+} from "@/lib/social-links";
 import { storeFile } from "@/lib/storage";
 import { claimUploadSlot } from "@/lib/upload-quota";
 
@@ -96,6 +101,14 @@ async function handleImport(request: Request) {
     );
   }
 
+  // Instagram and TikTok answer a server with a login wall, so the ordinary
+  // page fetch below would read nothing - see `social-links.ts`.
+  const site = socialSite(address);
+  if (site === "instagram") {
+    return NextResponse.json({ error: INSTAGRAM_ADVICE }, { status: 422 });
+  }
+  if (site === "tiktok") return importTikTok(address, user);
+
   const page = await fetchPage(address);
   if (!page.ok) {
     const handoff: HandoffPayload = {
@@ -115,20 +128,8 @@ async function handleImport(request: Request) {
   // Metered here: everything above is a fetch of a public page, and a site
   // that refuses should not spend somebody's allowance. Everything below is
   // the billable half.
-  const slot = await claimUploadSlot(user.id);
-  if (!slot.ok) {
-    return NextResponse.json(
-      {
-        error:
-          `That is ${slot.limit} recipes read today, which is the daily ` +
-          `limit. It resets at midnight UTC; recipes can still be typed in.`,
-      },
-      {
-        status: 429,
-        headers: { "Retry-After": String(slot.retryAfterSeconds) },
-      },
-    );
-  }
+  const overLimit = await claimSlotOrRefuse(user.id);
+  if (overLimit) return overLimit;
 
   const extraction = await extractRecipeFromPage({
     url: page.finalUrl,
@@ -145,6 +146,72 @@ async function handleImport(request: Request) {
   // A second paste of the same post makes a second recipe rather than being
   // refused - there is no file hash to recognise it by, and the title match
   // below is what says "you may already have this".
+  const similar = await findSimilarlyTitled(
+    extraction.recipe.title,
+    user.householdId,
+  );
+
+  return NextResponse.json({
+    recipe: extraction.recipe,
+    source: "URL",
+    sourceFileUrl: null,
+    sourceFileName: null,
+    sourceFileType: null,
+    sourceFileSha256: null,
+    imageUrl,
+    similar,
+  });
+}
+
+/** The daily reading allowance: null when there is room, else the refusal. */
+async function claimSlotOrRefuse(userId: string) {
+  const slot = await claimUploadSlot(userId);
+  if (slot.ok) return null;
+  return NextResponse.json(
+    {
+      error:
+        `That is ${slot.limit} recipes read today, which is the daily ` +
+        `limit. It resets at midnight UTC; recipes can still be typed in.`,
+    },
+    {
+      status: 429,
+      headers: { "Retry-After": String(slot.retryAfterSeconds) },
+    },
+  );
+}
+
+/**
+ * A TikTok video, read from its caption.
+ *
+ * The caption goes to the same extraction as a page's text, so the review
+ * screen gets the same recipe shape and the same confidence - a caption that
+ * only half-holds a recipe comes back saying so. The video's thumbnail is
+ * kept as the recipe's photo: on a cooking video it is nearly always the
+ * finished dish.
+ */
+async function importTikTok(
+  address: string,
+  user: { id: string; householdId: string },
+) {
+  const video = await fetchTikTokCaption(address);
+  if (!video.ok) {
+    return NextResponse.json({ error: video.error }, { status: 422 });
+  }
+
+  const overLimit = await claimSlotOrRefuse(user.id);
+  if (overLimit) return overLimit;
+
+  const extraction = await extractRecipeFromPage({
+    url: address,
+    siteName: video.author ? `${video.author} on TikTok` : "TikTok",
+    markup: null,
+    text: `The caption of a TikTok cooking video:\n\n${video.caption}`,
+  });
+  if (!extraction.ok) {
+    return NextResponse.json({ error: extraction.error }, { status: 422 });
+  }
+
+  const imageUrl = await storePageImage(video.thumbnailUrl);
   const similar = await findSimilarlyTitled(
     extraction.recipe.title,
     user.householdId,

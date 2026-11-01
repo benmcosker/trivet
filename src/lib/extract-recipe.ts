@@ -238,7 +238,9 @@ export async function extractRecipeFromPdf(
 }
 
 /**
- * Read a recipe out of a photograph of a card.
+ * Read a recipe out of a photograph of a card, or a screenshot - an
+ * Instagram caption is the usual one, since Instagram shares captions with
+ * no other app (see `social-links.ts`).
  *
  * The image block comes before the instruction because Claude reads
  * image-then-text better than the other way round, which is the same ordering
@@ -261,8 +263,9 @@ export async function extractRecipeFromImage(
     {
       type: "text",
       text:
-        `Extract the recipe from this photograph of a recipe card ` +
-        `(filename: ${filename}).`,
+        `Extract the recipe from this image (filename: ${filename}). It may ` +
+        `be a photograph of a recipe card or cookbook page, or a screenshot ` +
+        `of a recipe, such as a social media post's caption.`,
     },
   ]);
 }

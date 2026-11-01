@@ -577,7 +577,8 @@ export function UploadWorkflow() {
              * by somebody's CDN.
              */}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              The page for one recipe. Almost any cooking site.
+              The page for one recipe, from almost any cooking site, or a TikTok
+              video.
             </Typography>
 
             {/*
@@ -652,8 +653,8 @@ export function UploadWorkflow() {
               A file
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              A PDF, or a photograph of a printed or handwritten card. Up to 20
-              MB.
+              A PDF, a photo of a printed or handwritten card, or a screenshot
+              of a recipe, such as an Instagram caption. Up to 20 MB.
             </Typography>
 
             <input
