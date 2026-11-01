@@ -109,8 +109,8 @@ export function UploadWorkflow({
 }: {
   /**
    * A link handed to the page in its address, `/upload?url=…`, by the iPhone
-   * share-sheet Shortcut. Filled in and read straight away, so sharing from
-   * TikTok lands on the recipe being read rather than on an empty field.
+   * share-sheet Shortcut. Filled in and read straight away, so sharing a
+   * recipe page lands on it being read rather than on an empty field.
    */
   sharedUrl?: string | null;
 } = {}) {
@@ -604,8 +604,7 @@ export function UploadWorkflow({
              * by somebody's CDN.
              */}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              The page for one recipe, from almost any cooking site, or a TikTok
-              video.
+              The page for one recipe. Almost any cooking site.
             </Typography>
 
             {/*

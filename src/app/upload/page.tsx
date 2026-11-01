@@ -27,10 +27,9 @@ export default async function UploadPage({
         Add a recipe
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        A link to a recipe online or a TikTok video, a PDF, a photograph of a
-        card, or a screenshot. Whichever you give it, it is read automatically,
-        and you get a chance to correct anything before it joins the shared
-        library.
+        A link to a recipe online, a PDF, a photograph of a card, or a
+        screenshot. Whichever you give it, it is read automatically, and you get
+        a chance to correct anything before it joins the shared library.
       </Typography>
       <UploadWorkflow sharedUrl={shared} />
     </AppShell>
