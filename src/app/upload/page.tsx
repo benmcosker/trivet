@@ -3,10 +3,17 @@ import Typography from "@mui/material/Typography";
 import { AppShell } from "@/components/AppShell";
 import { UploadWorkflow } from "@/components/UploadWorkflow";
 import { requireUser } from "@/lib/session";
+import { linkFromShare } from "@/lib/social-links";
 
-export default async function UploadPage() {
+export default async function UploadPage({
+  searchParams,
+}: PageProps<"/upload">) {
   // Upload is for signed-in users only.
   await requireUser();
+
+  // A link shared in from the iPhone Shortcut, read on arrival.
+  const { url } = await searchParams;
+  const shared = linkFromShare(typeof url === "string" ? url : null);
 
   return (
     <AppShell>
@@ -20,11 +27,12 @@ export default async function UploadPage() {
         Add a recipe
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        A link to a recipe online, a PDF, or a photograph of a printed or
-        handwritten card. Whichever you give it, it is read automatically, and
-        you get a chance to correct anything before it joins the shared library.
+        A link to a recipe online or a TikTok video, a PDF, a photograph of a
+        card, or a screenshot. Whichever you give it, it is read automatically,
+        and you get a chance to correct anything before it joins the shared
+        library.
       </Typography>
-      <UploadWorkflow />
+      <UploadWorkflow sharedUrl={shared} />
     </AppShell>
   );
 }
