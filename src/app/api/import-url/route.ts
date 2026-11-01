@@ -20,14 +20,7 @@ import {
   readablePageText,
 } from "@/lib/recipe-markup";
 import { getCurrentHousehold } from "@/lib/session";
-import {
-  INSTAGRAM_ADVICE,
-  TIKTOK_NO_RECIPE,
-  captionHoldsRecipe,
-  fetchTikTokCaption,
-  recipeLinkInCaption,
-  socialSite,
-} from "@/lib/social-links";
+import { socialAdvice, socialSite } from "@/lib/social-links";
 import { storeFile } from "@/lib/storage";
 import { claimUploadSlot } from "@/lib/upload-quota";
 
@@ -107,17 +100,16 @@ async function handleImport(request: Request) {
   // Instagram and TikTok answer a server with a login wall, so the ordinary
   // page fetch below would read nothing - see `social-links.ts`.
   const site = socialSite(address);
-  if (site === "instagram") {
-    return NextResponse.json({ error: INSTAGRAM_ADVICE }, { status: 422 });
+  if (site) {
+    return NextResponse.json({ error: socialAdvice(site) }, { status: 422 });
   }
-  if (site === "tiktok") return importTikTok(address, user);
 
   return importPage(address, user);
 }
 
 /**
  * An ordinary recipe page: fetched, read for its recipe markup or its text,
- * and extracted. Also where a TikTok caption's recipe link is sent.
+ * and extracted.
  */
 async function importPage(
   address: string,
@@ -192,74 +184,6 @@ async function claimSlotOrRefuse(userId: string) {
       headers: { "Retry-After": String(slot.retryAfterSeconds) },
     },
   );
-}
-
-/**
- * A TikTok video, read from the recipe its caption links to, or else from
- * the caption itself.
- *
- * A link wins when there is one: a creator's own recipe page has the real
- * amounts and steps, where the caption is usually a teaser. If that site
- * refuses, a caption long enough to hold a recipe is still read.
- *
- * The caption goes to the same extraction as a page's text, so the review
- * screen gets the same recipe shape and the same confidence - a caption that
- * only half-holds a recipe comes back saying so. The video's thumbnail is
- * kept as the recipe's photo: on a cooking video it is nearly always the
- * finished dish.
- */
-async function importTikTok(
-  address: string,
-  user: { id: string; householdId: string },
-) {
-  const video = await fetchTikTokCaption(address);
-  if (!video.ok) {
-    return NextResponse.json({ error: video.error }, { status: 422 });
-  }
-
-  const link = recipeLinkInCaption(video.caption);
-  const linkUsable =
-    link !== null &&
-    normaliseAddress(link) !== null &&
-    isPublicHost(new URL(link).hostname);
-  if (link && linkUsable) {
-    const fromPage = await importPage(link, user);
-    if (fromPage.ok || !captionHoldsRecipe(video.caption)) return fromPage;
-  }
-
-  if (!captionHoldsRecipe(video.caption)) {
-    return NextResponse.json({ error: TIKTOK_NO_RECIPE }, { status: 422 });
-  }
-
-  const overLimit = await claimSlotOrRefuse(user.id);
-  if (overLimit) return overLimit;
-
-  const extraction = await extractRecipeFromPage({
-    url: address,
-    siteName: video.author ? `${video.author} on TikTok` : "TikTok",
-    markup: null,
-    text: `The caption of a TikTok cooking video:\n\n${video.caption}`,
-  });
-  if (!extraction.ok) {
-    return NextResponse.json({ error: extraction.error }, { status: 422 });
-  }
-
-  const imageUrl = await storePageImage(video.thumbnailUrl);
-  const similar = await findSimilarlyTitled(
-    extraction.recipe.title,
-    user.householdId,
-  );
-
-  return NextResponse.json({
-    recipe: extraction.recipe,
-    source: "URL",
-    sourceFileUrl: null,
-    sourceFileName: null,
-    sourceFileType: null,
-    sourceFileSha256: null,
-    imageUrl,
-    similar,
-  });
 }
 
 /**

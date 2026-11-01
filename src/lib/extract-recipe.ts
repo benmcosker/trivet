@@ -270,6 +270,39 @@ export async function extractRecipeFromImage(
   ]);
 }
 
+/**
+ * Read one recipe out of several images, in order.
+ *
+ * For a recipe that will not fit in one picture: a caption that runs past a
+ * screen, the front and back of a card, two pages of a book. They go to the
+ * model in one call, so it reads them as one recipe rather than as several
+ * fragments - and is told that screenshots overlap, because a line that
+ * appears at the foot of one and the head of the next is one line.
+ */
+export async function extractRecipeFromImages(
+  images: { bytes: Uint8Array; mediaType: SupportedImageType }[],
+): Promise<ExtractionResult> {
+  return extract([
+    ...images.map(({ bytes, mediaType }): Anthropic.ContentBlockParam => ({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: mediaType,
+        data: Buffer.from(bytes).toString("base64"),
+      },
+    })),
+    {
+      type: "text",
+      text:
+        `These ${images.length} images are consecutive parts of one recipe, ` +
+        `in order: screenshots of a caption that runs past one screen, the ` +
+        `front and back of a card, or pages of a book. Extract it as a single ` +
+        `recipe. Where screenshots overlap, text that appears in both belongs ` +
+        `once.`,
+    },
+  ]);
+}
+
 /** What a recipe page gave up, handed to the model as an input. */
 export type PageExtractionInput = {
   /** The address that finally answered, after any redirect. */

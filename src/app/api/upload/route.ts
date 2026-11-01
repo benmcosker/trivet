@@ -9,6 +9,7 @@ import {
 } from "@/lib/duplicates";
 import {
   extractRecipeFromImage,
+  extractRecipeFromImages,
   extractRecipeFromPdf,
   MAX_CARD_IMAGE_BYTES,
 } from "@/lib/extract-recipe";
@@ -91,11 +92,15 @@ async function handleUpload(request: Request) {
     );
   }
 
-  const file = formData.get("file");
-
-  if (!(file instanceof File)) {
+  const files = formData
+    .getAll("file")
+    .filter((entry): entry is File => entry instanceof File);
+  if (files.length === 0) {
     return NextResponse.json({ error: "No file received." }, { status: 400 });
   }
+  // Several photos are one recipe that ran past one picture.
+  if (files.length > 1) return handlePhotos(files, user);
+  const file = files[0];
 
   // The largest thing either path accepts, checked before the body is read
   // into memory. The per-format ceilings below are tighter.
@@ -198,6 +203,121 @@ async function handleUpload(request: Request) {
     sourceFileType: card.contentType,
     sourceFileSha256,
     imageUrl,
+    similar,
+  });
+}
+
+/** Enough for a long caption or a card's two sides, with room to spare. */
+const MAX_PHOTOS = 6;
+
+/**
+ * Several photos of one recipe, read together.
+ *
+ * The same checks as a single photo, made on each, then one model call over
+ * all of them, so they come back as one recipe. Photos only: a PDF already
+ * holds as many pages as it needs. The first photo is kept as the original,
+ * because a recipe has one source file; the reading used all of them.
+ */
+async function handlePhotos(
+  files: File[],
+  user: { id: string; householdId: string },
+) {
+  if (files.length > MAX_PHOTOS) {
+    return NextResponse.json(
+      { error: `Up to ${MAX_PHOTOS} photos make one recipe.` },
+      { status: 400 },
+    );
+  }
+  const total = files.reduce((sum, f) => sum + f.size, 0);
+  if (total > MAX_PDF_BYTES) {
+    return NextResponse.json(
+      { error: "Those photos come to more than 20 MB together." },
+      { status: 413 },
+    );
+  }
+
+  const images: { bytes: Uint8Array; mediaType: SupportedImageType }[] = [];
+  for (const [index, file] of files.entries()) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (looksLikePdf(bytes)) {
+      return NextResponse.json(
+        {
+          error:
+            "A PDF goes on its own. Choose several files only when they are all photos.",
+        },
+        { status: 400 },
+      );
+    }
+    const card = inspectAsImage(bytes);
+    if (!card.ok) {
+      return NextResponse.json(
+        { error: `Photo ${index + 1}: ${card.reason}` },
+        { status: card.status },
+      );
+    }
+    if (card.kind === "PHOTO") {
+      images.push({ bytes, mediaType: card.contentType });
+    }
+  }
+
+  // The set, not any one photo: the same screenshots chosen again are the
+  // same recipe, while one of them reused with others is not.
+  const combined = new Uint8Array(total);
+  let offset = 0;
+  for (const { bytes } of images) {
+    combined.set(bytes, offset);
+    offset += bytes.length;
+  }
+  const sourceFileSha256 = hashBytes(combined);
+  const alreadyHave = await findRecipeBySourceHash(
+    sourceFileSha256,
+    user.householdId,
+  );
+  if (alreadyHave) {
+    return NextResponse.json(
+      {
+        error: `Those photos are already saved as "${alreadyHave.title}".`,
+        duplicateOf: alreadyHave,
+      },
+      { status: 409 },
+    );
+  }
+
+  const slot = await claimUploadSlot(user.id);
+  if (!slot.ok) {
+    return NextResponse.json(
+      {
+        error:
+          `That is ${slot.limit} cards read today, which is the daily limit. ` +
+          `It resets at midnight UTC; recipes can still be typed in.`,
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(slot.retryAfterSeconds) },
+      },
+    );
+  }
+
+  const extraction = await extractRecipeFromImages(images);
+  if (!extraction.ok) {
+    return NextResponse.json({ error: extraction.error }, { status: 422 });
+  }
+
+  const first = images[0];
+  const stored = await storeFile(first.bytes, files[0].name, first.mediaType);
+  const similar = await findSimilarlyTitled(
+    extraction.recipe.title,
+    user.householdId,
+  );
+
+  return NextResponse.json({
+    recipe: extraction.recipe,
+    source: "PHOTO",
+    sourceFileUrl: stored.url,
+    sourceFileName: files[0].name,
+    sourceFileType: first.mediaType,
+    sourceFileSha256,
+    imageUrl: null,
     similar,
   });
 }

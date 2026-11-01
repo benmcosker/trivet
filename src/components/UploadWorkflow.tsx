@@ -109,8 +109,8 @@ export function UploadWorkflow({
 }: {
   /**
    * A link handed to the page in its address, `/upload?url=…`, by the iPhone
-   * share-sheet Shortcut. Filled in and read straight away, so sharing from
-   * TikTok lands on the recipe being read rather than on an empty field.
+   * share-sheet Shortcut. Filled in and read straight away, so sharing a
+   * recipe page lands on it being read rather than on an empty field.
    */
   sharedUrl?: string | null;
 } = {}) {
@@ -171,15 +171,32 @@ export function UploadWorkflow({
     setDuplicateOf(null);
   }
 
-  async function handleFile(file: File) {
+  async function handleFiles(files: File[]) {
     startWork("file");
 
     // An iPhone photograph of a card arrives as HEIC unless the picker chose
     // to transcode it, and nothing downstream can read one: not the model, not
     // the server's own validation. Converting here means the upload succeeds
     // instead of failing politely after the wait.
+    //
+    // Several photos are one recipe across screens or sides of a card, sent
+    // together and read as one. They are shrunk first: a request is capped
+    // at a few megabytes, and three full-size screenshots would pass it.
     const body = new FormData();
-    body.append("file", await heicToJpeg(file));
+    let total = 0;
+    for (const file of files) {
+      const jpeg = await heicToJpeg(file);
+      const ready = files.length > 1 ? await shrinkPhoto(jpeg) : jpeg;
+      total += ready.size;
+      body.append("file", ready);
+    }
+    if (files.length > 1 && total > MAX_PHOTOS_BYTES) {
+      setError(
+        "Those photos are too large to send together. Try fewer, or crop them to the recipe.",
+      );
+      setBusy(null);
+      return;
+    }
 
     // Slightly beyond the server's own ceiling, so a server-side timeout
     // reports its own error rather than being masked by this one. Without any
@@ -604,8 +621,7 @@ export function UploadWorkflow({
              * by somebody's CDN.
              */}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              The page for one recipe, from almost any cooking site, or a TikTok
-              video.
+              The page for one recipe. Almost any cooking site.
             </Typography>
 
             {/*
@@ -681,17 +697,20 @@ export function UploadWorkflow({
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
               A PDF, a photo of a printed or handwritten card, or a screenshot
-              of a recipe, such as an Instagram caption. Up to 20 MB.
+              of a recipe, such as an Instagram caption. Up to 20 MB. For a
+              recipe that runs across screens or both sides of a card, pick all
+              the photos at once, in order.
             </Typography>
 
             <input
               ref={inputRef}
               type="file"
               accept="application/pdf,image/jpeg,image/png,image/gif,image/webp"
+              multiple
               hidden
               onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void handleFile(file);
+                const picked = Array.from(event.target.files ?? []);
+                if (picked.length > 0) void handleFiles(picked);
                 // Reset so re-picking the same file fires change again.
                 event.target.value = "";
               }}
@@ -708,7 +727,7 @@ export function UploadWorkflow({
                   ? elapsed > 0
                     ? `Reading the card… ${elapsed}s`
                     : "Reading the card…"
-                  : "Select a PDF or photo"}
+                  : "Select a PDF or photos"}
               </Button>
             </Box>
 
@@ -792,4 +811,37 @@ function HandoffNote({ handoff }: { handoff: Handoff }) {
       — and bring that in below. It reads just as well.
     </PaperNote>
   );
+}
+
+/** What several photos may come to together, under the platform's cap. */
+const MAX_PHOTOS_BYTES = 4 * 1024 * 1024;
+
+/**
+ * A smaller JPEG of a photo, for sending several at once.
+ *
+ * The model reads an image at about 1,600 pixels on its long side whatever
+ * it is sent, so 2,000 loses nothing it would have seen. A photo already
+ * small, or one the browser cannot redraw, is sent as it is.
+ */
+async function shrinkPhoto(file: File): Promise<File> {
+  if (file.size <= 900_000) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.85),
+    );
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", {
+      type: "image/jpeg",
+    });
+  } catch {
+    return file;
+  }
 }
