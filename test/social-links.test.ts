@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   INSTAGRAM_ADVICE,
-  TIKTOK_OEMBED,
+  captionFromPreview,
   captionHoldsRecipe,
   fetchTikTokCaption,
   linkFromShare,
@@ -14,9 +14,6 @@ const VIDEO = "https://www.tiktok.com/@cook/video/7300000000000000000";
 const RECIPE_CAPTION =
   "Lemon orzo: 1 cup orzo, 2 cups stock, zest of a lemon, parmesan. " +
   "Toast the orzo, add stock, simmer 10 min, finish with lemon. #dinner";
-
-const answer = (status: number, body: unknown) =>
-  vi.fn(async () => new Response(JSON.stringify(body), { status }));
 
 describe("socialSite", () => {
   it("recognises TikTok, short links included", () => {
@@ -43,62 +40,90 @@ describe("socialSite", () => {
 });
 
 describe("fetchTikTokCaption", () => {
-  it("asks TikTok's own oEmbed endpoint for the video", async () => {
-    const fetcher = answer(200, { title: RECIPE_CAPTION });
-    await fetchTikTokCaption(VIDEO, fetcher);
-    expect(fetcher).toHaveBeenCalledWith(
-      `${TIKTOK_OEMBED}?url=${encodeURIComponent(VIDEO)}`,
-      expect.anything(),
-    );
-  });
+  // A preview description the way TikTok writes it, from the video Ben tried.
+  const PREVIEW =
+    "16.6K Likes, 219 Comments. TikTok video from Nico Pallotta " +
+    "(@nicopallotta): &quot;Easy Pearl Couscous Salad GET RECIPE: " +
+    "https://theplantbasedschool.com/israeli-couscous-salad/ Despite its " +
+    "English name&quot;. original sound - Nico &amp; Louise";
 
-  it("returns the caption, the creator and the thumbnail", async () => {
+  const page = (head: string, status = 200) =>
+    vi.fn(
+      async () =>
+        new Response(`<html><head>${head}</head><body></body></html>`, {
+          status,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        }),
+    );
+
+  it("reads the caption and creator out of the link-preview description", async () => {
     const result = await fetchTikTokCaption(
       VIDEO,
-      answer(200, {
-        title: RECIPE_CAPTION,
-        author_name: "Weeknight Cook",
-        thumbnail_url: "https://p16-sign.tiktokcdn.com/thumb.jpeg",
-      }),
+      page(
+        `<meta property="og:description" content="${PREVIEW}">` +
+          `<meta property="og:image" content="https://p16.tiktokcdn.com/a.jpeg">`,
+      ),
     );
     expect(result).toEqual({
       ok: true,
-      caption: RECIPE_CAPTION,
-      author: "Weeknight Cook",
-      thumbnailUrl: "https://p16-sign.tiktokcdn.com/thumb.jpeg",
+      caption:
+        "Easy Pearl Couscous Salad GET RECIPE: " +
+        "https://theplantbasedschool.com/israeli-couscous-salad/ Despite its " +
+        "English name",
+      author: "Nico Pallotta",
+      thumbnailUrl: "https://p16.tiktokcdn.com/a.jpeg",
     });
   });
 
-  it("returns a short caption too, since it may still carry a link", async () => {
+  it("takes the longest of the descriptions a page publishes", async () => {
     const result = await fetchTikTokCaption(
       VIDEO,
-      answer(200, { title: "Recipe: https://example.com/orzo" }),
+      page(
+        `<meta name="description" content="Short">` +
+          `<meta name="twitter:description" content="${RECIPE_CAPTION}">`,
+      ),
     );
-    expect(result.ok && result.caption).toBe(
-      "Recipe: https://example.com/orzo",
+    expect(result.ok && result.caption).toBe(RECIPE_CAPTION);
+  });
+
+  it("asks for a screenshot when the page publishes no description", async () => {
+    const result = await fetchTikTokCaption(
+      VIDEO,
+      page("<title>TikTok</title>"),
+    );
+    expect(result.ok ? "" : result.error).toMatch(
+      /screenshot of the full caption/,
     );
   });
 
   it("says plainly when TikTok won't return the video", async () => {
     for (const fetcher of [
-      answer(404, { message: "Not found" }),
+      page("", 404),
       vi.fn(async () => {
         throw new Error("network");
       }),
-      vi.fn(async () => new Response("<html>", { status: 200 })),
     ]) {
       const result = await fetchTikTokCaption(VIDEO, fetcher);
       expect(result.ok).toBe(false);
       expect(result.ok ? "" : result.error).toMatch(/private or deleted/);
     }
   });
+});
 
-  it("drops a thumbnail that is not https", async () => {
-    const result = await fetchTikTokCaption(
-      VIDEO,
-      answer(200, { title: RECIPE_CAPTION, thumbnail_url: "http://x/y.jpg" }),
-    );
-    expect(result.ok && result.thumbnailUrl).toBeNull();
+describe("captionFromPreview", () => {
+  it("takes the caption from between the quotes", () => {
+    expect(
+      captionFromPreview(
+        "12 Likes. TikTok video from Cook (@cook): “Lemon orzo, 1 cup orzo”. original sound",
+      ),
+    ).toEqual({ caption: "Lemon orzo, 1 cup orzo", author: "Cook" });
+  });
+
+  it("takes a description in any other shape whole", () => {
+    expect(captionFromPreview("Lemon orzo with 1 cup orzo")).toEqual({
+      caption: "Lemon orzo with 1 cup orzo",
+      author: null,
+    });
   });
 });
 
@@ -133,6 +158,12 @@ describe("captionHoldsRecipe", () => {
 
   it("skips a teaser, rather than letting the model guess", () => {
     expect(captionHoldsRecipe("Dinner in 20! #pasta")).toBe(false);
+  });
+
+  it("skips a caption TikTok cut short, rather than half a recipe", () => {
+    expect(captionHoldsRecipe(`${RECIPE_CAPTION} 2 cups cherry tom...`)).toBe(
+      false,
+    );
   });
 });
 
