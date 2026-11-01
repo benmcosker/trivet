@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import {
   INSTAGRAM_ADVICE,
   TIKTOK_OEMBED,
+  captionHoldsRecipe,
   fetchTikTokCaption,
   linkFromShare,
+  recipeLinkInCaption,
   socialSite,
 } from "@/lib/social-links";
 
@@ -67,13 +69,14 @@ describe("fetchTikTokCaption", () => {
     });
   });
 
-  it("refuses a caption too short to hold a recipe, rather than guessing", async () => {
+  it("returns a short caption too, since it may still carry a link", async () => {
     const result = await fetchTikTokCaption(
       VIDEO,
-      answer(200, { title: "Dinner in 20! #pasta" }),
+      answer(200, { title: "Recipe: https://example.com/orzo" }),
     );
-    expect(result.ok).toBe(false);
-    expect(result.ok ? "" : result.error).toMatch(/only spoken in the video/);
+    expect(result.ok && result.caption).toBe(
+      "Recipe: https://example.com/orzo",
+    );
   });
 
   it("says plainly when TikTok won't return the video", async () => {
@@ -120,5 +123,50 @@ describe("linkFromShare", () => {
   it("has nothing to read from nothing", () => {
     expect(linkFromShare(null)).toBeNull();
     expect(linkFromShare("   ")).toBeNull();
+  });
+});
+
+describe("captionHoldsRecipe", () => {
+  it("reads a caption long enough to hold one", () => {
+    expect(captionHoldsRecipe(RECIPE_CAPTION)).toBe(true);
+  });
+
+  it("skips a teaser, rather than letting the model guess", () => {
+    expect(captionHoldsRecipe("Dinner in 20! #pasta")).toBe(false);
+  });
+});
+
+describe("recipeLinkInCaption", () => {
+  it("finds the recipe page a creator links to", () => {
+    // The caption that prompted this, from Inspired Taste.
+    const caption =
+      "We've been obsessed with this easy couscous salad for years! Recipe " +
+      "linked in our bio @inspiredtaste or you can google it. RECIPE: " +
+      "https://www.inspiredtaste.net/12689/lemon-and-herb-couscous-salad-recipe/";
+    expect(recipeLinkInCaption(caption)).toBe(
+      "https://www.inspiredtaste.net/12689/lemon-and-herb-couscous-salad-recipe/",
+    );
+  });
+
+  it("leaves off a sentence's own punctuation", () => {
+    expect(
+      recipeLinkInCaption("Full recipe here (https://cook.example/orzo)."),
+    ).toBe("https://cook.example/orzo");
+  });
+
+  it("skips links that never hold a recipe", () => {
+    expect(
+      recipeLinkInCaption(
+        "More on https://www.tiktok.com/@cook and https://linktr.ee/cook " +
+          "and https://www.instagram.com/cook",
+      ),
+    ).toBeNull();
+    expect(
+      recipeLinkInCaption("https://linktr.ee/cook then https://cook.example/a"),
+    ).toBe("https://cook.example/a");
+  });
+
+  it("finds nothing in a caption with no link", () => {
+    expect(recipeLinkInCaption(RECIPE_CAPTION)).toBeNull();
   });
 });

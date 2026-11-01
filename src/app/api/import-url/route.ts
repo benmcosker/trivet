@@ -22,7 +22,10 @@ import {
 import { getCurrentHousehold } from "@/lib/session";
 import {
   INSTAGRAM_ADVICE,
+  TIKTOK_NO_RECIPE,
+  captionHoldsRecipe,
   fetchTikTokCaption,
+  recipeLinkInCaption,
   socialSite,
 } from "@/lib/social-links";
 import { storeFile } from "@/lib/storage";
@@ -109,6 +112,17 @@ async function handleImport(request: Request) {
   }
   if (site === "tiktok") return importTikTok(address, user);
 
+  return importPage(address, user);
+}
+
+/**
+ * An ordinary recipe page: fetched, read for its recipe markup or its text,
+ * and extracted. Also where a TikTok caption's recipe link is sent.
+ */
+async function importPage(
+  address: string,
+  user: { id: string; householdId: string },
+) {
   const page = await fetchPage(address);
   if (!page.ok) {
     const handoff: HandoffPayload = {
@@ -181,7 +195,12 @@ async function claimSlotOrRefuse(userId: string) {
 }
 
 /**
- * A TikTok video, read from its caption.
+ * A TikTok video, read from the recipe its caption links to, or else from
+ * the caption itself.
+ *
+ * A link wins when there is one: a creator's own recipe page has the real
+ * amounts and steps, where the caption is usually a teaser. If that site
+ * refuses, a caption long enough to hold a recipe is still read.
  *
  * The caption goes to the same extraction as a page's text, so the review
  * screen gets the same recipe shape and the same confidence - a caption that
@@ -196,6 +215,20 @@ async function importTikTok(
   const video = await fetchTikTokCaption(address);
   if (!video.ok) {
     return NextResponse.json({ error: video.error }, { status: 422 });
+  }
+
+  const link = recipeLinkInCaption(video.caption);
+  const linkUsable =
+    link !== null &&
+    normaliseAddress(link) !== null &&
+    isPublicHost(new URL(link).hostname);
+  if (link && linkUsable) {
+    const fromPage = await importPage(link, user);
+    if (fromPage.ok || !captionHoldsRecipe(video.caption)) return fromPage;
+  }
+
+  if (!captionHoldsRecipe(video.caption)) {
+    return NextResponse.json({ error: TIKTOK_NO_RECIPE }, { status: 422 });
   }
 
   const overLimit = await claimSlotOrRefuse(user.id);
