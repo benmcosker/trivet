@@ -58,6 +58,57 @@ const TIKTOK_TIMEOUT_MS = 10_000;
 /** Fewer characters than this is a caption with no recipe in it. */
 const MIN_CAPTION_CHARS = 40;
 
+/** What to say when a caption has neither a recipe nor a link to one. */
+export const TIKTOK_NO_RECIPE =
+  "That TikTok's caption doesn't hold a recipe or link to one. If the " +
+  "recipe is only spoken in the video, type it in instead.";
+
+/**
+ * Whether a caption is long enough to be worth reading for a recipe.
+ *
+ * Short ones are not sent to the model: "Dinner in 20 minutes! #pasta" would
+ * come back as a guessed recipe, and the recipe usually lives in the
+ * voice-over, which nothing can read without downloading the video.
+ */
+export function captionHoldsRecipe(caption: string): boolean {
+  return caption.trim().length >= MIN_CAPTION_CHARS;
+}
+
+/** Link-in-bio pages: a list of links, never the recipe itself. */
+const LINK_PAGES = new Set([
+  "linktr.ee",
+  "beacons.ai",
+  "stan.store",
+  "linkin.bio",
+  "lnk.bio",
+  "bio.link",
+]);
+
+/**
+ * The recipe page a caption points at, if it points at one.
+ *
+ * Many creators keep the recipe on their own site and put the address in the
+ * caption ("RECIPE: https://www.inspiredtaste.net/12689/…"). That page is the
+ * better source - real amounts and steps, usually with recipe markup - so it
+ * is read in preference to the caption. Links back into TikTok or Instagram,
+ * and link-in-bio pages, are skipped: none of them holds a recipe.
+ */
+export function recipeLinkInCaption(caption: string): string | null {
+  for (const match of caption.matchAll(/https?:\/\/[^\s<>"']+/g)) {
+    // A sentence's own punctuation is not part of the address.
+    const candidate = match[0].replace(/[.,;:!?)\]]+$/, "");
+    let host: string;
+    try {
+      host = new URL(candidate).hostname.toLowerCase().replace(/^www\./, "");
+    } catch {
+      continue;
+    }
+    if (socialSite(candidate) || LINK_PAGES.has(host)) continue;
+    return candidate;
+  }
+  return null;
+}
+
 export type TikTokCaption =
   | {
       ok: true;
@@ -71,12 +122,9 @@ export type TikTokCaption =
 type Fetcher = (url: string, init: RequestInit) => Promise<Response>;
 
 /**
- * A TikTok video's caption, through TikTok's own oEmbed endpoint.
- *
- * A caption too short to hold a recipe is refused here rather than sent to
- * the model: "Dinner in 20 minutes! #pasta" would come back as a guessed
- * recipe, and the recipe usually lives in the voice-over, which nothing can
- * read without downloading the video.
+ * A TikTok video's caption, through TikTok's own oEmbed endpoint. Returned
+ * whatever its length: a short caption can still carry a link to the recipe,
+ * so whether it is worth reading is the caller's call.
  */
 export async function fetchTikTokCaption(
   address: string,
@@ -108,14 +156,6 @@ export async function fetchTikTokCaption(
   const { title, author_name, thumbnail_url } = body as Record<string, unknown>;
 
   const caption = typeof title === "string" ? title.trim() : "";
-  if (caption.length < MIN_CAPTION_CHARS) {
-    return {
-      ok: false,
-      error:
-        "That TikTok's caption doesn't hold a recipe. If the recipe is only " +
-        "spoken in the video, type it in instead.",
-    };
-  }
 
   return {
     ok: true,
