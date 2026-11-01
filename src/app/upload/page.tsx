@@ -3,10 +3,17 @@ import Typography from "@mui/material/Typography";
 import { AppShell } from "@/components/AppShell";
 import { UploadWorkflow } from "@/components/UploadWorkflow";
 import { requireUser } from "@/lib/session";
+import { linkFromShare } from "@/lib/social-links";
 
-export default async function UploadPage() {
+export default async function UploadPage({
+  searchParams,
+}: PageProps<"/upload">) {
   // Upload is for signed-in users only.
   await requireUser();
+
+  // A link shared in from the iPhone Shortcut, read on arrival.
+  const { url } = await searchParams;
+  const shared = linkFromShare(typeof url === "string" ? url : null);
 
   return (
     <AppShell>
@@ -25,7 +32,7 @@ export default async function UploadPage() {
         and you get a chance to correct anything before it joins the shared
         library.
       </Typography>
-      <UploadWorkflow />
+      <UploadWorkflow sharedUrl={shared} />
     </AppShell>
   );
 }

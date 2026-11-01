@@ -4,6 +4,7 @@ import {
   INSTAGRAM_ADVICE,
   TIKTOK_OEMBED,
   fetchTikTokCaption,
+  linkFromShare,
   socialSite,
 } from "@/lib/social-links";
 
@@ -95,5 +96,29 @@ describe("fetchTikTokCaption", () => {
       answer(200, { title: RECIPE_CAPTION, thumbnail_url: "http://x/y.jpg" }),
     );
     expect(result.ok && result.thumbnailUrl).toBeNull();
+  });
+});
+
+describe("linkFromShare", () => {
+  it("finds the link inside TikTok's share sentence", () => {
+    expect(
+      linkFromShare(
+        "Check out this video! https://vm.tiktok.com/ZMabc123/ #fyp",
+      ),
+    ).toBe("https://vm.tiktok.com/ZMabc123/");
+  });
+
+  it("passes a bare link, or text with none, through as it is", () => {
+    expect(linkFromShare(" https://www.instagram.com/reel/Cx1/ ")).toBe(
+      "https://www.instagram.com/reel/Cx1/",
+    );
+    expect(linkFromShare("smittenkitchen.com/orzo")).toBe(
+      "smittenkitchen.com/orzo",
+    );
+  });
+
+  it("has nothing to read from nothing", () => {
+    expect(linkFromShare(null)).toBeNull();
+    expect(linkFromShare("   ")).toBeNull();
   });
 });

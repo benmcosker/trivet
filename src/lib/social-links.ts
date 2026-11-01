@@ -130,3 +130,17 @@ export async function fetchTikTokCaption(
         : null,
   };
 }
+
+/**
+ * The link inside whatever a share sheet passed along.
+ *
+ * TikTok's share text is often a sentence with the link at the end ("Check
+ * out this video! https://vm.tiktok.com/…"), and a Shortcut forwards it
+ * whole. The first web address in it is the one meant; text with none is
+ * passed on as it is, for the page's own check to answer.
+ */
+export function linkFromShare(text: string | null | undefined): string | null {
+  const trimmed = (text ?? "").trim().slice(0, 2048);
+  if (!trimmed) return null;
+  return trimmed.match(/https?:\/\/[^\s<>"']+/)?.[0] ?? trimmed;
+}

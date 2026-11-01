@@ -104,12 +104,21 @@ function confidenceLine(recipe: ExtractedRecipe, source: RecipeSource): string {
   );
 }
 
-export function UploadWorkflow() {
+export function UploadWorkflow({
+  sharedUrl = null,
+}: {
+  /**
+   * A link handed to the page in its address, `/upload?url=…`, by the iPhone
+   * share-sheet Shortcut. Filled in and read straight away, so sharing from
+   * TikTok lands on the recipe being read rather than on an empty field.
+   */
+  sharedUrl?: string | null;
+} = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<Half | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [address, setAddress] = useState("");
+  const [address, setAddress] = useState(sharedUrl ?? "");
   const [addressInvalid, setAddressInvalid] = useState(false);
   const addressRef = useRef<HTMLInputElement | null>(null);
 
@@ -218,6 +227,10 @@ export function UploadWorkflow() {
 
   async function handleAddress(event: FormEvent) {
     event.preventDefault();
+    await readAddress(address);
+  }
+
+  async function readAddress(raw: string) {
     if (busy) return;
 
     // The lenient parse gets its go first: a pasted `smittenkitchen.com/...`
@@ -225,7 +238,7 @@ export function UploadWorkflow() {
     // somebody else's typing. Only what is left after that is a typo, and
     // saying so here is worth it because a round trip and a model call for a
     // typo is a rude four seconds.
-    const normalised = normaliseAddress(address);
+    const normalised = normaliseAddress(raw);
     if (!normalised) {
       setAddressInvalid(true);
       setHandoff(null);
@@ -285,6 +298,20 @@ export function UploadWorkflow() {
       setBusy(null);
     }
   }
+
+  /*
+   * Read a shared link once, on arrival. The address is then tidied back to
+   * plain /upload, so a reload or a trip back does not read it a second time.
+   */
+  const sharedRead = useRef(false);
+  useEffect(() => {
+    if (!sharedUrl || sharedRead.current) return;
+    sharedRead.current = true;
+    window.history.replaceState(null, "", "/upload");
+    void readAddress(sharedUrl);
+    // Once, for the link the page arrived with; later edits are typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedUrl]);
 
   if (extracted) {
     const { recipe, ...assets } = extracted;
