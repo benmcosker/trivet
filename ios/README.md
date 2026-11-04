@@ -28,6 +28,13 @@ build. A new build is only needed when the Swift code here changes.
 
 Raise the build number (target → General → Build) before each upload.
 
+## App icon
+
+`TrivetBox/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, drawn from
+`ios/app-icon.svg`: the site's own mark (`src/app/icon.svg`) on a full-bleed
+green square, since iOS rounds the corners itself. It must stay 1024 x 1024
+with no transparency, or App Store Connect rejects the upload.
+
 ## Known gaps
 
 - The planner's Print button does nothing in the app yet; it needs a small
