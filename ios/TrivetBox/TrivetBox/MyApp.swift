@@ -1,6 +1,7 @@
 import SwiftUI
 
-@main struct MyApp: App {
+@main
+struct TrivetApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
