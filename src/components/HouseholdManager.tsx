@@ -511,12 +511,22 @@ function InviteForm({
              * Refusing to shrink fixes the cause; shrinking the line height
              * instead left it two lines on a desktop and a 28px tap target on
              * a phone, where it did not wrap at all.
+             *
+             * Beside the field it also stretched to the field's full height,
+             * helper line included, and stood 67px tall next to a 41px box.
+             * From `sm` up it keeps to the top and takes the box's height;
+             * on a phone it sits full width underneath at the contained
+             * button's own 49px, the better size for a thumb.
              */}
             <Button
               type="submit"
               variant="contained"
               disabled={pending}
-              sx={{ flexShrink: 0 }}
+              sx={{
+                flexShrink: 0,
+                alignSelf: { sm: "flex-start" },
+                py: { sm: 1.25 },
+              }}
             >
               Create code
             </Button>
