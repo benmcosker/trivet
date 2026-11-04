@@ -119,10 +119,11 @@ model Account {
   id                    String    @id
   accountId             String
   providerId            String
-  /// Namespaces accountId so a provider ID cannot collide with a local
-  /// credential. Required by better-auth >= 1.5; the deprecated CLI that
-  /// generated these models predates it.
-  issuer                String
+  /// Written by better-auth 1.7.0 through 1.7.2 and required then. From 1.7.3
+  /// accounts are keyed by providerId and accountId again and nothing writes
+  /// this, so it is optional: rows from before keep their value, new rows
+  /// leave it empty. Safe to drop, with its index, in a later cleanup.
+  issuer                String?
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
