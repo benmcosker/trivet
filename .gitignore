@@ -55,3 +55,9 @@ next-env.d.ts
 # touch the sign-in rate limiter. Holds a live cookie; deleting it costs one
 # sign-in and nothing else.
 .browse-session.json
+
+# Xcode (ios/)
+xcuserdata/
+DerivedData/
+*.xcuserstate
+ios/**/build/
