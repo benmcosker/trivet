@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Offline with nothing saved yet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f6f4e}a:hover{color:#1f5038}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f7f4ed; color: #1a1815; font-family: Karla, system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column">
+
+  <header style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#2f6f4e" stroke-width="3.2" stroke-linecap="round"><circle cx="16" cy="16" r="9"></circle><path d="M16 25v4.2M8.2 11.5 4.5 9.4M23.8 11.5 27.5 9.4"></path></g></svg>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 26px; line-height: 1">Trivet</span>
+      </div>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c">Sign out</span>
+    </div>
+    <nav style="display: flex; gap: 26px; font-weight: 600; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c; white-space: nowrap; overflow: hidden">
+      <span style="padding-bottom: 8px">Recipes</span>
+      <span style="padding-bottom: 6px; color: #1a1815; border-bottom: 2px solid #a44a24">This week</span>
+      <span style="padding-bottom: 8px">Pantry</span>
+      <span style="padding-bottom: 8px">Upload</span>
+    </nav>
+  </header>
+
+  <div role="status" style="background: #efe9dc; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8; padding: 12px 20px; display: flex; gap: 12px; align-items: center">
+    <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink: 0" aria-hidden="true"><g fill="none" stroke="#1a1815" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5a15 15 0 0 1 20 0"></path><path d="M5.5 12.5a10 10 0 0 1 13 0"></path><path d="M9 16.2a5 5 0 0 1 6 0"></path><path d="M12 20h.01"></path><path d="M3 3l18 18"></path></g></svg>
+    <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815">No signal · Nothing saved yet</span>
+  </div>
+
+  <main style="padding: 26px 20px 0; display: flex; flex-direction: column">
+    <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #a44a24">The McMullens</span>
+    <h1 style="margin: 4px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 48px; line-height: 1.05">This week</h1>
+    <div style="height: 1px; background: #1a1815; margin-top: 20px"></div>
+
+    <p style="margin: 22px 0 0; font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 22px; line-height: 1.3; color: #746c5c">Nothing saved on this phone yet.</p>
+    <p style="margin: 14px 0 0; font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.45; color: #2c2820">Trivet keeps a copy of your shopping list each time you open This week with signal. Open it once when you're back in range, and it'll be here next time.</p>
+
+    <a href="#" style="align-self: flex-start; margin-top: 24px; padding: 10px 0 2px; font-weight: 700; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: #2f6f4e; text-decoration: none; border-bottom: 1px solid #2f6f4e">Try again</a>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Got it failed with no signal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f6f4e}a:hover{color:#1f5038}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f7f4ed; color: #1a1815; font-family: Karla, system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column">
+
+  <header style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 16px; border-bottom: 1px solid #ded7c8">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#2f6f4e" stroke-width="3.2" stroke-linecap="round"><circle cx="16" cy="16" r="9"></circle><path d="M16 25v4.2M8.2 11.5 4.5 9.4M23.8 11.5 27.5 9.4"></path></g></svg>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 26px; line-height: 1">Trivet</span>
+      </div>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c">Sign out</span>
+    </div>
+    <nav style="display: flex; gap: 26px; font-weight: 600; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c; white-space: nowrap; overflow: hidden">
+      <span style="padding-bottom: 8px">Recipes</span>
+      <span style="padding-bottom: 6px; color: #1a1815; border-bottom: 2px solid #a44a24">This week</span>
+      <span style="padding-bottom: 8px">Pantry</span>
+      <span style="padding-bottom: 8px">Upload</span>
+    </nav>
+  </header>
+
+  <main style="padding: 22px 20px 0; display: flex; flex-direction: column">
+    <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #a44a24">From five dinners</span>
+    <h2 style="margin: 6px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 32px; line-height: 1.1">Shopping list</h2>
+    <div style="height: 1px; background: #1a1815; margin-top: 14px"></div>
+
+    <span style="margin-top: 26px; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #746c5c">Produce</span>
+    <div style="height: 1px; background: #1a1815; margin-top: 12px"></div>
+
+    <sc-for list="{{rows}}" as="row" hint-placeholder-count="5">
+      <div style="display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; column-gap: 12px; padding: 16px 0; border-bottom: 1px solid #ded7c8">
+        <span style="font-weight: 700; font-size: 13px; padding-top: 5px">{{row.amount}}</span>
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+          <span style="font-family: Newsreader, Georgia, serif; font-size: 20px; line-height: 1.2">{{row.name}}</span>
+          <span style="font-size: 11px; letter-spacing: 0.06em; line-height: 1.4; color: #746c5c">{{row.from}}</span>
+          <sc-if value="{{row.failed}}" hint-placeholder-val="{{false}}">
+            <span role="status" style="margin-top: 6px; font-family: Newsreader, Georgia, serif; font-style: italic; font-size: 15px; line-height: 1.35; color: #a44a24">No signal, so lemon is still on the list. Tap Got it again once you're back in range.</span>
+          </sc-if>
+        </div>
+        <div style="display: flex; gap: 14px; padding-top: 6px; font-weight: 600; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap">
+          <button type="button" style="all: unset; color: #746c5c; cursor: pointer">Got it</button>
+          <button type="button" style="all: unset; color: #746c5c; cursor: pointer">Always have</button>
+        </div>
+      </div>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rows: [
+        { amount: '2 tins', name: 'cannellini beans', from: 'White Bean and Kale Soup', failed: false },
+        { amount: '2', name: 'carrots', from: 'Pork Shoulder Ragu', failed: false },
+        { amount: '1 bunch', name: 'lacinato kale', from: 'White Bean and Kale Soup', failed: false },
+        { amount: '2', name: 'lemon', from: 'Sheet Pan Chicken Thighs, Shrimp and Grits', failed: true },
+        { amount: '3', name: 'onions', from: 'White Bean and Kale Soup, Pork Shoulder Ragu', failed: false }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
