@@ -6,8 +6,9 @@ The iOS app (`ios/TrivetBox`) is a thin WKWebView shell around
 `https://trivetbox.com` — `ContentView.swift` loads the site full-screen and
 does nothing else; every feature lives on the website. That means offline
 support can't be built twice: whatever makes the website work without a
-network connection is what the iOS app gets too, for free, since it's loading
-the same origin.
+network connection is what the iOS app gets too, since it's loading the
+same origin — with one native setting first, without which a service worker
+never starts inside the app at all (see Phase 0).
 
 The motivating case is the two places in this app where a flaky or absent
 connection is routine rather than exceptional: `/recipes/<id>/cook` (a phone
@@ -48,7 +49,37 @@ Read-only offline access to recipes and the grocery list the household has
 already viewed while online. No offline writes. If a write is attempted
 offline, it fails visibly — never silently, and never by faking success.
 
+**Order: the grocery list first, on its own.** Reading the list in a shop with
+no signal is the case the family beta is most likely to hit, and it is the
+smaller job: one page, no images. Recipes and cook mode follow once the list
+has been used offline for real.
+
+## Needs design first
+
+Nothing below is built until these four states have been through a design
+pass. The plan says they must exist; it does not say what they look like.
+
+1. **Reading a saved copy.** How a page says it is the copy from the last
+   visit rather than live, and how old it is ("Saved Tuesday, 6pm").
+2. **An action that failed offline.** What "Got it" or "Always have" does
+   when there is no signal: the visible "reconnect to update your list"
+   message described below, and where it sits.
+3. **Never viewed, offline.** The empty state for a page that was never
+   opened while online, so nothing was saved.
+4. **First launch with no connection.** The small native screen in the
+   iPhone app (Phase 0), shown before the website has ever loaded.
+
 ## Phase 0 — native groundwork (iOS)
+
+- **App-bound domains, or no service worker in the app.** WKWebView only
+  exposes service workers to an app that declares its domains as app-bound.
+  Without this, `navigator.serviceWorker` is missing inside the app and the
+  whole of Phase 1 works in Safari but not in TrivetBox. Two changes:
+  `WKAppBoundDomains` listing `trivetbox.com` in the app's Info.plist (an
+  array, so it needs a small Info.plist file next to the generated keys), and
+  `config.limitsNavigationsToAppBoundDomains = true` in `ContentView.swift`.
+  The second keeps the web view on trivetbox.com, which the `Coordinator`
+  already does by sending every other link to Safari.
 
 - `ios/TrivetBox/TrivetBox/ContentView.swift` already sets
   `config.websiteDataStore = .default()` — a persistent store, so a Service
@@ -143,5 +174,6 @@ infrastructure.
 
 Yes, unchanged — the WKWebView only loads `trivetbox.com`, so the service
 worker, IndexedDB, and both cache-recorder components are the same code
-running in both places. The only iOS-only piece is the
-`didFailProvisionalNavigation` handler in Phase 0.
+running in both places. The iOS-only pieces are both in Phase 0: the
+app-bound domains setting that lets the service worker run in the app at all,
+and the `didFailProvisionalNavigation` handler.
