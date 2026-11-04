@@ -28,7 +28,7 @@ this app is built:
 
 - `/recipes/[id]` and `/recipes/[id]/cook` are **independent** Server
   Components. Each calls `requireHousehold()` then `getRecipe(id,
-  householdId)` itself — `/cook` is not a child render of the detail page, it
+householdId)` itself — `/cook` is not a child render of the detail page, it
   re-fetches and re-authorizes on its own. Caching keys off the recipe id and
   feeds both routes from one cache entry; it does not key off "the page
   family."
@@ -110,7 +110,7 @@ above.
 - **Offline writes of any kind** — "Got it," "Always have," marking a recipe
   cooked. `CookingView.finish()`'s `markCookedAction` call already silently
   swallows a failure today (`// Offline, or signed out mid-recipe. Nothing to
-  tell anybody here.`) — acceptable for that one low-stakes action, but the
+tell anybody here.`) — acceptable for that one low-stakes action, but the
   grocery actions should surface a visible "you're offline — reconnect to
   update your list" message on failure rather than leaving the button look
   like it worked.
