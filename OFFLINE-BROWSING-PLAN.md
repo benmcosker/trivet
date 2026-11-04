@@ -49,25 +49,35 @@ Read-only offline access to recipes and the grocery list the household has
 already viewed while online. No offline writes. If a write is attempted
 offline, it fails visibly — never silently, and never by faking success.
 
+One addition on the grocery list: items can be **crossed off on this phone**
+while offline. A crossing is kept on the phone and sent nowhere. When signal
+returns, the household chooses whether those items become "Got it" or are
+left as they were. Nothing reaches the server until someone presses a button
+with signal, so this is still not an offline write.
+
 **Order: the grocery list first, on its own.** Reading the list in a shop with
 no signal is the case the family beta is most likely to hit, and it is the
 smaller job: one page, no images. Recipes and cook mode follow once the list
 has been used offline for real.
 
-## Needs design first
+## Design
 
-Nothing below is built until these four states have been through a design
-pass. The plan says they must exist; it does not say what they look like.
+Done: `design_handoff_trivet_offline/` draws five states, and its README is the
+spec. The decisions it settles:
 
-1. **Reading a saved copy.** How a page says it is the copy from the last
-   visit rather than live, and how old it is ("Saved Tuesday, 6pm").
-2. **An action that failed offline.** What "Got it" or "Always have" does
-   when there is no signal: the visible "reconnect to update your list"
-   message described below, and where it sits.
-3. **Never viewed, offline.** The empty state for a page that was never
-   opened while online, so nothing was saved.
-4. **First launch with no connection.** The small native screen in the
-   iPhone app (Phase 0), shown before the website has ever loaded.
+1. **Saved copy.** A band under the nav — "No signal · Saved Tuesday, 6:04pm"
+   — and Got it and Always have stay on screen, greyed out and disabled, so
+   the rows keep their shape.
+2. **An action that failed.** The message sits on the row that failed, and
+   the item stays on the list.
+3. **Nothing saved yet.** The empty state for a list never opened with signal
+   on this phone.
+4. **First launch with no connection.** The native screen in Phase 0.
+5. **Back in range.** Shown once after items were crossed off offline: "Mark
+   them got it" or "Leave the list".
+
+The saved copy opens **scrolled to the shopping list**, not at the top of This
+week: in a shop the seven day tiles are a long scroll past what you came for.
 
 ## Phase 0 — native groundwork (iOS)
 
@@ -136,6 +146,21 @@ precaching the JS/CSS shell and giving navigation requests a cache fallback.
 It does not need to touch recipe images at all, given the raw-blob approach
 above.
 
+**Crossing off on this phone.** On the saved copy, tapping an item's name
+toggles a crossing (a button with `aria-pressed`). Crossings live in
+IndexedDB beside the saved list, keyed by household, the list's own
+`weekStartIso` and ingredient name, so last week's crossings can never reach
+this week's list. They are cleared on sign-out with the rest of the cache.
+
+**Back in range.** On the first live load of `/plan` with crossings stored for
+the week on screen, count only the crossed items still on the live list.
+Somebody at home may have ticked one already; those drop silently, and if
+none are left, no band appears. "Mark them got it" calls the existing
+`skipForWeekAction` for each item, exactly as pressing Got it would, so there
+is no new server action. "Leave the list" clears the crossings and changes
+nothing on the server. Until one is pressed, the crossed rows stay struck
+through.
+
 ## Explicitly out of scope for this version
 
 - **Offline writes of any kind** — "Got it," "Always have," marking a recipe
@@ -145,6 +170,10 @@ tell anybody here.`) — acceptable for that one low-stakes action, but the
   grocery actions should surface a visible "you're offline — reconnect to
   update your list" message on failure rather than leaving the button look
   like it worked.
+- **Sending crossings automatically.** A crossing never becomes "Got it" on
+  its own when signal returns — "Got it" inserts a `WeeklySkip` row, and
+  sending it unasked could undo a change made at home in the meantime. The
+  household decides, in the back-in-range band.
 - **Recipe upload/creation** — needs the Claude call, which needs the
   network, by design.
 - **Search** — server-side full-text/SQL ranking in `recipe-visibility.ts`;
@@ -165,7 +194,10 @@ repo currently simulates offline network conditions (`setOffline`,
 Add a pass that: visits a recipe/cook/plan page once (warm cache), calls
 `page.context().setOffline(true)`, reloads the same paths, and asserts cached
 content renders. Also assert the explicit empty state for "never viewed
-before, offline" — don't assume a cache hit. Wire the new step in directly
+before, offline" — don't assume a cache hit. On the offline list, cross off
+an item, go back online, reload, and assert the back-in-range band counts it;
+then press "Mark them got it" and assert the item has gone from the live list.
+Wire the new step in directly
 after today's "Browser check" step in `.github/workflows/ci.yml`, reusing the
 already-running app and cached session rather than standing up new
 infrastructure.
