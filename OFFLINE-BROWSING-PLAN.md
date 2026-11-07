@@ -81,6 +81,9 @@ week: in a shop the seven day tiles are a long scroll past what you came for.
 
 ## Phase 0 — native groundwork (iOS)
 
+Done in build 2 of the iPhone app: app-bound domains, the no-connection screen
+and `src/app/manifest.ts`. `ios/README.md` covers how each works.
+
 - **App-bound domains, or no service worker in the app.** WKWebView only
   exposes service workers to an app that declares its domains as app-bound.
   Without this, `navigator.serviceWorker` is missing inside the app and the
