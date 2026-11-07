@@ -5,6 +5,10 @@ Add a recipe from a link, a PDF, or a photograph of a printed or handwritten
 card, plan a dinner for each night from your library, and take the resulting
 shopping list to the shop.
 
+Live at [trivetbox.com](https://trivetbox.com), and on iPhone in a family beta.
+The [case study](docs/case-study.pdf) covers why it works the way it does: the
+problem, the decisions, what was cut, and what comes next.
+
 ## Demo video
 
 https://github.com/user-attachments/assets/f4008d4c-4334-4b36-83d7-cc69ad15a5a2
@@ -112,6 +116,29 @@ the same URL and this command does not need editing every time.
   gets the week's shopping as an SMS, split into readable parts. Giving a number
   is optional, and a number alone sends nothing - only those who ticked the box
   are texted. Live: registered with the carriers and delivering.
+
+## iPhone app
+
+A thin native app in [`ios/`](ios/) wraps trivetbox.com in a SwiftUI web view:
+a home-screen icon, sign-in that persists, the camera for recipe cards, and
+links to other sites opened in Safari. Every feature still lives on the website,
+so a change ships to the app the moment it ships to the web. It is in a family
+beta through TestFlight. [`ios/README.md`](ios/README.md) covers building it,
+sending a build to TestFlight, and its known gaps.
+
+A React Native rebuild was considered and set aside: it meant rewriting every
+screen for little the web didn't already do. The beta decides what, if anything,
+goes native.
+
+### What's next
+
+- **Offline shopping list.** A saved copy of the list that opens in a shop with
+  no signal, with items crossed off on the phone and sent to the household's
+  list only when someone chooses to, back in range. Designed in
+  [`design_handoff_trivet_offline/`](design_handoff_trivet_offline/) and planned
+  in [`OFFLINE-BROWSING-PLAN.md`](OFFLINE-BROWSING-PLAN.md); not built yet.
+- **A share sheet.** Share a recipe website or a photo of a card into Trivet from
+  any app. TikTok maybe, if its share includes the caption; Instagram no.
 
 ## Stack
 
