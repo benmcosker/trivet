@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		The only keys that can't be written as INFOPLIST_KEY_ build settings
+		(an array); Xcode merges this file into the generated Info.plist.
+
+		App-bound domains: WKWebView only runs service workers for an app that
+		declares its domains, so the offline shopping list needs this. It also
+		keeps the web view on these hosts; ContentView sends every other link
+		to Safari. Keep this list and `trivetHosts` in ContentView.swift the same.
+
+		Lives beside the TrivetBox folder, not in it: that folder syncs into the
+		target, and an Info.plist inside it would be copied as a resource too.
+	-->
+	<key>WKAppBoundDomains</key>
+	<array>
+		<string>trivetbox.com</string>
+		<string>www.trivetbox.com</string>
+	</array>
+</dict>
+</plist>
