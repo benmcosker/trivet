@@ -231,6 +231,18 @@ describe("nutrition", () => {
     ]);
   });
 
+  it("lets a household's own words through unchanged, with no credit", () => {
+    const own = exported({ sourceName: null });
+    const sameWords = rewrite({
+      title: own.title,
+      description: own.description,
+      notes: own.notes,
+      instructions: own.instructions,
+      nutrition: { ...CARD, estimated: true },
+    });
+    expect(checkRewrites([own], [sameWords])).toEqual([]);
+  });
+
   it("refuses figures outside the recipe form's limits", () => {
     expect(
       checkRewrites(

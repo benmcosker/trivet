@@ -39,6 +39,11 @@ async function main() {
       carbsG: true,
       fatG: true,
       nutritionEstimated: true,
+      servings: true,
+      ingredients: {
+        orderBy: { position: "asc" },
+        select: { name: true, quantity: true, unit: true, note: true },
+      },
       household: { select: { name: true } },
     },
   });
@@ -62,6 +67,8 @@ async function main() {
       fatG: r.fatG,
     },
     nutritionEstimated: r.nutritionEstimated,
+    servings: r.servings,
+    ingredients: r.ingredients,
   }));
 
   mkdirSync(OUT_DIR, { recursive: true });

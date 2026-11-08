@@ -87,6 +87,14 @@ export type ExportedRecipe = Words & {
   /** Missing from exports made before the tools handled nutrition. */
   nutrition?: Nutrition;
   nutritionEstimated?: boolean;
+  /** What a nutrition estimate is worked out from. Read only, never written. */
+  servings?: number;
+  ingredients?: {
+    name: string;
+    quantity: number | null;
+    unit: string | null;
+    note: string | null;
+  }[];
 };
 
 /** The recipe as it stands in the database at apply time. */
@@ -142,9 +150,12 @@ export function checkRewrites(
       if (text.includes(unnamed))
         problems.push(`${name}: still names ${unnamed}`);
     }
+    // Words left exactly as they were (a household's own recipe getting only
+    // nutrition) owe no credit: there is nothing of anyone else's in them.
     const uncredited =
-      original.sourceName !== null &&
-      UNCREDITED_SOURCES.has(original.sourceName);
+      sameWords(original, r) ||
+      (original.sourceName !== null &&
+        UNCREDITED_SOURCES.has(original.sourceName));
     if (
       !uncredited &&
       (!r.description || !/Adapted from \S/.test(r.description))
