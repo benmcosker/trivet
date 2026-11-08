@@ -5,10 +5,12 @@
  *   npm run library:apply -- --write       # applies data/library-refined.json
  *   npm run library:apply -- --revert      # dry run of the undo
  *   npm run library:apply -- --revert --write
+ *   npm run library:apply -- --revert --export .library/export-<time>.json
  *
  * Reads `.library/export.json` (from `library:export`) and
  * `data/library-refined.json`. Only titles, descriptions, notes and
- * instructions change. A recipe edited since the export is skipped, by name.
+ * instructions change, plus nutrition where the box was empty. A recipe edited
+ * since the export is skipped, by name.
  * Everything runs in one transaction: if any recipe changed between planning
  * and writing, nothing is written and the run says which. See
  * `src/lib/library-refine.ts` for the rules.
@@ -32,6 +34,9 @@ const EXPORT = ".library/export.json";
 const REFINED = "data/library-refined.json";
 
 const args = new Set(process.argv.slice(2));
+// `--export <file>` reverts against an older export kept by library:export.
+const exportArg = process.argv.indexOf("--export");
+const exportPath = exportArg > 0 ? process.argv[exportArg + 1] : EXPORT;
 const write = args.has("--write");
 const revert = args.has("--revert");
 
@@ -46,7 +51,7 @@ function readJson<T>(path: string, hint: string): T {
 
 async function main() {
   const exported = readJson<ExportedRecipe[]>(
-    EXPORT,
+    exportPath,
     "Run `npm run library:export` first.",
   );
   const rewrites = readJson<Rewrite[]>(REFINED, "The rewrite file is missing.");
@@ -68,12 +73,20 @@ async function main() {
       instructions: true,
       isShared: true,
       updatedAt: true,
+      caloriesKcal: true,
+      proteinG: true,
+      carbsG: true,
+      fatG: true,
+      nutritionEstimated: true,
     },
   });
-  const current: CurrentRecipe[] = rows.map((r) => ({
-    ...r,
-    updatedAt: r.updatedAt.toISOString(),
-  }));
+  const current: CurrentRecipe[] = rows.map(
+    ({ caloriesKcal, proteinG, carbsG, fatG, ...r }) => ({
+      ...r,
+      updatedAt: r.updatedAt.toISOString(),
+      nutrition: { caloriesKcal, proteinG, carbsG, fatG },
+    }),
+  );
 
   const plan = revert
     ? planRevert(exported, current, rewrites)
@@ -83,7 +96,11 @@ async function main() {
   console.log(`${verb} ${plan.changes.length} recipe(s):`);
   for (const c of plan.changes) {
     const renamed = c.data.title !== c.title ? ` → "${c.data.title}"` : "";
-    console.log(`  ${c.title}${renamed}`);
+    const kcal =
+      c.data.caloriesKcal != null
+        ? ` (${c.data.caloriesKcal} kcal${c.data.nutritionEstimated ? ", estimated" : ""})`
+        : "";
+    console.log(`  ${c.title}${renamed}${kcal}`);
   }
   if (plan.skipped.length > 0) {
     console.log(`Skip ${plan.skipped.length}:`);

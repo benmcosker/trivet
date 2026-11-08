@@ -12,6 +12,9 @@ import {
 const T0 = "2026-11-01T12:00:00.000Z";
 const T1 = "2026-11-02T09:30:00.000Z";
 
+const EMPTY = { caloriesKcal: null, proteinG: null, carbsG: null, fatG: null };
+const CARD = { caloriesKcal: 650, proteinG: 40, carbsG: 50, fatG: 30 };
+
 const exported = (over: Partial<ExportedRecipe> = {}): ExportedRecipe => ({
   id: "r1",
   publicId: "abc123",
@@ -24,6 +27,8 @@ const exported = (over: Partial<ExportedRecipe> = {}): ExportedRecipe => ({
   sourceUrl: null,
   sourceFileName: "card.pdf",
   updatedAt: T0,
+  nutrition: EMPTY,
+  nutritionEstimated: false,
   ...over,
 });
 
@@ -46,6 +51,8 @@ const current = (over: Partial<CurrentRecipe> = {}): CurrentRecipe => {
     instructions: e.instructions,
     isShared: true,
     updatedAt: T0,
+    nutrition: EMPTY,
+    nutritionEstimated: false,
     ...over,
   };
 };
@@ -191,5 +198,66 @@ describe("planRevert", () => {
     const plan = planRevert([exported()], [edited], [rewrite()]);
     expect(plan.changes).toEqual([]);
     expect(plan.skipped[0].reason).toMatch(/not holding the rewrite/);
+  });
+});
+
+describe("nutrition", () => {
+  const withCard = rewrite({ nutrition: { ...CARD, estimated: false } });
+
+  it("fills an empty box, and says whether it is an estimate", () => {
+    expect(checkRewrites([exported()], [withCard])).toEqual([]);
+    const [change] = planApply(
+      [exported()],
+      [current()],
+      [rewrite({ nutrition: { ...CARD, estimated: true } })],
+    ).changes;
+    expect(change.data).toMatchObject({ ...CARD, nutritionEstimated: true });
+  });
+
+  it("never replaces figures the recipe already has", () => {
+    expect(
+      checkRewrites(
+        [exported({ nutrition: { ...EMPTY, caloriesKcal: 500 } })],
+        [withCard],
+      ),
+    ).toEqual(["Zesty Lemon Chicken Bonanza: nutrition is already filled in"]);
+  });
+
+  it("refuses an export made before nutrition was exported", () => {
+    const old = exported();
+    delete old.nutrition;
+    expect(checkRewrites([old], [withCard])).toEqual([
+      "Zesty Lemon Chicken Bonanza: the export has no nutrition; export again",
+    ]);
+  });
+
+  it("refuses figures outside the recipe form's limits", () => {
+    expect(
+      checkRewrites(
+        [exported()],
+        [
+          rewrite({
+            nutrition: { ...CARD, caloriesKcal: 9000, estimated: true },
+          }),
+        ],
+      ),
+    ).toEqual(["Zesty Lemon Chicken Bonanza: Calories out of range"]);
+  });
+
+  it("counts the nutrition when deciding a rewrite is already applied", () => {
+    const wordsOnly = current({ ...rewrite(), updatedAt: T0 });
+    expect(
+      planApply([exported()], [wordsOnly], [withCard]).changes,
+    ).toHaveLength(1);
+    const both = current({ ...rewrite(), nutrition: CARD, updatedAt: T1 });
+    expect(planApply([exported()], [both], [withCard]).skipped[0].reason).toBe(
+      "already applied",
+    );
+  });
+
+  it("empties the box again on revert", () => {
+    const applied = current({ ...rewrite(), nutrition: CARD, updatedAt: T1 });
+    const [change] = planRevert([exported()], [applied], [withCard]).changes;
+    expect(change.data).toMatchObject({ ...EMPTY, nutritionEstimated: false });
   });
 });

@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { prisma } from "./db";
 import { visibleRecipes } from "./recipe-visibility";
-import type { RecipeInput } from "./recipe-schema";
+import { MACRO_KEYS, type RecipeInput } from "./recipe-schema";
 import { upsertTags, type RecipeWithRelations } from "./recipes";
 
 /**
@@ -179,9 +179,23 @@ export async function updateRecipe(
   return prisma.$transaction(async (tx) => {
     const owned = await tx.recipe.findFirst({
       where: { id, householdId },
-      select: { id: true },
+      select: {
+        id: true,
+        caloriesKcal: true,
+        proteinG: true,
+        carbsG: true,
+        fatG: true,
+        nutritionEstimated: true,
+      },
     });
     if (!owned) return false;
+
+    // An estimate stays labelled only while its figures are untouched. Once
+    // somebody types their own, the label would be wrong.
+    const nutrition = nutritionColumns(input);
+    const nutritionEstimated =
+      owned.nutritionEstimated &&
+      MACRO_KEYS.every((key) => nutrition[key] === owned[key]);
 
     await tx.ingredient.deleteMany({ where: { recipeId: id } });
     await tx.recipeTag.deleteMany({ where: { recipeId: id } });
@@ -200,7 +214,8 @@ export async function updateRecipe(
         restMinutes: input.restMinutes ?? null,
         yieldNote: emptyToNull(input.yieldNote),
         equipment: input.equipment,
-        ...nutritionColumns(input),
+        ...nutrition,
+        nutritionEstimated,
         // `?? null`, not undefined: clearing it on the form has to clear it.
         course: input.course ?? null,
         notes: emptyToNull(input.notes),

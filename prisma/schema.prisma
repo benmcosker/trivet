@@ -319,10 +319,16 @@ model Recipe {
   /// SNACK matches `MealSlot.SNACK`, so the dish and the slot share a word.
   course RecipeCourse?
 
-  caloriesKcal Int?
-  proteinG     Int?
-  carbsG       Int?
-  fatG         Int?
+  caloriesKcal       Int?
+  proteinG           Int?
+  carbsG             Int?
+  fatG               Int?
+  /// True when the four figures above are Trivet's estimate from the
+  /// ingredients rather than numbers the recipe printed. The nutrition block
+  /// says "Estimated" when it is set, because every other field on the page is
+  /// what the recipe said. Editing any of the four by hand clears it: the
+  /// figures are then the household's own.
+  nutritionEstimated Boolean @default(false)
 
   /// The card this recipe was read from: a PDF, or a photograph of one.
   ///

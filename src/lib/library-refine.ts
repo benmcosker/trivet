@@ -20,9 +20,16 @@
  * never overwritten. Each export row carries its `updatedAt`, and a recipe
  * whose `updatedAt` has moved since then is skipped, by name.
  *
+ * A rewrite may also fill in a recipe's nutrition, but only where the box was
+ * empty at export time: figures a recipe printed are never replaced. Each
+ * filled box says whether the figures were read off the card or estimated
+ * from the ingredients, and the recipe page labels the estimates.
+ *
  * Pure functions, so the rules test without a database; the scripts in
  * `scripts/` do the reading and writing.
  */
+
+import { MACRO_RANGE } from "./recipe-schema";
 
 /**
  * Sources the library does not name. Their recipes are rewritten in full and
@@ -33,12 +40,31 @@ export const UNCREDITED_SOURCES: ReadonlySet<string> = new Set([
   "Marley Spoon",
 ]);
 
-/** The fields a rewrite may change. Nothing else is ever written. */
+/**
+ * The word fields a rewrite may change. The only other fields ever written
+ * are the four in `NUTRITION_FIELDS` and `nutritionEstimated`, and only into
+ * an empty nutrition box.
+ */
 export const REFINED_FIELDS = [
   "title",
   "description",
   "notes",
   "instructions",
+] as const;
+
+/** The four macro figures for one serving, as stored on a recipe. */
+export type Nutrition = {
+  caloriesKcal: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+};
+
+export const NUTRITION_FIELDS = [
+  "caloriesKcal",
+  "proteinG",
+  "carbsG",
+  "fatG",
 ] as const;
 
 export type Words = {
@@ -58,6 +84,9 @@ export type ExportedRecipe = Words & {
   sourceFileName: string | null;
   /** ISO time. The guard against overwriting a later edit. */
   updatedAt: string;
+  /** Missing from exports made before the tools handled nutrition. */
+  nutrition?: Nutrition;
+  nutritionEstimated?: boolean;
 };
 
 /** The recipe as it stands in the database at apply time. */
@@ -65,16 +94,21 @@ export type CurrentRecipe = Words & {
   id: string;
   isShared: boolean;
   updatedAt: string;
+  nutrition: Nutrition;
+  nutritionEstimated: boolean;
 };
 
-export type Rewrite = Words & { id: string };
+/** Nutrition for an empty box, and whether it is an estimate. */
+export type RewriteNutrition = Nutrition & { estimated: boolean };
+
+export type Rewrite = Words & { id: string; nutrition?: RewriteNutrition };
 
 export type Change = {
   id: string;
   title: string;
   /** The `updatedAt` the write is conditional on. */
   expectedUpdatedAt: string;
-  data: Words;
+  data: Words & Partial<Nutrition & { nutritionEstimated: boolean }>;
 };
 
 export type Skip = { id: string; title: string; reason: string };
@@ -126,6 +160,32 @@ export function checkRewrites(
     if (original.notes && !r.notes) {
       problems.push(`${name}: notes dropped`);
     }
+    if (r.nutrition)
+      problems.push(...checkNutrition(name, original, r.nutrition));
+  }
+  return problems;
+}
+
+function checkNutrition(
+  name: string,
+  original: ExportedRecipe,
+  n: RewriteNutrition,
+): string[] {
+  const problems: string[] = [];
+  if (!original.nutrition) {
+    problems.push(`${name}: the export has no nutrition; export again`);
+  } else if (NUTRITION_FIELDS.some((k) => original.nutrition![k] !== null)) {
+    problems.push(`${name}: nutrition is already filled in`);
+  }
+  if (NUTRITION_FIELDS.every((k) => n[k] === null)) {
+    problems.push(`${name}: nutrition is empty`);
+  }
+  for (const k of NUTRITION_FIELDS) {
+    const v = n[k];
+    const { min, max, label } = MACRO_RANGE[k];
+    if (v !== null && (!Number.isInteger(v) || v < min || v > max)) {
+      problems.push(`${name}: ${label} out of range`);
+    }
   }
   return problems;
 }
@@ -137,6 +197,26 @@ function sameWords(a: Words, b: Words): boolean {
     (a.notes ?? null) === (b.notes ?? null) &&
     a.instructions.length === b.instructions.length &&
     a.instructions.every((step, i) => step === b.instructions[i])
+  );
+}
+
+function nutritionOf(n: Nutrition): Nutrition {
+  return {
+    caloriesKcal: n.caloriesKcal,
+    proteinG: n.proteinG,
+    carbsG: n.carbsG,
+    fatG: n.fatG,
+  };
+}
+
+/** Whether a recipe holds exactly what a rewrite would write. */
+function holdsRewrite(now: CurrentRecipe, rewrite: Rewrite): boolean {
+  if (!sameWords(now, rewrite)) return false;
+  const n = rewrite.nutrition;
+  return (
+    !n ||
+    (NUTRITION_FIELDS.every((k) => now.nutrition[k] === n[k]) &&
+      now.nutritionEstimated === n.estimated)
   );
 }
 
@@ -170,7 +250,7 @@ export function planApply(
       plan.skipped.push({ id: rewrite.id, title, reason: "deleted since" });
     } else if (!now.isShared) {
       plan.skipped.push({ id: rewrite.id, title, reason: "no longer shared" });
-    } else if (sameWords(now, rewrite)) {
+    } else if (holdsRewrite(now, rewrite)) {
       plan.skipped.push({ id: rewrite.id, title, reason: "already applied" });
     } else if (now.updatedAt !== was.updatedAt) {
       plan.skipped.push({
@@ -183,7 +263,13 @@ export function planApply(
         id: rewrite.id,
         title,
         expectedUpdatedAt: now.updatedAt,
-        data: words(rewrite),
+        data: rewrite.nutrition
+          ? {
+              ...words(rewrite),
+              ...nutritionOf(rewrite.nutrition),
+              nutritionEstimated: rewrite.nutrition.estimated,
+            }
+          : words(rewrite),
       });
     }
   }
@@ -212,7 +298,7 @@ export function planRevert(
       plan.skipped.push({ id: rewrite.id, title, reason: "not in the export" });
     } else if (!now) {
       plan.skipped.push({ id: rewrite.id, title, reason: "deleted since" });
-    } else if (!sameWords(now, rewrite)) {
+    } else if (!holdsRewrite(now, rewrite)) {
       plan.skipped.push({
         id: rewrite.id,
         title,
@@ -223,7 +309,14 @@ export function planRevert(
         id: rewrite.id,
         title,
         expectedUpdatedAt: now.updatedAt,
-        data: words(was),
+        data:
+          rewrite.nutrition && was.nutrition
+            ? {
+                ...words(was),
+                ...nutritionOf(was.nutrition),
+                nutritionEstimated: was.nutritionEstimated ?? false,
+              }
+            : words(was),
       });
     }
   }
