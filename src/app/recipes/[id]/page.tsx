@@ -541,7 +541,12 @@ export default async function RecipePage({
            * the name of the family it belongs to.
            */}
           {!mine && recipe.isShared ? <> · Shared with you</> : null}
-          {recipe.sourceName ? <> · From {recipe.sourceName}</> : null}
+          {/*
+           * The source is a note to the household that saved the recipe. Other
+           * households read the credit in the description instead, which the
+           * library rewrite controls.
+           */}
+          {mine && recipe.sourceName ? <> · From {recipe.sourceName}</> : null}
           {recipe.sourceUrl ? (
             <>
               {" · "}
