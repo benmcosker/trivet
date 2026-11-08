@@ -65,6 +65,22 @@ describe("checkRewrites", () => {
     ]);
   });
 
+  it("leaves Marley Spoon uncredited, and refuses a rewrite that names it", () => {
+    const card = exported({ sourceName: "Marley Spoon" });
+    expect(
+      checkRewrites(
+        [card],
+        [rewrite({ description: "Bright, quick chicken." })],
+      ),
+    ).toEqual([]);
+    expect(
+      checkRewrites(
+        [card],
+        [rewrite({ description: "Bright. Adapted from Marley Spoon." })],
+      ),
+    ).toEqual(["Zesty Lemon Chicken Bonanza: still names Marley Spoon"]);
+  });
+
   it("refuses to drop steps or notes the original had", () => {
     const problems = checkRewrites(
       [exported()],

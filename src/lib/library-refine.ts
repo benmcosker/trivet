@@ -6,7 +6,7 @@
  * cookbook is someone else's prose. Ingredients and quantities are facts and
  * stay as they are. What changes is a recipe's title, description, notes and
  * instructions, rewritten in Trivet's own words, each description ending
- * "Adapted from <source>".
+ * "Adapted from <source>" (except sources in `UNCREDITED_SOURCES`).
  *
  * The flow, and why it is three steps:
  *
@@ -23,6 +23,15 @@
  * Pure functions, so the rules test without a database; the scripts in
  * `scripts/` do the reading and writing.
  */
+
+/**
+ * Sources the library does not name. Their recipes are rewritten in full and
+ * carry no "Adapted from" credit, and a rewrite that still mentions them is
+ * refused.
+ */
+export const UNCREDITED_SOURCES: ReadonlySet<string> = new Set([
+  "Marley Spoon",
+]);
 
 /** The fields a rewrite may change. Nothing else is ever written. */
 export const REFINED_FIELDS = [
@@ -94,7 +103,18 @@ export function checkRewrites(
       continue;
     }
     if (!r.title.trim()) problems.push(`${name}: empty title`);
-    if (!r.description || !/Adapted from \S/.test(r.description)) {
+    const text = [r.title, r.description, r.notes, ...r.instructions].join(" ");
+    for (const unnamed of UNCREDITED_SOURCES) {
+      if (text.includes(unnamed))
+        problems.push(`${name}: still names ${unnamed}`);
+    }
+    const uncredited =
+      original.sourceName !== null &&
+      UNCREDITED_SOURCES.has(original.sourceName);
+    if (
+      !uncredited &&
+      (!r.description || !/Adapted from \S/.test(r.description))
+    ) {
       problems.push(`${name}: description has no "Adapted from"`);
     }
     if (original.instructions.length > 0 && r.instructions.length === 0) {
