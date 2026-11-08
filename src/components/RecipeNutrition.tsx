@@ -8,6 +8,7 @@ export type RecipeNutritionSource = {
   proteinG?: number | null;
   carbsG?: number | null;
   fatG?: number | null;
+  nutritionEstimated?: boolean;
 };
 
 const UNIT: Record<MacroKey, string> = {
@@ -35,6 +36,11 @@ const UNIT: Record<MacroKey, string> = {
  * Absent rather than empty when there is nothing to show. A heading that
  * failed to fill is what would read as a gap, and most of the library is
  * photographed cards, which rarely print any of this.
+ *
+ * The one exception to "no caption": figures Trivet estimated from the
+ * ingredients, rather than read off the recipe, say so in the heading. That
+ * is the case the paragraph above warns about in reverse - an estimate shown
+ * bare would read exactly as certain as the oven temperature.
  */
 export function RecipeNutrition({ recipe }: { recipe: RecipeNutritionSource }) {
   const parts = MACRO_KEYS.filter((key) => recipe[key] != null).map(
@@ -54,7 +60,7 @@ export function RecipeNutrition({ recipe }: { recipe: RecipeNutritionSource }) {
      */
     <Box sx={{ mt: 4 }}>
       <Typography variant="overline" component="p" color="text.secondary">
-        Per serving
+        {recipe.nutritionEstimated ? "Per serving, estimated" : "Per serving"}
       </Typography>
 
       <Typography variant="body2" sx={{ mt: 0.5 }}>

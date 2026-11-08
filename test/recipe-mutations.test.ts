@@ -99,6 +99,37 @@ describe.skipIf(!hasDb)("recipe mutations", () => {
     expect(recipe.tags.map((t) => t.tag.name)).toEqual(["Weeknight"]);
   });
 
+  it("drops the Estimated label once somebody edits the figures", async () => {
+    const macros = { caloriesKcal: 600, proteinG: 30, carbsG: 50, fatG: 25 };
+    const id = await createRecipe(
+      recipeInput.parse({ ...base, ...macros }),
+      householdId,
+      userId,
+    );
+    await prisma.recipe.update({
+      where: { id },
+      data: { nutritionEstimated: true },
+    });
+    const estimated = async () =>
+      (await prisma.recipe.findUniqueOrThrow({ where: { id } }))
+        .nutritionEstimated;
+
+    // Editing something else keeps the label.
+    await updateRecipe(
+      id,
+      householdId,
+      recipeInput.parse({ ...base, ...macros, title: "Miso Salmon" }),
+    );
+    expect(await estimated()).toBe(true);
+
+    await updateRecipe(
+      id,
+      householdId,
+      recipeInput.parse({ ...base, ...macros, caloriesKcal: 550 }),
+    );
+    expect(await estimated()).toBe(false);
+  });
+
   it("reindexes for search after an edit", async () => {
     const id = await createRecipe(recipeInput.parse(base), householdId, userId);
     await updateRecipe(

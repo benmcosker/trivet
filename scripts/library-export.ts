@@ -9,7 +9,7 @@
  * git-ignored and the file never belongs in a commit. See
  * `src/lib/library-refine.ts` for the whole flow.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 
 import "dotenv/config";
 
@@ -34,6 +34,16 @@ async function main() {
       sourceUrl: true,
       sourceFileName: true,
       updatedAt: true,
+      caloriesKcal: true,
+      proteinG: true,
+      carbsG: true,
+      fatG: true,
+      nutritionEstimated: true,
+      servings: true,
+      ingredients: {
+        orderBy: { position: "asc" },
+        select: { name: true, quantity: true, unit: true, note: true },
+      },
       household: { select: { name: true } },
     },
   });
@@ -50,9 +60,25 @@ async function main() {
     sourceUrl: r.sourceUrl,
     sourceFileName: r.sourceFileName,
     updatedAt: r.updatedAt.toISOString(),
+    nutrition: {
+      caloriesKcal: r.caloriesKcal,
+      proteinG: r.proteinG,
+      carbsG: r.carbsG,
+      fatG: r.fatG,
+    },
+    nutritionEstimated: r.nutritionEstimated,
+    servings: r.servings,
+    ingredients: r.ingredients,
   }));
 
   mkdirSync(OUT_DIR, { recursive: true });
+  // Keep the previous export: `--revert` against it is the only way back to
+  // the words as they were before that run.
+  if (existsSync(OUT)) {
+    const kept = `${OUT_DIR}/export-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    renameSync(OUT, kept);
+    console.log(`Kept the previous export as ${kept}.`);
+  }
   writeFileSync(OUT, JSON.stringify(rows, null, 2) + "\n");
 
   const households = new Set(rows.map((r) => r.householdName));
