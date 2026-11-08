@@ -61,3 +61,7 @@ xcuserdata/
 DerivedData/
 *.xcuserstate
 ios/**/build/
+
+# `npm run library:export` output: the shared library's original wording,
+# which is the copyrighted text the rewrite replaces. Never commit it.
+/.library/
