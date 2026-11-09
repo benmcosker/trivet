@@ -53,6 +53,32 @@ screen. To see it, turn on Airplane Mode and launch the app from closed. Its
 copy says the app needs a connection; it changes to the designed wording when
 the offline shopping list ships.
 
+## Share to Trivet
+
+`TrivetShare` is a share extension: it puts **Trivet** in the iPhone share
+sheet for web links and for text with a link in it (Phase 1 of
+`SHARE-SHEET-PLAN.md`; photos and PDFs come next).
+
+- The extension cannot see the app's sign-in and Apple does not let it open
+  the app, so it leaves the link in the App Group folder
+  (`group.com.trivetbox.app`, file `pending-share.json`) and says "Open
+  Trivet". The app checks for it when it comes forward and after each page
+  loads, opens `/upload?url=…`, and clears it once the upload page has loaded.
+  On the sign-in pages it waits. A share older than a day is dropped.
+- TikTok and Instagram links are answered in the sheet with the screenshot
+  route, without reaching the app. The host list in
+  `TrivetShare/SharedLink.swift` must match `src/lib/social-links.ts`.
+- The App Group name appears in both `.entitlements` files,
+  `SharedLink.appGroup` and `PendingShare.appGroup`; all four must match.
+- The extension is a separate program, so the palette and the Trivet mark are
+  copied into `ShareViewController.swift`. If either changes, change both.
+- Its build number must match the app's (`CURRENT_PROJECT_VERSION` on both
+  targets), or App Store Connect rejects the upload.
+
+To test on a phone: Safari, a recipe page, Share, **Trivet** (under "More" the
+first time, then it can be moved up), Done, then open Trivet. The upload page
+should be reading that link.
+
 ## App icon
 
 `TrivetBox/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, drawn from
