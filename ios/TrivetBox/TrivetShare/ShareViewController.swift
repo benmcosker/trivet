@@ -55,6 +55,12 @@ enum ShareState: Equatable {
 @Observable
 final class ShareModel {
     var state: ShareState = .reading
+    /// Show how to pin Trivet in the share sheet. Only for the first few
+    /// shares: by then it is pinned, or iOS has moved it up by itself.
+    var showPinTip = false
+
+    private static let tipShares = 3
+    private static let sharesKey = "readyShares"
 
     /// Find the link in what was shared: a URL if the app shared one (Safari,
     /// Chrome), otherwise the first link in shared text ("Look at this!
@@ -97,6 +103,9 @@ final class ShareModel {
         }
         do {
             try SharedLink.save(url)
+            let shares = UserDefaults.standard.integer(forKey: Self.sharesKey) + 1
+            UserDefaults.standard.set(shares, forKey: Self.sharesKey)
+            showPinTip = shares <= Self.tipShares
             state = .ready(host: SharedLink.hostLabel(url))
         } catch {
             state = .failed
@@ -146,6 +155,23 @@ struct ShareSheetView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 28)
+
+                // Apps cannot pin themselves in the share sheet, so say how,
+                // once it has proved worth pinning.
+                if model.showPinTip {
+                    Text("Tip")
+                        .textCase(.uppercase)
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(1.6)
+                        .foregroundStyle(green)
+                        .padding(.top, 32)
+                    Text("Keep Trivet up front: in any share sheet, tap More, then Edit, then the + beside Trivet.")
+                        .font(.system(size: 15))
+                        .foregroundStyle(softInk)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 6)
+                }
             }
             Spacer(minLength: 0)
         }
