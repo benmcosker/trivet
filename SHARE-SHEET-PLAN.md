@@ -29,6 +29,7 @@ Phase 0 of it has shipped; Phase 1 picks up after this plan.
 | Photos, or the screenshot preview                      | One image              | The existing photo import                             |
 | Mail, Files                                            | One PDF                | The existing PDF import                               |
 | TikTok, Instagram                                      | A link to the post     | Answered on the spot, see below                       |
+| Anywhere, as copied text (a caption, a message)        | Text with no link      | A text import, see Captions as text                   |
 
 One item per share. Several photos of one card (front and back) is a later
 addition; the upload page handles one file at a time today.
@@ -48,11 +49,36 @@ caption is read like a recipe card.
 
 So a TikTok or Instagram link shared to Trivet is answered inside the share
 sheet, without a trip to the server: "TikTok doesn't share captions with other
-apps. Take a screenshot of the caption and share that to Trivet instead." The
-extension recognises the same hosts as `socialSite()`; the two lists must
-match, like `trivetHosts` and `WKAppBoundDomains` already do.
+apps. Copy the caption, or take a screenshot of it, and share that to Trivet
+instead." The extension recognises the same hosts as `socialSite()`; the two
+lists must match, like `trivetHosts` and `WKAppBoundDomains` already do.
 
-Revisiting this is a separate decision, not part of this plan.
+### Captions as text
+
+The cheaper path, where a post allows it: **copy the caption** and give Trivet
+the text. It is the person handing over words they can already see, like a
+screenshot, so it stays inside both sites' rules, and it costs one model call
+on a few hundred words, the same as a link import. Reading a video was
+considered and set aside: far more expensive per import.
+
+- **In the share sheet:** shared text with no link in it, or a social link
+  with text around it, is treated as a recipe caption when it is long enough to
+  be one (a few lines, with something that looks like an ingredient or a
+  step). Short text with no link gets the "no link" answer.
+- **On the upload page:** a **Paste a recipe** option beside the link field,
+  for text copied anywhere: a caption, a message from a relative, a note.
+- **On the server:** a text import route that calls `extractRecipeFromPage`
+  with the pasted text and no page fetch. If a social link came with the text,
+  it is kept as the source address, so the recipe credits the post.
+
+How often a caption can be copied varies by app and by post, which is why
+the screenshot route stays alongside it.
+
+Logging in to Instagram or TikTok inside Trivet to read captions was also
+considered and set aside: it needs those sites added to the app-bound domains
+from Phase 0, App Store guideline 5.2.2 requires permission from the service
+whose content an app collects, and people would have to give a recipe app
+their Instagram login.
 
 ## How a shared item reaches the signed-in app
 
@@ -135,6 +161,7 @@ matching one for a shared file. Same handoff format as
 ## Explicitly out of scope
 
 - Reading TikTok or Instagram captions from a link (see above).
+- Reading recipes out of videos.
 - Saving without review. Every import still goes through the review step
   before it joins the library.
 - Several photos in one share.
@@ -152,14 +179,17 @@ On a real phone, since the simulator's share sheet is limited:
 2. The same while signed out: sign in, and the import starts afterwards.
 3. Chrome, and an app that shares text with a link in it.
 4. A TikTok link: the advice appears in the sheet; nothing is sent.
-5. Phase 2: a screenshot from the preview, a photo from Photos, a PDF from
+5. A copied caption shared as text, and the same text pasted on the upload
+   page: both import, and a social link alongside is kept as the source.
+6. Phase 2: a screenshot from the preview, a photo from Photos, a PDF from
    Mail. Each opens the upload page with the file already read.
-6. A file over the limit: refused in the sheet.
-7. Share something, don't open Trivet for a day: nothing happens when it is
+7. A file over the limit: refused in the sheet.
+8. Share something, don't open Trivet for a day: nothing happens when it is
    next opened.
 
 ## Effort
 
 Phase 1 is small: the extension, the App Group and about forty lines in the
-app. Phase 2 adds the file handoff on both sides and is the larger half. Both
+app. Captions as text add one server route, a paste field and the text case in
+the extension; small, and testable on the web before any iOS work. Phase 2 adds the file handoff on both sides and is the larger half. Both
 need a build in Xcode on a phone to test, as Phase 0 did.
