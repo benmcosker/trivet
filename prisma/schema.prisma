@@ -242,6 +242,8 @@ enum RecipeSource {
   PHOTO
   /// A recipe page on the web, read from the address somebody pasted.
   URL
+  /// Text somebody pasted or shared: a message, a note, a copied page.
+  TEXT
 }
 
 model Recipe {

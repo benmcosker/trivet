@@ -21,6 +21,7 @@ import {
   saveExtractedRecipeAction,
 } from "@/app/upload/actions";
 import { heicToJpeg } from "@/lib/heic";
+import { PASTED_TEXT_REFUSAL, readPastedText } from "@/lib/pasted-text";
 import { hostLabel, normaliseAddress } from "@/lib/recipe-address";
 import type { ExtractedRecipe, RecipeInput } from "@/lib/recipe-schema";
 import { recipePath } from "@/lib/recipe-url";
@@ -35,13 +36,14 @@ const UPLOAD_TIMEOUT_MS = 70_000;
 
 /** So the shelf label and the field are a real label/control pair. */
 const ADDRESS_FIELD_ID = "recipe-address";
+const TEXT_FIELD_ID = "recipe-text";
 
 type ExistingRecipe = { id: string; publicId: string; title: string };
 
-/** Which half of the card is working. One model call at a time. */
-type Half = "link" | "file";
+/** Which part of the card is working. One model call at a time. */
+type Half = "link" | "file" | "text";
 
-type RecipeSource = "PDF" | "PHOTO" | "URL";
+type RecipeSource = "PDF" | "PHOTO" | "URL" | "TEXT";
 
 /**
  * A page that did not come back, and what to say about it.
@@ -134,6 +136,8 @@ export function UploadWorkflow({
     setAddress("");
     setAddressInvalid(false);
   }
+  const [pasted, setPasted] = useState("");
+  const [pastedRefusal, setPastedRefusal] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [extracted, setExtracted] = useState<Extracted | null>(null);
@@ -168,6 +172,7 @@ export function UploadWorkflow({
     setError(null);
     setHandoff(null);
     setAddressInvalid(false);
+    setPastedRefusal(null);
     setDuplicateOf(null);
   }
 
@@ -316,6 +321,54 @@ export function UploadWorkflow({
     }
   }
 
+  async function handleText(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+
+    // The same checks the route makes, here first so an empty or one-line
+    // paste is answered at once rather than after a round trip.
+    const checked = readPastedText(pasted);
+    if (!checked.ok) {
+      setPastedRefusal(PASTED_TEXT_REFUSAL[checked.reason]);
+      setError(null);
+      return;
+    }
+
+    startWork("text");
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+
+    try {
+      const response = await fetch("/api/import-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: checked.text }),
+        signal: controller.signal,
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setError(
+          payload?.error ??
+            `That text could not be read (${response.status}). Nothing was saved.`,
+        );
+        return;
+      }
+
+      setExtracted(payload as Extracted);
+    } catch (cause) {
+      setError(
+        cause instanceof DOMException && cause.name === "AbortError"
+          ? "That took too long to read. Try again, or add the recipe by hand."
+          : "That text could not be read. Check your connection and try again.",
+      );
+    } finally {
+      clearTimeout(timeout);
+      setBusy(null);
+    }
+  }
+
   /*
    * Read a shared link once, on arrival. The address is then tidied back to
    * plain /upload, so a reload or a trip back does not read it a second time.
@@ -333,6 +386,7 @@ export function UploadWorkflow({
   if (extracted) {
     const { recipe, ...assets } = extracted;
     const fromUrl = extracted.source === "URL";
+    const fromText = extracted.source === "TEXT";
     const initial: RecipeInput = {
       title: recipe.title,
       description: recipe.description ?? null,
@@ -399,9 +453,11 @@ export function UploadWorkflow({
           <Typography variant="body2" color="text.secondary">
             {fromUrl
               ? "No photo came back from that page. You can add one after saving."
-              : extracted.source === "PHOTO"
-                ? "A photo of the card is not a photo of the dish, so none was set. You can add one after saving."
-                : "No usable photo was found in the PDF."}
+              : fromText
+                ? "Pasted text has no photo of the dish. You can add one after saving."
+                : extracted.source === "PHOTO"
+                  ? "A photo of the card is not a photo of the dish, so none was set. You can add one after saving."
+                  : "No usable photo was found in the PDF."}
           </Typography>
         )}
 
@@ -424,10 +480,11 @@ export function UploadWorkflow({
               await discardUploadAction(assets);
               setExtracted(null);
               setAddress("");
+              setPasted("");
               setDiscarding(false);
             }}
           >
-            {fromUrl
+            {fromUrl || fromText
               ? "Discard and start again"
               : "Discard and upload a different card"}
           </Button>
@@ -732,6 +789,91 @@ export function UploadWorkflow({
             </Box>
 
             {busy === "file" ? <LinearProgress sx={{ mt: 2 }} /> : null}
+          </Box>
+
+          {/*
+           * The third way in, last because it is the least common and because
+           * the link half's handoff note says "below" of the file half, which
+           * has to stay directly under it.
+           *
+           * Text copied anywhere a copy is possible: a message, a note, a page,
+           * a caption on Instagram's website. Neither Instagram's nor TikTok's
+           * app lets a caption be copied, which is why the file half above
+           * names the screenshot.
+           */}
+          <Box
+            component="form"
+            onSubmit={handleText}
+            noValidate
+            sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: "divider" }}
+          >
+            <Typography
+              component="label"
+              htmlFor={TEXT_FIELD_ID}
+              variant="overline"
+              sx={{ display: "block", color: "text.secondary" }}
+            >
+              Some text
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              A recipe copied from a message, a note or a page. Paste the whole
+              thing, ingredients and steps.
+            </Typography>
+
+            <InputBase
+              value={pasted}
+              onChange={(event) => {
+                setPasted(event.target.value);
+                if (pastedRefusal) setPastedRefusal(null);
+              }}
+              multiline
+              minRows={4}
+              maxRows={14}
+              placeholder="Paste a recipe"
+              inputProps={{ id: TEXT_FIELD_ID }}
+              sx={{
+                mt: 2,
+                width: "100%",
+                // The same underline the address field draws, so the two
+                // fields read as the same kind of thing at different sizes.
+                borderBottom: "1px solid",
+                borderColor: "text.primary",
+                pb: "12px",
+                fontFamily: fonts.sans,
+                fontSize: "1rem",
+                color: "text.primary",
+                "& textarea::placeholder": {
+                  color: "text.secondary",
+                  opacity: 1,
+                },
+              }}
+            />
+
+            {pastedRefusal ? (
+              <Typography
+                variant="body2"
+                sx={{ color: "secondary.main", mt: 1 }}
+              >
+                {pastedRefusal}
+              </Typography>
+            ) : null}
+
+            <Box sx={{ mt: 2.5 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                disabled={busy !== null}
+              >
+                {busy === "text"
+                  ? elapsed > 0
+                    ? `Reading the text… ${elapsed}s`
+                    : "Reading the text…"
+                  : "Read the text"}
+              </Button>
+            </Box>
+
+            {busy === "text" ? <LinearProgress sx={{ mt: 2 }} /> : null}
           </Box>
         </CardContent>
       </Card>

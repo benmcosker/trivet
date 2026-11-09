@@ -100,7 +100,7 @@ type RecipeAssets = {
   /** Lets a re-upload of the same file be recognised. Null for manual entry. */
   sourceFileSha256?: string | null;
   imageUrl?: string | null;
-  source?: "MANUAL" | "PDF" | "PHOTO" | "URL";
+  source?: "MANUAL" | "PDF" | "PHOTO" | "URL" | "TEXT";
 };
 
 export async function createRecipe(
