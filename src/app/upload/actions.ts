@@ -19,7 +19,7 @@ export type SaveExtractedResult = { ok: false; error: string };
 export async function saveExtractedRecipeAction(
   raw: unknown,
   assets: {
-    source?: "PDF" | "PHOTO" | "URL";
+    source?: "PDF" | "PHOTO" | "URL" | "TEXT";
     sourceFileUrl?: string | null;
     sourceFileName?: string | null;
     sourceFileType?: string | null;
