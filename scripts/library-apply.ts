@@ -6,6 +6,7 @@
  *   npm run library:apply -- --revert      # dry run of the undo
  *   npm run library:apply -- --revert --write
  *   npm run library:apply -- --revert --export .library/export-<time>.json
+ *   npm run library:apply -- --rewrites data/library-nutrition.json
  *
  * Reads `.library/export.json` (from `library:export`) and
  * `data/library-refined.json`. Only titles, descriptions, notes and
@@ -37,6 +38,9 @@ const args = new Set(process.argv.slice(2));
 // `--export <file>` reverts against an older export kept by library:export.
 const exportArg = process.argv.indexOf("--export");
 const exportPath = exportArg > 0 ? process.argv[exportArg + 1] : EXPORT;
+// `--rewrites <file>` applies a later pass, such as data/library-nutrition.json.
+const rewritesArg = process.argv.indexOf("--rewrites");
+const rewritesPath = rewritesArg > 0 ? process.argv[rewritesArg + 1] : REFINED;
 const write = args.has("--write");
 const revert = args.has("--revert");
 
@@ -54,7 +58,10 @@ async function main() {
     exportPath,
     "Run `npm run library:export` first.",
   );
-  const rewrites = readJson<Rewrite[]>(REFINED, "The rewrite file is missing.");
+  const rewrites = readJson<Rewrite[]>(
+    rewritesPath,
+    "The rewrite file is missing.",
+  );
 
   const problems = checkRewrites(exported, rewrites);
   if (problems.length > 0 && !revert) {
