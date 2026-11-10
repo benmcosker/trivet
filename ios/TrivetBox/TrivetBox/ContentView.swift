@@ -39,12 +39,44 @@ final class WebState {
     /// page on screen, as Safari would, instead of covering it.
     @ObservationIgnored var hasLoaded = false
     @ObservationIgnored weak var webView: WKWebView?
+    /// A link from the share sheet has been sent to the upload page and is
+    /// cleared once that page has loaded.
+    @ObservationIgnored var deliveringShare = false
 
     init(home: URL) { self.home = home }
 
     func retry() {
         showOffline = false
         webView?.load(URLRequest(url: home))
+    }
+
+    /// Pages where a waiting share would interrupt somebody mid-sign-in. The
+    /// share waits; the app tries again when it next comes forward.
+    private static let signInPaths: Set<String> = [
+        "/sign-in", "/sign-up", "/forgot-password", "/reset-password",
+    ]
+
+    /// Open a link left by the share sheet on the upload page, which reads it
+    /// on arrival. Called when the app comes forward and after each page
+    /// loads. If the person is signed out, the site sends them to sign in and
+    /// the link keeps waiting.
+    func deliverPendingShare() {
+        guard let webView, !deliveringShare, let link = PendingShare.link() else { return }
+        if Self.signInPaths.contains(webView.url?.path ?? "") { return }
+        deliveringShare = true
+        webView.load(URLRequest(url: PendingShare.uploadURL(for: link, home: home)))
+    }
+
+    /// A page finished loading. The share is done once the upload page has it.
+    func pageLoaded(_ url: URL?) {
+        if deliveringShare {
+            deliveringShare = false
+            if url?.path == "/upload" {
+                PendingShare.clear()
+                return
+            }
+        }
+        deliverPendingShare()
     }
 }
 
@@ -53,6 +85,7 @@ final class WebState {
 /// when there is no connection to open it with.
 struct ContentView: View {
     @State private var state = WebState(home: URL(string: "https://trivetbox.com")!)
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -62,6 +95,10 @@ struct ContentView: View {
             }
         }
         .background(paper.ignoresSafeArea())
+        // Back from sharing a recipe to Trivet: open it on the upload page.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { state.deliverPendingShare() }
+        }
     }
 }
 
@@ -139,6 +176,7 @@ struct TrivetWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             state.hasLoaded = true
             state.showOffline = false
+            state.pageLoaded(webView.url)
         }
 
         func webView(
@@ -158,6 +196,9 @@ struct TrivetWebView: UIViewRepresentable {
         /// fails too, and must not look like a lost connection.
         private func showOfflineIfNeeded(_ error: Error) {
             let error = error as NSError
+            // A share whose page failed tries again later. A cancelled load is
+            // not a failure: it is usually the home page giving way to it.
+            if error.code != NSURLErrorCancelled { state.deliveringShare = false }
             guard !state.hasLoaded, error.domain == NSURLErrorDomain,
                   Self.offlineCodes.contains(error.code) else { return }
             state.showOffline = true

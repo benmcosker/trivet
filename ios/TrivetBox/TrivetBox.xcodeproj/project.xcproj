@@ -13,10 +13,25 @@
   "files": [
     { "kind": "folder", "path": "TrivetBox", "target-membership": [ "TrivetBox" ] },
     {
+      "kind": "folder",
+      "path": "TrivetShare",
+      "target-membership": [
+        "TrivetShare",
+      ],
+      "membership-exceptions": [
+        {
+          "target": "TrivetShare",
+          "exclusions": [
+            "Info.plist",
+          ],
+        },
+      ],
+    }, {
       "kind": "group",
       "name": "Products",
       "children": [
         { "path": "<PRODUCTS>/TrivetBox.app", "id": "000000000000000000000120", "type": "wrapper.application", "index": false },
+        { "path": "<PRODUCTS>/TrivetShare.appex", "id": "B5AED22030A22441004A9C65", "type": "wrapper.app-extension", "index": false, "target-membership": [ { "build-phase": "TrivetBox/copy/Embed Foundation Extensions", "header-preservation": "remove-on-copy" } ] },
       ],
     },
   ],
@@ -26,16 +41,25 @@
       "id": "000000000000000100000000",
       "product": "Products/TrivetBox.app",
       "product-type": "application",
+      "dependencies": [
+        "TrivetShare",
+      ],
       "build-phases": [
         "compile-sources",
         "frameworks",
         "resources",
+        {
+          "kind": "copy",
+          "name": "Embed Foundation Extensions",
+          "bundle-base-path": "plugins-directory",
+        },
       ],
       "build-settings": {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+        "CODE_SIGN_ENTITLEMENTS": "TrivetBox/TrivetBox.entitlements",
         "CODE_SIGN_STYLE": "Automatic",
-        "CURRENT_PROJECT_VERSION": "2",
+        "CURRENT_PROJECT_VERSION": "3",
         "DEVELOPMENT_TEAM": "5HF5FS3MHN",
         "ENABLE_APP_SANDBOX": "YES",
         "ENABLE_PREVIEWS": "YES",
@@ -71,6 +95,45 @@
         "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
         "SWIFT_VERSION": "5.0",
         "TARGETED_DEVICE_FAMILY": "1,2",
+      },
+    }, {
+      "name": "TrivetShare",
+      "id": "B5AED21F30A22441004A9C65",
+      "product": "Products/TrivetShare.appex",
+      "product-type": "app-extension",
+      "build-phases": [
+        "compile-sources",
+        "frameworks",
+        "resources",
+      ],
+      "build-settings": {
+        "CODE_SIGN_ENTITLEMENTS": "TrivetShare/TrivetShare.entitlements",
+        "CODE_SIGN_STYLE": "Automatic",
+        "CURRENT_PROJECT_VERSION": "3",
+        "DEVELOPMENT_TEAM": "5HF5FS3MHN",
+        "GENERATE_INFOPLIST_FILE": "YES",
+        "INFOPLIST_FILE": "TrivetShare/Info.plist",
+        "INFOPLIST_KEY_CFBundleDisplayName": "Trivet",
+        "INFOPLIST_KEY_NSHumanReadableCopyright": "",
+        "LD_RUNPATH_SEARCH_PATHS": [
+          "$(inherited)",
+          "@executable_path/Frameworks",
+          "@executable_path/../../Frameworks",
+        ],
+        "MARKETING_VERSION": "1.0",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.trivetbox.app.TrivetShare",
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "REGISTER_APP_GROUPS": "YES",
+        "SDKROOT": "iphoneos",
+        "SKIP_INSTALL": "YES",
+        "STRING_CATALOG_GENERATE_SYMBOLS": "YES",
+        "SWIFT_APPROACHABLE_CONCURRENCY": "YES",
+        "SWIFT_DEFAULT_ACTOR_ISOLATION": "MainActor",
+        "SWIFT_EMIT_LOC_STRINGS": "YES",
+        "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY": "YES",
+        "SWIFT_VERSION": "5.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+        "VALIDATE_PRODUCT[config=Release]": "YES",
       },
     },
   ],
@@ -145,5 +208,5 @@
     "XROS_DEPLOYMENT_TARGET": "27.2",
   },
   "last-upgrade": "27.0",
-  "last-swift-update": "27.0",
+  "last-swift-update": "27.2",
 }
