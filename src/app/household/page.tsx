@@ -1,18 +1,24 @@
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
+import { DeleteAccount, HiddenHouseholds } from "@/components/AccountSettings";
 import { AppShell } from "@/components/AppShell";
 import { HouseholdManager } from "@/components/HouseholdManager";
+import { deletionPreview } from "@/lib/account-deletion";
 import { getHousehold, MAX_HOUSEHOLD_NAME } from "@/lib/household";
 import { INVITE_TTL_DAYS, inviteLink, listPendingInvites } from "@/lib/invites";
+import { listHiddenHouseholds } from "@/lib/moderation";
 import { requireHousehold } from "@/lib/session";
 import { smsAvailable } from "@/lib/sms";
 
 export default async function HouseholdPage() {
   const user = await requireHousehold();
 
-  const [household, invites] = await Promise.all([
+  const [household, invites, hidden, preview] = await Promise.all([
     getHousehold(user.householdId),
     listPendingInvites(user.id),
+    listHiddenHouseholds(user.householdId),
+    deletionPreview(user.id),
   ]);
 
   return (
@@ -55,6 +61,15 @@ export default async function HouseholdPage() {
         }
         smsConfigured={smsAvailable()}
       />
+
+      <Stack spacing={3} sx={{ mt: 3 }}>
+        <HiddenHouseholds households={hidden} />
+        <DeleteAccount
+          email={user.email}
+          householdName={household?.name ?? user.householdName}
+          preview={preview}
+        />
+      </Stack>
     </AppShell>
   );
 }

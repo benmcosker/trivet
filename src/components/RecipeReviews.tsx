@@ -22,6 +22,7 @@ import {
   type ReviewWithAuthor,
 } from "@/lib/review-schema";
 
+import { ReportOrHide } from "./ReportOrHide";
 import { ReviewStars } from "./ReviewStars";
 
 /**
@@ -37,12 +38,15 @@ export function RecipeReviews({
   reviews,
   myReview,
   currentUserId,
+  householdId,
 }: {
   recipeId: string;
   summary: ReviewSummary;
   reviews: ReviewWithAuthor[];
   myReview: ReviewWithAuthor | null;
   currentUserId: string;
+  /** The reader's household: a review from any other can be reported. */
+  householdId: string;
 }) {
   const others = reviews.filter((review) => review.author.id !== currentUserId);
 
@@ -63,7 +67,11 @@ export function RecipeReviews({
       {others.length > 0 ? (
         <Stack spacing={2.5} sx={{ mt: 4 }}>
           {others.map((review) => (
-            <ReviewRow key={review.id} review={review} />
+            <ReviewRow
+              key={review.id}
+              review={review}
+              householdId={householdId}
+            />
           ))}
         </Stack>
       ) : null}
@@ -200,7 +208,16 @@ function ReviewForm({
   );
 }
 
-function ReviewRow({ review }: { review: ReviewWithAuthor }) {
+function ReviewRow({
+  review,
+  householdId,
+}: {
+  review: ReviewWithAuthor;
+  householdId: string;
+}) {
+  const { householdId: fromId, householdName: fromName } = review.author;
+  const fromElsewhere = fromId !== null && fromId !== householdId;
+
   return (
     <Stack direction="row" spacing={1.5} sx={{ alignItems: "flex-start" }}>
       <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
@@ -244,6 +261,16 @@ function ReviewRow({ review }: { review: ReviewWithAuthor }) {
           <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mt: 0.25 }}>
             {review.body}
           </Typography>
+        ) : null}
+
+        {fromElsewhere ? (
+          <Box sx={{ mt: 0.5 }}>
+            <ReportOrHide
+              target={{ reviewId: review.id }}
+              household={{ id: fromId, name: fromName ?? "this household" }}
+              what="review"
+            />
+          </Box>
         ) : null}
       </Box>
     </Stack>

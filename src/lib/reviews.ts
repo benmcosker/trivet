@@ -1,5 +1,5 @@
 import { prisma } from "./db";
-import { visibleRecipes } from "./recipe-visibility";
+import { visibleRecipes, visibleReviews } from "./recipe-visibility";
 import {
   NO_REVIEWS,
   reviewInput,
@@ -19,13 +19,15 @@ import {
  */
 export async function getReviewSummaries(
   recipeIds: string[],
+  /** Whose view: a household it has hidden does not count towards it. */
+  householdId: string,
 ): Promise<Map<string, ReviewSummary>> {
   const summaries = new Map<string, ReviewSummary>();
   if (recipeIds.length === 0) return summaries;
 
   const groups = await prisma.recipeReview.groupBy({
     by: ["recipeId"],
-    where: { recipeId: { in: recipeIds } },
+    where: { recipeId: { in: recipeIds }, ...visibleReviews(householdId) },
     _avg: { stars: true },
     _count: { stars: true },
   });
@@ -47,8 +49,9 @@ export async function getReviewSummaries(
 
 export async function getReviewSummary(
   recipeId: string,
+  householdId: string,
 ): Promise<ReviewSummary> {
-  const summaries = await getReviewSummaries([recipeId]);
+  const summaries = await getReviewSummaries([recipeId], householdId);
   return summaries.get(recipeId) ?? NO_REVIEWS;
 }
 
@@ -61,11 +64,13 @@ export async function getReviewSummary(
  */
 export async function listReviews(
   recipeId: string,
+  /** Whose view: reviews from a household it has hidden are left out. */
+  householdId: string,
 ): Promise<ReviewWithAuthor[]> {
   const reviews = await prisma.recipeReview.findMany({
-    where: { recipeId },
+    where: { recipeId, ...visibleReviews(householdId) },
     orderBy: { createdAt: "desc" },
-    include: { user: { select: { id: true, name: true } } },
+    include: { user: { select: authorSelect } },
   });
 
   return reviews.map((review) => ({
@@ -74,7 +79,7 @@ export async function listReviews(
     body: review.body,
     createdAt: review.createdAt,
     updatedAt: review.updatedAt,
-    author: review.user,
+    author: author(review.user),
   }));
 }
 
@@ -85,7 +90,7 @@ export async function getMyReview(
 ): Promise<ReviewWithAuthor | null> {
   const review = await prisma.recipeReview.findUnique({
     where: { recipeId_userId: { recipeId, userId } },
-    include: { user: { select: { id: true, name: true } } },
+    include: { user: { select: authorSelect } },
   });
   if (!review) return null;
 
@@ -95,7 +100,28 @@ export async function getMyReview(
     body: review.body,
     createdAt: review.createdAt,
     updatedAt: review.updatedAt,
-    author: review.user,
+    author: author(review.user),
+  };
+}
+
+const authorSelect = {
+  id: true,
+  name: true,
+  householdId: true,
+  household: { select: { name: true } },
+} as const;
+
+function author(user: {
+  id: string;
+  name: string;
+  householdId: string | null;
+  household: { name: string } | null;
+}): ReviewWithAuthor["author"] {
+  return {
+    id: user.id,
+    name: user.name,
+    householdId: user.householdId,
+    householdName: user.household?.name ?? null,
   };
 }
 

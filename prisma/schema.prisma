@@ -44,6 +44,10 @@ model Household {
   texts    ShoppingText[]
   cooked   CookedMeal[]
 
+  /// Households this one has hidden, and those that have hidden it.
+  blocksMade     HouseholdBlock[] @relation("BlocksMade")
+  blocksReceived HouseholdBlock[] @relation("BlocksReceived")
+
   @@map("household")
 }
 
@@ -93,6 +97,7 @@ model User {
   extraItems    ExtraItem[]
   reviews       RecipeReview[]
   uploadQuotas  UploadQuota[]
+  reports       ContentReport[]
 
   @@unique([email])
   @@index([householdId])
@@ -391,6 +396,7 @@ model Recipe {
   plannedMeals PlannedMeal[]
   cookedMeals  CookedMeal[]
   reviews      RecipeReview[]
+  reports      ContentReport[]
 
   /// Maintained by a trigger (see the recipe_search migration), not by Prisma.
   /// Declared here only so migrations do not drop a column they cannot model.
@@ -483,6 +489,8 @@ model RecipeReview {
   recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   userId   String
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reports ContentReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -738,4 +746,63 @@ model UploadQuota {
 
   @@id([userId, day])
   @@map("upload_quota")
+}
+
+// ---------------------------------------------------------------------------
+// Shared content: hiding and reporting
+// ---------------------------------------------------------------------------
+
+/// One household hiding another's shared recipes and reviews from itself.
+///
+/// Apple's rule for apps where people see each other's content (guideline
+/// 1.2) asks for a way to block an abusive user. The library is shared
+/// between households, so a household is what is hidden: its shared recipes
+/// leave this household's library and its members' reviews leave the recipe
+/// pages. Undone from the Household page. The hidden household is not told.
+model HouseholdBlock {
+  blockerId String
+  blocker   Household @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   Household @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("household_block")
+}
+
+enum ReportReason {
+  OFFENSIVE
+  NOT_A_RECIPE
+  COPYRIGHT
+  OTHER
+}
+
+/// A shared recipe or a review somebody reported, waiting for the admins.
+///
+/// Apple's guideline 1.2 asks for a way to report objectionable content and a
+/// timely answer to it. Each report is emailed to the admins and listed on
+/// /admin until it is resolved. A report goes when what it reports goes.
+model ContentReport {
+  id     String       @id @default(cuid())
+  reason ReportReason
+  note   String?
+
+  recipeId String?
+  recipe   Recipe?       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  reviewId String?
+  review   RecipeReview? @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  /// Null once the reporter's account is deleted; the report still stands.
+  reporterId String?
+  reporter   User?   @relation(fields: [reporterId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([resolvedAt, createdAt])
+  @@index([recipeId])
+  @@index([reviewId])
+  @@map("content_report")
 }

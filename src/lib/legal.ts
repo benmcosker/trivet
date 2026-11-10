@@ -120,4 +120,4 @@ export const SMS_PROVIDER =
   "no other third party receives your mobile number.";
 
 /** Shown at the foot of each policy so a reviewer can see it is current. */
-export const LEGAL_UPDATED = "25 October 2026";
+export const LEGAL_UPDATED = "10 November 2026";
