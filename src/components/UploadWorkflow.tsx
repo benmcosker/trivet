@@ -1163,6 +1163,7 @@ function SharedBand({ summary }: { summary: SharedSummary }) {
         <Typography
           component="p"
           sx={{
+            fontFamily: fonts.sans,
             fontWeight: 700,
             fontSize: 11,
             letterSpacing: "0.14em",
