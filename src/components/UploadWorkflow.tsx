@@ -14,7 +14,7 @@ import type { Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
 
 import {
   discardUploadAction,
@@ -25,6 +25,13 @@ import { PASTED_TEXT_REFUSAL, readPastedText } from "@/lib/pasted-text";
 import { hostLabel, normaliseAddress } from "@/lib/recipe-address";
 import type { ExtractedRecipe, RecipeInput } from "@/lib/recipe-schema";
 import { recipePath } from "@/lib/recipe-url";
+import {
+  shareBridge,
+  sharedLabel,
+  sharedSentence,
+  takeSharedItem,
+  type SharedSummary,
+} from "@/lib/shared-item";
 import { fonts } from "@/theme/theme";
 
 import { PaperNote } from "./PaperNote";
@@ -108,13 +115,20 @@ function confidenceLine(recipe: ExtractedRecipe, source: RecipeSource): string {
 
 export function UploadWorkflow({
   sharedUrl = null,
+  sharedFromApp = false,
 }: {
   /**
    * A link handed to the page in its address, `/upload?url=…`, by the iPhone
-   * share-sheet Shortcut. Filled in and read straight away, so sharing a
-   * recipe page lands on it being read rather than on an empty field.
+   * share sheet. Filled in and read straight away, so sharing a recipe page
+   * lands on it being read rather than on an empty field.
    */
   sharedUrl?: string | null;
+  /**
+   * `/upload?shared=1`: the app has screenshots' words, photos or a PDF from
+   * the share sheet waiting, and hands them over once the page asks
+   * (`shared-item.ts`). Ignored outside the app.
+   */
+  sharedFromApp?: boolean;
 } = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<Half | null>(null);
@@ -142,6 +156,15 @@ export function UploadWorkflow({
   const [error, setError] = useState<string | null>(null);
   const [extracted, setExtracted] = useState<Extracted | null>(null);
   const [duplicateOf, setDuplicateOf] = useState<ExistingRecipe | null>(null);
+  /**
+   * What the share sheet handed over, and which half is reading it. While it
+   * is set that half comes first on the card, under a band saying what
+   * arrived; starting any other half puts the card back in its usual order.
+   */
+  const [arrival, setArrival] = useState<{
+    half: Half;
+    summary: SharedSummary;
+  } | null>(null);
 
   /**
    * The long placeholder does not fit beside the shelf label on a phone, and
@@ -167,6 +190,7 @@ export function UploadWorkflow({
 
   /** Everything either half clears before it starts. */
   function startWork(half: Half) {
+    setArrival((current) => (current?.half === half ? current : null));
     setBusy(half);
     setElapsed(0);
     setError(null);
@@ -323,11 +347,19 @@ export function UploadWorkflow({
 
   async function handleText(event: FormEvent) {
     event.preventDefault();
+    await readText(pasted);
+  }
+
+  /**
+   * `origin` is "screenshots" for words the share sheet read off screenshots,
+   * which the model is told to expect the app's own words in.
+   */
+  async function readText(raw: string, origin?: "screenshots") {
     if (busy) return;
 
     // The same checks the route makes, here first so an empty or one-line
     // paste is answered at once rather than after a round trip.
-    const checked = readPastedText(pasted);
+    const checked = readPastedText(raw);
     if (!checked.ok) {
       setPastedRefusal(PASTED_TEXT_REFUSAL[checked.reason]);
       setError(null);
@@ -343,7 +375,7 @@ export function UploadWorkflow({
       const response = await fetch("/api/import-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: checked.text }),
+        body: JSON.stringify({ text: checked.text, origin }),
         signal: controller.signal,
       });
       const payload = await response.json().catch(() => null);
@@ -382,6 +414,48 @@ export function UploadWorkflow({
     // Once, for the link the page arrived with; later edits are typed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedUrl]);
+
+  /*
+   * Take what the share sheet left with the app, once, and read it. The app
+   * forgets it only after every file has arrived, so a page that fails here
+   * leaves it waiting for the next time Trivet comes forward.
+   */
+  const sharedTaken = useRef(false);
+  useEffect(() => {
+    if (!sharedFromApp || sharedTaken.current) return;
+    sharedTaken.current = true;
+    window.history.replaceState(null, "", "/upload");
+    const bridge = shareBridge();
+    if (!bridge) return;
+
+    void (async () => {
+      let item: Awaited<ReturnType<typeof takeSharedItem>>;
+      try {
+        item = await takeSharedItem(bridge);
+      } catch {
+        setError(
+          "What you shared didn't come through. Share it to Trivet again, or add it below.",
+        );
+        return;
+      }
+      if (!item) return;
+      void bridge.postMessage({ type: "taken" }).catch(() => {});
+
+      if (item.kind === "text") {
+        setPasted(item.summary.text);
+        setArrival({ half: "text", summary: item.summary });
+        await readText(
+          item.summary.text,
+          item.summary.screenshots ? "screenshots" : undefined,
+        );
+      } else {
+        setArrival({ half: "file", summary: item.summary });
+        await handleFiles(item.files);
+      }
+    })();
+    // Once, for what the page arrived with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedFromApp]);
 
   if (extracted) {
     const { recipe, ...assets } = extracted;
@@ -496,6 +570,33 @@ export function UploadWorkflow({
     );
   }
 
+  /*
+   * Link, file, text: the usual order, and the link half's handoff note says
+   * "below" of the file half because it is directly underneath. Something
+   * shared from the phone puts its own half first instead, so it is read at
+   * the top of the page rather than off the bottom of it; any other half
+   * starting clears the arrival, which brings the usual order back before a
+   * handoff note can appear.
+   */
+  const order: Half[] =
+    arrival?.half === "file"
+      ? ["file", "link", "text"]
+      : arrival?.half === "text"
+        ? ["text", "link", "file"]
+        : ["link", "file", "text"];
+
+  /** The rule above a half, unless it is first or a note already drew one. */
+  function placement(half: Half) {
+    const index = order.indexOf(half);
+    if (index === 0) return {};
+    // `PaperNote` carries its own top and bottom hairlines, so a second rule
+    // under the link half's note would touch it and read as one 2px line.
+    if (half === "file" && order[index - 1] === "link" && handoff) {
+      return { pt: 3 };
+    }
+    return { mt: 4, pt: 4, borderTop: 1, borderColor: "divider" };
+  }
+
   return (
     <Stack spacing={2}>
       {error ? (
@@ -511,373 +612,401 @@ export function UploadWorkflow({
         </Alert>
       ) : null}
 
+      {arrival && busy === arrival.half ? (
+        <SharedBand summary={arrival.summary} />
+      ) : null}
+
       <Card>
         <CardContent>
-          {/*
-           * One card, two addressed halves, link above file - and that
-           * ordering is load-bearing rather than a guess about which is more
-           * popular. A third of recipe sites refuse a server outright, and
-           * the answer to a refusal is "print the page yourself and bring
-           * that in below": a sentence whose last word is only true while the
-           * file picker is on the same screen, directly underneath. Behind a
-           * tab or a route it becomes a navigation instruction, which reads
-           * as a dead end however politely it is worded.
-           *
-           * `noValidate` because `type="url"` would otherwise have the
-           * browser refuse `smittenkitchen.com/...` before the lenient parse
-           * that exists to accept it ever runs.
-           */}
-          <Box component="form" onSubmit={handleAddress} noValidate>
-            <Box
-              sx={{
-                display: "flex",
-                // The 11px label sits on the field's baseline rather than
-                // halfway up its line.
-                alignItems: "baseline",
-                columnGap: { xs: "10px", md: "14px" },
-                // The rule belongs to the field's own zone and stops where
-                // the field stops, which is what makes it an underline rather
-                // than a section divider. Borrowed from `RecipeSearchBar`,
-                // along with the label beside rather than above.
-                borderBottom: "1px solid",
-                borderColor: "text.primary",
-                pb: "12px",
-                // The field is the whole zone, not just the glyphs in it.
-                cursor: "text",
-                "&:hover > label, &:focus-within > label": {
-                  color: "text.primary",
-                },
-              }}
-            >
-              <Typography
-                component="label"
-                htmlFor={ADDRESS_FIELD_ID}
-                variant="overline"
-                sx={{
-                  flexShrink: 0,
-                  color: "text.secondary",
-                  cursor: "pointer",
-                  transition: "color 120ms",
-                }}
-              >
-                A link
-              </Typography>
+          {order.map((half) => (
+            <Fragment key={half}>
+              {half === "link" ? (
+                <>
+                  {/*
+                   * One card, two addressed halves, link above file - and that
+                   * ordering is load-bearing rather than a guess about which is more
+                   * popular. A third of recipe sites refuse a server outright, and
+                   * the answer to a refusal is "print the page yourself and bring
+                   * that in below": a sentence whose last word is only true while the
+                   * file picker is on the same screen, directly underneath. Behind a
+                   * tab or a route it becomes a navigation instruction, which reads
+                   * as a dead end however politely it is worded.
+                   *
+                   * `noValidate` because `type="url"` would otherwise have the
+                   * browser refuse `smittenkitchen.com/...` before the lenient parse
+                   * that exists to accept it ever runs.
+                   */}
+                  <Box
+                    component="form"
+                    onSubmit={handleAddress}
+                    noValidate
+                    sx={placement("link")}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        // The 11px label sits on the field's baseline rather than
+                        // halfway up its line.
+                        alignItems: "baseline",
+                        columnGap: { xs: "10px", md: "14px" },
+                        // The rule belongs to the field's own zone and stops where
+                        // the field stops, which is what makes it an underline rather
+                        // than a section divider. Borrowed from `RecipeSearchBar`,
+                        // along with the label beside rather than above.
+                        borderBottom: "1px solid",
+                        borderColor: "text.primary",
+                        pb: "12px",
+                        // The field is the whole zone, not just the glyphs in it.
+                        cursor: "text",
+                        "&:hover > label, &:focus-within > label": {
+                          color: "text.primary",
+                        },
+                      }}
+                    >
+                      <Typography
+                        component="label"
+                        htmlFor={ADDRESS_FIELD_ID}
+                        variant="overline"
+                        sx={{
+                          flexShrink: 0,
+                          color: "text.secondary",
+                          cursor: "pointer",
+                          transition: "color 120ms",
+                        }}
+                      >
+                        A link
+                      </Typography>
 
-              {/*
-               * Karla at 1rem, where the search field is serif at 1.625rem.
-               * The two fields are not drifting apart by accident: the
-               * theme's own line is that prose is serif and data is not, and
-               * a pasted URL is the most data-like string anybody will put
-               * into this app. There is a practical half - at the search
-               * field's size a ninety-character address shows about
-               * twenty-five characters, and somebody who cannot see what they
-               * pasted cannot check it. The placeholder is not italic for the
-               * same reason: the italic belongs to the serif field's idiom,
-               * and carrying it over would say these are the same kind of
-               * thing.
-               */}
-              <InputBase
-                value={address}
-                inputRef={addressRef}
-                onKeyDown={(event) => {
-                  if (event.key !== "Escape" || !address) return;
-                  event.preventDefault();
-                  clearAddress();
-                }}
-                onChange={(event) => {
-                  setAddress(event.target.value);
-                  if (addressInvalid) setAddressInvalid(false);
-                }}
-                type="url"
-                inputMode="url"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={
-                  compact
-                    ? "Paste a recipe address"
-                    : "Paste the address of a recipe page"
-                }
-                inputProps={{
-                  id: ADDRESS_FIELD_ID,
-                  "aria-label": "A link to a recipe page",
-                }}
-                sx={{
-                  flex: 1,
-                  minWidth: 0,
-                  // The field's zone owns the padding above its rule; the
-                  // input must not add a second helping of it.
-                  p: 0,
-                  fontFamily: fonts.sans,
-                  fontSize: "1rem",
-                  color: "text.primary",
-                  "& input::placeholder": {
-                    color: "text.secondary",
-                    // Browsers dim placeholders by default, which on this
-                    // palette leaves it almost invisible.
-                    opacity: 1,
-                  },
-                }}
-              />
+                      {/*
+                       * Karla at 1rem, where the search field is serif at 1.625rem.
+                       * The two fields are not drifting apart by accident: the
+                       * theme's own line is that prose is serif and data is not, and
+                       * a pasted URL is the most data-like string anybody will put
+                       * into this app. There is a practical half - at the search
+                       * field's size a ninety-character address shows about
+                       * twenty-five characters, and somebody who cannot see what they
+                       * pasted cannot check it. The placeholder is not italic for the
+                       * same reason: the italic belongs to the serif field's idiom,
+                       * and carrying it over would say these are the same kind of
+                       * thing.
+                       */}
+                      <InputBase
+                        value={address}
+                        inputRef={addressRef}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Escape" || !address) return;
+                          event.preventDefault();
+                          clearAddress();
+                        }}
+                        onChange={(event) => {
+                          setAddress(event.target.value);
+                          if (addressInvalid) setAddressInvalid(false);
+                        }}
+                        type="url"
+                        inputMode="url"
+                        autoComplete="off"
+                        spellCheck={false}
+                        placeholder={
+                          compact
+                            ? "Paste a recipe address"
+                            : "Paste the address of a recipe page"
+                        }
+                        inputProps={{
+                          id: ADDRESS_FIELD_ID,
+                          "aria-label": "A link to a recipe page",
+                        }}
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          // The field's zone owns the padding above its rule; the
+                          // input must not add a second helping of it.
+                          p: 0,
+                          fontFamily: fonts.sans,
+                          fontSize: "1rem",
+                          color: "text.primary",
+                          "& input::placeholder": {
+                            color: "text.secondary",
+                            // Browsers dim placeholders by default, which on this
+                            // palette leaves it almost invisible.
+                            opacity: 1,
+                          },
+                        }}
+                      />
 
-              {/*
-               * The same Clear the recipes search carries, for the same
-               * reason and in the same word: the page owns one word for this
-               * act, and spelling it a second way here would be two
-               * vocabularies for one idea. It sits inside the field's rule at
-               * the far end of it, so it empties the box it is drawn inside
-               * and nothing else - the button below and the file half are not
-               * its business.
-               *
-               * Only while there is something to clear. A pasted address is
-               * long, and often the wrong one, and getting back to an empty
-               * field should not mean holding backspace over ninety
-               * characters.
-               */}
-              {address ? (
-                <ButtonBase
-                  onClick={clearAddress}
-                  aria-label="Clear the address"
-                  sx={(theme) => ({
-                    flexShrink: 0,
-                    position: "relative",
-                    ...theme.typography.overline,
-                    color: "text.secondary",
-                    transition: "color 120ms",
-                    "&:hover, &:focus-visible": { color: "text.primary" },
-                    // The word is 11px; the target it answers to is not. It
-                    // grows leftwards over the end of the field rather than
-                    // symmetrically, so it cannot take a tap meant for
-                    // anything to its right.
-                    "&::after": {
-                      content: '""',
-                      position: "absolute",
-                      inset: "-16px -2px -16px -22px",
-                    },
-                  })}
-                >
-                  Clear
-                </ButtonBase>
-              ) : null}
-            </Box>
+                      {/*
+                       * The same Clear the recipes search carries, for the same
+                       * reason and in the same word: the page owns one word for this
+                       * act, and spelling it a second way here would be two
+                       * vocabularies for one idea. It sits inside the field's rule at
+                       * the far end of it, so it empties the box it is drawn inside
+                       * and nothing else - the button below and the file half are not
+                       * its business.
+                       *
+                       * Only while there is something to clear. A pasted address is
+                       * long, and often the wrong one, and getting back to an empty
+                       * field should not mean holding backspace over ninety
+                       * characters.
+                       */}
+                      {address ? (
+                        <ButtonBase
+                          onClick={clearAddress}
+                          aria-label="Clear the address"
+                          sx={(theme) => ({
+                            flexShrink: 0,
+                            position: "relative",
+                            ...theme.typography.overline,
+                            color: "text.secondary",
+                            transition: "color 120ms",
+                            "&:hover, &:focus-visible": {
+                              color: "text.primary",
+                            },
+                            // The word is 11px; the target it answers to is not. It
+                            // grows leftwards over the end of the field rather than
+                            // symmetrically, so it cannot take a tap meant for
+                            // anything to its right.
+                            "&::after": {
+                              content: '""',
+                              position: "absolute",
+                              inset: "-16px -2px -16px -22px",
+                            },
+                          })}
+                        >
+                          Clear
+                        </ButtonBase>
+                      ) : null}
+                    </Box>
 
-            {/*
-             * The link half's description, the sibling of the file half's.
-             *
-             * Both halves name a shape and then a bound. The file half's
-             * bound is a limit (`Up to 20 MB.`); this one's is a generosity,
-             * and the asymmetry is the point - a file has to be small enough,
-             * a link only has to be a recipe.
-             *
-             * `One recipe` is doing the work: it excludes the search result,
-             * the Pinterest pin and the Instagram reel without scolding
-             * anybody, and those are the pastes that fail worst, because they
-             * extract *something* and it is confident and wrong.
-             *
-             * What it must never say is that almost any cooking site can be
-             * read automatically - eight of twenty-one measured sites refuse
-             * a server outright. It says where the recipe can end up, which
-             * is true of all of them: twelve by paste, the rest by the
-             * handoff. A sentence about the destination cannot be falsified
-             * by somebody's CDN.
-             */}
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              The page for one recipe. Almost any cooking site.
-            </Typography>
+                    {/*
+                     * The link half's description, the sibling of the file half's.
+                     *
+                     * Both halves name a shape and then a bound. The file half's
+                     * bound is a limit (`Up to 20 MB.`); this one's is a generosity,
+                     * and the asymmetry is the point - a file has to be small enough,
+                     * a link only has to be a recipe.
+                     *
+                     * `One recipe` is doing the work: it excludes the search result,
+                     * the Pinterest pin and the Instagram reel without scolding
+                     * anybody, and those are the pastes that fail worst, because they
+                     * extract *something* and it is confident and wrong.
+                     *
+                     * What it must never say is that almost any cooking site can be
+                     * read automatically - eight of twenty-one measured sites refuse
+                     * a server outright. It says where the recipe can end up, which
+                     * is true of all of them: twelve by paste, the rest by the
+                     * handoff. A sentence about the destination cannot be falsified
+                     * by somebody's CDN.
+                     */}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      The page for one recipe. Almost any cooking site.
+                    </Typography>
 
-            {/*
-             * The field telling you about itself, rather than the page
-             * telling you something - so a line under the field rather than a
-             * note.
-             *
-             * Below the line above, not instead of it: that one says what the
-             * field wants, this says what you gave it is not that, and a cook
-             * who has just been corrected can look up one line to see what
-             * they should have pasted.
-             */}
-            {addressInvalid ? (
-              <Typography
-                variant="body2"
-                sx={{ color: "secondary.main", mt: 1 }}
-              >
-                That isn&apos;t a web address.
-              </Typography>
-            ) : null}
+                    {/*
+                     * The field telling you about itself, rather than the page
+                     * telling you something - so a line under the field rather than a
+                     * note.
+                     *
+                     * Below the line above, not instead of it: that one says what the
+                     * field wants, this says what you gave it is not that, and a cook
+                     * who has just been corrected can look up one line to see what
+                     * they should have pasted.
+                     */}
+                    {addressInvalid ? (
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "secondary.main", mt: 1 }}
+                      >
+                        That isn&apos;t a web address.
+                      </Typography>
+                    ) : null}
 
-            {/*
-             * Contained, like the file half's button. Two contained buttons
-             * in one card is deliberate: each half has exactly one action and
-             * they are siblings rather than a primary and a secondary. An
-             * outlined button here would rank them, and beside a text field
-             * it would read as a third empty box.
-             */}
-            <Box sx={{ mt: 2.5 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={busy !== null}
-              >
-                {busy === "link"
-                  ? elapsed > 0
-                    ? `Reading the page… ${elapsed}s`
-                    : "Reading the page…"
-                  : "Read the page"}
-              </Button>
-            </Box>
+                    {/*
+                     * Contained, like the file half's button. Two contained buttons
+                     * in one card is deliberate: each half has exactly one action and
+                     * they are siblings rather than a primary and a secondary. An
+                     * outlined button here would rank them, and beside a text field
+                     * it would read as a third empty box.
+                     */}
+                    <Box sx={{ mt: 2.5 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        size="large"
+                        disabled={busy !== null}
+                      >
+                        {busy === "link"
+                          ? elapsed > 0
+                            ? `Reading the page… ${elapsed}s`
+                            : "Reading the page…"
+                          : "Read the page"}
+                      </Button>
+                    </Box>
 
-            {busy === "link" ? <LinearProgress sx={{ mt: 2 }} /> : null}
+                    {busy === "link" ? <LinearProgress sx={{ mt: 2 }} /> : null}
 
-            {handoff ? (
-              <Box sx={{ mt: 2.5 }}>
-                <HandoffNote handoff={handoff} />
-              </Box>
-            ) : null}
-          </Box>
+                    {handoff ? (
+                      <Box sx={{ mt: 2.5 }}>
+                        <HandoffNote handoff={handoff} />
+                      </Box>
+                    ) : null}
+                  </Box>
+                </>
+              ) : half === "file" ? (
+                <>
+                  {/*
+                   * The divider between the halves - except when the note above drew
+                   * one (see `placement`). `PaperNote` carries its own top and bottom hairlines, so a
+                   * second rule here would touch its bottom border and the two would
+                   * read as one 2px line.
+                   */}
+                  <Box sx={placement("file")}>
+                    <Typography
+                      variant="overline"
+                      component="p"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      A file
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      A PDF, a photo of a printed or handwritten card, or a
+                      screenshot of a recipe, such as an Instagram caption. Up
+                      to 20 MB. For a recipe that runs across screens or both
+                      sides of a card, pick all the photos at once, in order.
+                    </Typography>
 
-          {/*
-           * The divider between the halves - except when the note above drew
-           * one. `PaperNote` carries its own top and bottom hairlines, so a
-           * second rule here would touch its bottom border and the two would
-           * read as one 2px line.
-           */}
-          <Box
-            sx={{
-              mt: handoff ? 0 : 4,
-              pt: handoff ? 3 : 4,
-              borderTop: handoff ? 0 : 1,
-              borderColor: "divider",
-            }}
-          >
-            <Typography
-              variant="overline"
-              component="p"
-              sx={{ color: "text.secondary" }}
-            >
-              A file
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              A PDF, a photo of a printed or handwritten card, or a screenshot
-              of a recipe, such as an Instagram caption. Up to 20 MB. For a
-              recipe that runs across screens or both sides of a card, pick all
-              the photos at once, in order.
-            </Typography>
+                    <input
+                      ref={inputRef}
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/png,image/gif,image/webp"
+                      multiple
+                      hidden
+                      onChange={(event) => {
+                        const picked = Array.from(event.target.files ?? []);
+                        if (picked.length > 0) void handleFiles(picked);
+                        // Reset so re-picking the same file fires change again.
+                        event.target.value = "";
+                      }}
+                    />
 
-            <input
-              ref={inputRef}
-              type="file"
-              accept="application/pdf,image/jpeg,image/png,image/gif,image/webp"
-              multiple
-              hidden
-              onChange={(event) => {
-                const picked = Array.from(event.target.files ?? []);
-                if (picked.length > 0) void handleFiles(picked);
-                // Reset so re-picking the same file fires change again.
-                event.target.value = "";
-              }}
-            />
+                    <Box sx={{ mt: 2.5 }}>
+                      <Button
+                        variant="contained"
+                        size="large"
+                        disabled={busy !== null}
+                        onClick={() => inputRef.current?.click()}
+                      >
+                        {busy === "file"
+                          ? elapsed > 0
+                            ? `Reading the card… ${elapsed}s`
+                            : "Reading the card…"
+                          : "Select a PDF or photos"}
+                      </Button>
+                    </Box>
 
-            <Box sx={{ mt: 2.5 }}>
-              <Button
-                variant="contained"
-                size="large"
-                disabled={busy !== null}
-                onClick={() => inputRef.current?.click()}
-              >
-                {busy === "file"
-                  ? elapsed > 0
-                    ? `Reading the card… ${elapsed}s`
-                    : "Reading the card…"
-                  : "Select a PDF or photos"}
-              </Button>
-            </Box>
+                    {busy === "file" ? <LinearProgress sx={{ mt: 2 }} /> : null}
+                  </Box>
+                </>
+              ) : (
+                <>
+                  {/*
+                   * The third way in, last because it is the least common and because
+                   * the link half's handoff note says "below" of the file half, which
+                   * has to stay directly under it.
+                   *
+                   * Text copied anywhere a copy is possible: a message, a note, a page,
+                   * a caption on Instagram's website. Neither Instagram's nor TikTok's
+                   * app lets a caption be copied, which is why the file half above
+                   * names the screenshot.
+                   */}
+                  <Box
+                    component="form"
+                    onSubmit={handleText}
+                    noValidate
+                    sx={placement("text")}
+                  >
+                    <Typography
+                      component="label"
+                      htmlFor={TEXT_FIELD_ID}
+                      variant="overline"
+                      sx={{ display: "block", color: "text.secondary" }}
+                    >
+                      Some text
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 1 }}
+                    >
+                      A recipe copied from a message, a note or a page. Paste
+                      the whole thing, ingredients and steps.
+                    </Typography>
 
-            {busy === "file" ? <LinearProgress sx={{ mt: 2 }} /> : null}
-          </Box>
+                    <InputBase
+                      value={pasted}
+                      onChange={(event) => {
+                        setPasted(event.target.value);
+                        if (pastedRefusal) setPastedRefusal(null);
+                      }}
+                      multiline
+                      minRows={4}
+                      maxRows={14}
+                      placeholder="Paste a recipe"
+                      inputProps={{ id: TEXT_FIELD_ID }}
+                      sx={{
+                        mt: 2,
+                        width: "100%",
+                        // The same underline the address field draws, so the two
+                        // fields read as the same kind of thing at different sizes.
+                        borderBottom: "1px solid",
+                        borderColor: "text.primary",
+                        pb: "12px",
+                        fontFamily: fonts.sans,
+                        fontSize: "1rem",
+                        color: "text.primary",
+                        "& textarea::placeholder": {
+                          color: "text.secondary",
+                          opacity: 1,
+                        },
+                      }}
+                    />
 
-          {/*
-           * The third way in, last because it is the least common and because
-           * the link half's handoff note says "below" of the file half, which
-           * has to stay directly under it.
-           *
-           * Text copied anywhere a copy is possible: a message, a note, a page,
-           * a caption on Instagram's website. Neither Instagram's nor TikTok's
-           * app lets a caption be copied, which is why the file half above
-           * names the screenshot.
-           */}
-          <Box
-            component="form"
-            onSubmit={handleText}
-            noValidate
-            sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: "divider" }}
-          >
-            <Typography
-              component="label"
-              htmlFor={TEXT_FIELD_ID}
-              variant="overline"
-              sx={{ display: "block", color: "text.secondary" }}
-            >
-              Some text
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              A recipe copied from a message, a note or a page. Paste the whole
-              thing, ingredients and steps.
-            </Typography>
+                    {pastedRefusal ? (
+                      <Typography
+                        variant="body2"
+                        sx={{ color: "secondary.main", mt: 1 }}
+                      >
+                        {pastedRefusal}
+                      </Typography>
+                    ) : null}
 
-            <InputBase
-              value={pasted}
-              onChange={(event) => {
-                setPasted(event.target.value);
-                if (pastedRefusal) setPastedRefusal(null);
-              }}
-              multiline
-              minRows={4}
-              maxRows={14}
-              placeholder="Paste a recipe"
-              inputProps={{ id: TEXT_FIELD_ID }}
-              sx={{
-                mt: 2,
-                width: "100%",
-                // The same underline the address field draws, so the two
-                // fields read as the same kind of thing at different sizes.
-                borderBottom: "1px solid",
-                borderColor: "text.primary",
-                pb: "12px",
-                fontFamily: fonts.sans,
-                fontSize: "1rem",
-                color: "text.primary",
-                "& textarea::placeholder": {
-                  color: "text.secondary",
-                  opacity: 1,
-                },
-              }}
-            />
+                    <Box sx={{ mt: 2.5 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        size="large"
+                        disabled={busy !== null}
+                      >
+                        {busy === "text"
+                          ? elapsed > 0
+                            ? `Reading the text… ${elapsed}s`
+                            : "Reading the text…"
+                          : "Read the text"}
+                      </Button>
+                    </Box>
 
-            {pastedRefusal ? (
-              <Typography
-                variant="body2"
-                sx={{ color: "secondary.main", mt: 1 }}
-              >
-                {pastedRefusal}
-              </Typography>
-            ) : null}
-
-            <Box sx={{ mt: 2.5 }}>
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={busy !== null}
-              >
-                {busy === "text"
-                  ? elapsed > 0
-                    ? `Reading the text… ${elapsed}s`
-                    : "Reading the text…"
-                  : "Read the text"}
-              </Button>
-            </Box>
-
-            {busy === "text" ? <LinearProgress sx={{ mt: 2 }} /> : null}
-          </Box>
+                    {busy === "text" ? <LinearProgress sx={{ mt: 2 }} /> : null}
+                  </Box>
+                </>
+              )}
+            </Fragment>
+          ))}
         </CardContent>
       </Card>
     </Stack>
@@ -989,4 +1118,74 @@ async function shrinkPhoto(file: File): Promise<File> {
   } catch {
     return file;
   }
+}
+
+/**
+ * What arrived from the share sheet, while it is read: a status band in the
+ * raised paper with hairlines, the device the offline designs use for a
+ * message that stays put. See design_handoff_trivet_share/.
+ */
+function SharedBand({ summary }: { summary: SharedSummary }) {
+  return (
+    <Box
+      role="status"
+      sx={{
+        bgcolor: "background.raised",
+        borderTop: 1,
+        borderBottom: 1,
+        borderColor: "divider",
+        px: "20px",
+        py: "12px",
+        display: "flex",
+        gap: "12px",
+        alignItems: "flex-start",
+      }}
+    >
+      <Box
+        component="svg"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        sx={{ width: 18, height: 18, flexShrink: 0, mt: "1px" }}
+      >
+        <g
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 3v12" />
+          <path d="M7.5 7.5 12 3l4.5 4.5" />
+          <path d="M5 11v9.5h14V11" />
+        </g>
+      </Box>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+        <Typography
+          component="p"
+          sx={{
+            fontWeight: 700,
+            fontSize: 11,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "text.primary",
+          }}
+        >
+          {sharedLabel(summary)}
+        </Typography>
+        <Typography
+          component="p"
+          sx={{
+            fontFamily: fonts.serif,
+            fontStyle: "italic",
+            fontWeight: 300,
+            fontSize: 15,
+            lineHeight: 1.35,
+            color: "text.muted",
+          }}
+        >
+          {sharedSentence(summary)}
+        </Typography>
+      </Box>
+    </Box>
+  );
 }

@@ -39,9 +39,12 @@ final class WebState {
     /// page on screen, as Safari would, instead of covering it.
     @ObservationIgnored var hasLoaded = false
     @ObservationIgnored weak var webView: WKWebView?
-    /// A link from the share sheet has been sent to the upload page and is
-    /// cleared once that page has loaded.
+    /// A share has been sent to the upload page, which is loading.
     @ObservationIgnored var deliveringShare = false
+    /// The upload page has loaded for a share it asks for itself (anything
+    /// but a link). It is not opened again until the app next comes forward,
+    /// so a page that never asks cannot be reloaded over and over.
+    @ObservationIgnored var offeredShare = false
 
     init(home: URL) { self.home = home }
 
@@ -56,23 +59,35 @@ final class WebState {
         "/sign-in", "/sign-up", "/forgot-password", "/reset-password",
     ]
 
-    /// Open a link left by the share sheet on the upload page, which reads it
-    /// on arrival. Called when the app comes forward and after each page
-    /// loads. If the person is signed out, the site sends them to sign in and
-    /// the link keeps waiting.
+    /// Open a share on the upload page, which reads it on arrival. Called
+    /// when the app comes forward and after each page loads. If the person is
+    /// signed out, the site sends them to sign in and the share keeps waiting.
     func deliverPendingShare() {
-        guard let webView, !deliveringShare, let link = PendingShare.link() else { return }
+        guard let webView, !deliveringShare, !offeredShare, let item = PendingShare.item() else { return }
         if Self.signInPaths.contains(webView.url?.path ?? "") { return }
         deliveringShare = true
-        webView.load(URLRequest(url: PendingShare.uploadURL(for: link, home: home)))
+        webView.load(URLRequest(url: PendingShare.uploadURL(for: item, home: home)))
     }
 
-    /// A page finished loading. The share is done once the upload page has it.
+    /// The app came forward: try a waiting share again, even one the page
+    /// was offered before.
+    func cameForward() {
+        offeredShare = false
+        deliverPendingShare()
+    }
+
+    /// A page finished loading. A link is done once the upload page has it in
+    /// its address; anything else once the page says it has taken it
+    /// (`ShareBridge`).
     func pageLoaded(_ url: URL?) {
         if deliveringShare {
             deliveringShare = false
             if url?.path == "/upload" {
-                PendingShare.clear()
+                if let item = PendingShare.item(), item.needsBridge {
+                    offeredShare = true
+                } else {
+                    PendingShare.clear()
+                }
                 return
             }
         }
@@ -97,7 +112,7 @@ struct ContentView: View {
         .background(paper.ignoresSafeArea())
         // Back from sharing a recipe to Trivet: open it on the upload page.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { state.deliverPendingShare() }
+            if phase == .active { state.cameForward() }
         }
     }
 }
@@ -111,6 +126,13 @@ struct TrivetWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default() // stay signed in between launches
         config.limitsNavigationsToAppBoundDomains = true // service workers need it
+        // How the upload page takes screenshots' words, photos and PDFs from
+        // the share sheet. Answers Trivet's own pages only.
+        config.userContentController.addScriptMessageHandler(
+            ShareBridge(allowedHosts: trivetHosts) { [weak state] in state?.offeredShare = false },
+            contentWorld: .page,
+            name: ShareBridge.name
+        )
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear

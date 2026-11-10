@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Share sheet refusing a share</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f6f4e}a:hover{color:#1f5038}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #6b665d; font-family: Karla, system-ui, sans-serif; color: #1a1815; overflow: hidden; display: flex; flex-direction: column; padding-top: 54px">
+  <div style="flex-grow: 1; background: #f7f4ed; border-radius: 10px 10px 0 0; padding: 40px 32px 0; display: flex; flex-direction: column">
+    <svg width="44" height="44" viewBox="0 0 32 32" role="img" aria-label="Trivet"><g fill="none" stroke="#2f6f4e" stroke-width="3.2" stroke-linecap="round"><circle cx="16" cy="16" r="9"></circle><path d="M16 25v4.2M8.2 11.5 4.5 9.4M23.8 11.5 27.5 9.4"></path></g><circle cx="16" cy="16" r="3.5" fill="#a44a24"></circle></svg>
+
+    <sc-if value="{{tooMany}}" hint-placeholder-val="{{true}}">
+      <h1 style="margin: 24px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 32px; line-height: 1.1">Six at a time</h1>
+      <div style="height: 1px; background: #1a1815; margin-top: 16px"></div>
+      <p style="margin: 16px 0 0; font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.45; color: #2c2820">Trivet reads up to six screenshots or photos as one recipe, and you picked 8. Share the six that hold the recipe.</p>
+    </sc-if>
+    <sc-if value="{{tooBig}}" hint-placeholder-val="{{false}}">
+      <h1 style="margin: 24px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 32px; line-height: 1.1">That file is too big</h1>
+      <div style="height: 1px; background: #1a1815; margin-top: 16px"></div>
+      <p style="margin: 16px 0 0; font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.45; color: #2c2820">Trivet takes PDFs up to 20 MB, and this one is 34 MB. A screenshot of each page will go through.</p>
+    </sc-if>
+    <sc-if value="{{mixed}}" hint-placeholder-val="{{false}}">
+      <h1 style="margin: 24px 0 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 32px; line-height: 1.1">One kind at a time</h1>
+      <div style="height: 1px; background: #1a1815; margin-top: 16px"></div>
+      <p style="margin: 16px 0 0; font-family: Newsreader, Georgia, serif; font-size: 18px; line-height: 1.45; color: #2c2820">Share one PDF on its own, or up to six screenshots and photos.</p>
+    </sc-if>
+
+    <button type="button" style="margin-top: 28px; width: 100%; height: 48px; border: 0; border-radius: 0; background: #1a1815; color: #f7f4ed; font-family: Karla, system-ui, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer">Done</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"reason":{"editor":"enum","default":"tooMany","options":["tooMany","tooBig","mixed"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const reason = this.props.reason ?? 'tooMany';
+    return { tooMany: reason === 'tooMany', tooBig: reason === 'tooBig', mixed: reason === 'mixed' };
+  }
+}
+</script>
+</body>
+</html>

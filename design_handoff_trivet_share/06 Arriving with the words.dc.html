@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upload page arriving with words from screenshots</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#2f6f4e}a:hover{color:#1f5038}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #f7f4ed; color: #1a1815; font-family: Karla, system-ui, sans-serif; overflow: hidden; display: flex; flex-direction: column">
+
+  <header style="padding: 18px 20px 0; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#2f6f4e" stroke-width="3.2" stroke-linecap="round"><circle cx="16" cy="16" r="9"></circle><path d="M16 25v4.2M8.2 11.5 4.5 9.4M23.8 11.5 27.5 9.4"></path></g></svg>
+        <span style="font-family: Newsreader, Georgia, serif; font-size: 26px; line-height: 1">Trivet</span>
+      </div>
+      <span style="font-weight: 600; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c">Sign out</span>
+    </div>
+    <nav style="display: flex; gap: 26px; font-weight: 600; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c; white-space: nowrap; overflow: hidden">
+      <span style="padding-bottom: 8px">Recipes</span>
+      <span style="padding-bottom: 8px">This week</span>
+      <span style="padding-bottom: 8px">Pantry</span>
+      <span style="padding-bottom: 6px; color: #1a1815; border-bottom: 2px solid #a44a24">Upload</span>
+    </nav>
+  </header>
+
+  <main style="padding: 24px 20px 0; display: flex; flex-direction: column">
+    <h1 style="margin: 0; font-family: Newsreader, Georgia, serif; font-weight: 400; font-size: 36px; line-height: 1.1">Add a recipe</h1>
+
+    <div role="status" style="margin-top: 20px; background: #efe9dc; border-top: 1px solid #ded7c8; border-bottom: 1px solid #ded7c8; padding: 12px 20px; display: flex; gap: 12px; align-items: flex-start">
+      <svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px" aria-hidden="true"><g fill="none" stroke="#1a1815" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="M7.5 7.5 12 3l4.5 4.5"></path><path d="M5 11v9.5h14V11"></path></g></svg>
+      <div style="display: flex; flex-direction: column; gap: 3px">
+        <span style="font-weight: 700; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #1a1815">Shared to Trivet · 2 screenshots</span>
+        <span style="font-family: Newsreader, Georgia, serif; font-style: italic; font-weight: 300; font-size: 15px; line-height: 1.35; color: #4a453c">Read on your phone. Trivet is turning the words into a recipe.</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #ded7c8; display: flex; flex-direction: column">
+      <label for="shared-text" style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c">Some text</label>
+      <textarea id="shared-text" readonly="" rows="7" style="margin-top: 12px; box-sizing: border-box; width: 100%; resize: none; border: 1px solid #cfc6b2; border-radius: 0; background: #f7f4ed; padding: 12px 14px; font-family: Karla, system-ui, sans-serif; font-size: 15px; line-height: 1.5; color: #2c2820">Chili garlic noodles, on the table in 15 minutes.
+
+Ingredients
+8 oz wheat noodles
+4 cloves garlic, minced
+2 tbsp chili crisp
+1 tbsp soy sauce</textarea>
+
+      <div style="margin-top: 20px">
+        <button type="button" disabled="" style="height: 48px; padding: 0 22px; border: 0; border-radius: 0; background: #1a1815; color: #f7f4ed; font-family: Karla, system-ui, sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase">Reading the text… 8s</button>
+      </div>
+      <div role="progressbar" aria-label="Reading the text" style="margin-top: 16px; height: 4px; background: #e1d8c5">
+        <div style="width: 38%; height: 4px; background: #2f6f4e"></div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #ded7c8">
+      <span style="font-weight: 700; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: #746c5c">A link</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

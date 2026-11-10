@@ -12,7 +12,7 @@ export default async function UploadPage({
   await requireUser();
 
   // A link shared in from the iPhone Shortcut, read on arrival.
-  const { url } = await searchParams;
+  const { url, shared: fromApp } = await searchParams;
   const shared = linkFromShare(typeof url === "string" ? url : null);
 
   return (
@@ -32,7 +32,7 @@ export default async function UploadPage({
         automatically, and you get a chance to correct anything before it joins
         the shared library.
       </Typography>
-      <UploadWorkflow sharedUrl={shared} />
+      <UploadWorkflow sharedUrl={shared} sharedFromApp={fromApp === "1"} />
     </AppShell>
   );
 }

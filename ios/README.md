@@ -56,15 +56,27 @@ the offline shopping list ships.
 ## Share to Trivet
 
 `TrivetShare` is a share extension: it puts **Trivet** in the iPhone share
-sheet for web links and for text with a link in it (Phase 1 of
-`SHARE-SHEET-PLAN.md`; photos and PDFs come next).
+sheet for web links, text, screenshots, photos and PDFs (`SHARE-SHEET-PLAN.md`;
+the sheet's states are drawn in `design_handoff_trivet_share/`).
 
 - The extension cannot see the app's sign-in and Apple does not let it open
-  the app, so it leaves the link in the App Group folder
-  (`group.com.trivetbox.app`, file `pending-share.json`) and says "Open
-  Trivet". The app checks for it when it comes forward and after each page
-  loads, opens `/upload?url=…`, and clears it once the upload page has loaded.
-  On the sign-in pages it waits. A share older than a day is dropped.
+  the app, so it leaves the share in the App Group folder
+  (`group.com.trivetbox.app`: `pending-share.json`, and files in
+  `pending-share-files/`) and says "Open Trivet". The app checks for it when it
+  comes forward and after each page loads. On the sign-in pages it waits. A
+  share older than a day is dropped.
+- A link opens `/upload?url=…` and is cleared once the upload page has loaded.
+- Screenshots and photos are read on the phone with Vision's text recognition
+  (`ScreenshotReader.swift`). With enough words, only the words are left, as
+  text; otherwise the images are left as JPEGs of at most 2,000 pixels. A
+  recipe shared as text (Notes, Messages) is left as text. Text, photos and a
+  PDF open `/upload?shared=1`, and the page asks for them over a script
+  message handler (`ShareBridge.swift`, `src/lib/shared-item.ts`), which
+  answers Trivet's own pages only. They are cleared once the page says it has
+  them.
+- The sheet refuses what the upload would: more than six images, a PDF over
+  20 MB, a PDF with photos. The limits in `ShareViewController.swift` must
+  match `src/app/api/upload/route.ts`.
 - TikTok and Instagram links are answered in the sheet with the screenshot
   route, without reaching the app. The host list in
   `TrivetShare/SharedLink.swift` must match `src/lib/social-links.ts`.
@@ -77,7 +89,9 @@ sheet for web links and for text with a link in it (Phase 1 of
 
 To test on a phone: Safari, a recipe page, Share, **Trivet** (under "More" the
 first time, then it can be moved up), Done, then open Trivet. The upload page
-should be reading that link.
+should be reading that link. For screenshots: Photos, select two screenshots of
+a caption, Share, **Trivet**; the sheet reads them, then Trivet opens on the
+words being read.
 
 ## App icon
 

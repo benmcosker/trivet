@@ -54,9 +54,9 @@ describe("POST /api/import-text", () => {
     const response = await post({ text: caption });
     expect(response.status).toBe(200);
     expect(mocks.extractRecipeFromText).toHaveBeenCalledWith({
-      ok: true,
       text: caption,
       link: "https://www.tiktok.com/@cook/video/1",
+      fromScreenshots: false,
     });
     const payload = await response.json();
     expect(payload).toMatchObject({
@@ -64,6 +64,13 @@ describe("POST /api/import-text", () => {
       imageUrl: null,
       recipe: { title: "Crispy Lemon Chicken" },
     });
+  });
+
+  it("tells the model when the words were read off screenshots", async () => {
+    await post({ text: caption, origin: "screenshots" });
+    expect(mocks.extractRecipeFromText).toHaveBeenCalledWith(
+      expect.objectContaining({ fromScreenshots: true }),
+    );
   });
 
   it("refuses a too-short paste before spending any allowance", async () => {

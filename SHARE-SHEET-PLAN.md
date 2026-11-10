@@ -158,12 +158,18 @@ for every import.
 
 **iOS.**
 
-- The activation rule adds up to 6 images and one PDF.
+- The activation rule adds images and PDFs, with no count: a rule capped at
+  six would hide Trivet when seven are selected, without saying why, so the
+  sheet refuses past six instead.
 - Text read on the phone is written to the App Group as text. Images that go
   to the photo import, and PDFs, are copied in as files with their names and
-  types. Images over 7 MB and PDFs over 20 MB are refused in the sheet with the
-  limits the upload route enforces (`MAX_CARD_IMAGE_BYTES`, `MAX_PDF_BYTES`),
-  so nobody waits for an app switch to be told no.
+  types. Images are made JPEGs of at most 2,000 pixels first, so none is too
+  big; more than six images, a PDF over 20 MB (`MAX_PDF_BYTES`) and a PDF with
+  photos are refused in the sheet, so nobody waits for an app switch to be
+  told no.
+- A recipe shared as text (Notes, Messages) is left as text when it has 120
+  characters or more besides its link; shorter text is read for its link, as
+  in Phase 1.
 - The app loads `/upload?shared=1` and hands the item to the page through a
   script message handler: the page says it is ready, the app sends the text or
   the files.
@@ -177,11 +183,10 @@ for every import.
 
 ## Design
 
-One board for the share sheet's states (link, social link, no link, images
-read), the **Paste a recipe** option on the upload page, and the upload page's
-arrival state, which already exists for links and needs a matching one for
-shared text and files. Same handoff format as
-`design_handoff_trivet_offline/`.
+Phase 2's states, and the decisions behind them, are in
+`design_handoff_trivet_share/`: the sheet reading screenshots and showing
+what it read, a photo, a PDF, the refusals, and the upload page arriving with
+each.
 
 ## Explicitly out of scope
 
