@@ -102,6 +102,12 @@ const recipeShape = z.object({
   proteinG: z.number().int().min(0).max(500).nullable().optional(),
   carbsG: z.number().int().min(0).max(1000).nullable().optional(),
   fatG: z.number().int().min(0).max(500).nullable().optional(),
+  /**
+   * The four figures above are Trivet's estimate from the ingredients, not
+   * numbers the source printed. Set by the importer; the review form clears
+   * it when somebody types their own figures.
+   */
+  nutritionEstimated: z.boolean().default(false),
   course: z.enum(RECIPE_COURSES).nullable().optional(),
   notes: z.string().trim().max(5000).nullable().optional(),
   instructions: z.array(z.string().trim().min(1)).max(100).default([]),

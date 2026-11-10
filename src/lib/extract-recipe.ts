@@ -141,11 +141,25 @@ const extractionSchema = z.object({
     .nullable()
     .describe(
       "Macros for ONE serving, transcribed from the source. Null unless the " +
-        "card or the page states them - do not calculate them from the " +
-        "ingredients. Transcribe only what is stated and leave the rest " +
-        "null: a card that prints protein and nothing else gives one figure " +
-        "and three nulls. If the source gives totals for the whole dish, " +
-        "divide by the servings.",
+        "card or the page states them - never your own figures. Transcribe " +
+        "only what is stated and leave the rest null: a card that prints " +
+        "protein and nothing else gives one figure and three nulls. If the " +
+        "source gives totals for the whole dish, divide by the servings.",
+    ),
+  estimatedNutrition: z
+    .object({
+      caloriesKcal: z.number().nullable(),
+      proteinG: z.number().nullable(),
+      carbsG: z.number().nullable(),
+      fatG: z.number().nullable(),
+    })
+    .nullable()
+    .describe(
+      "Only when the source states NO nutrition at all: your estimate of " +
+        "the macros for ONE serving, worked out from the ingredients, their " +
+        "amounts and the servings count. It is shown labelled as an " +
+        "estimate. Null whenever `nutrition` has any figure, and null when " +
+        "too few ingredients have amounts to estimate from.",
     ),
   course: z
     .enum(["DINNER", "SIDE", "BREAKFAST", "DESSERT", "SNACK", "OTHER"])
@@ -180,7 +194,8 @@ Rules:
 - Oven temperature is often printed only inside a step ("bake at 375F for 20 minutes"). Read the steps for it, not just the header block.
 - Give the temperature in the unit the card printed. Do not convert between Fahrenheit and Celsius.
 - If the card is not a recipe, or too little of it can be read, still return your best reading and set confidence to "low".
-- Nutrition is transcribed like everything else. If the source states macros, record them per serving, dividing by the servings count where it gives totals for the whole dish. If the source does not state them, return null - do not work them out from the ingredients. Somebody may count carbs against these, and a figure nobody can check against a source is worse here than no figure at all.
+- Nutrition the source states is transcribed like everything else, into \`nutrition\`: per serving, dividing by the servings count where it gives totals for the whole dish, and only what is stated. Never top a stated set up with your own figures.
+- If the source states no nutrition at all, leave \`nutrition\` null and estimate it in \`estimatedNutrition\` from the ingredients, their amounts and the servings count. It is shown to people as an estimate, so make it an honest one: count the oil, butter and sugar the recipe actually uses, not a typical portion of the dish. If too few ingredients have amounts to work from, leave it null.
 
 Rules for a web page:
 - Markup is a claim about the page, not the page. Read it the same way you read a card: transcribe what is there and invent nothing.
@@ -472,8 +487,8 @@ async function extract(
 /**
  * Macros, rounded and checked here rather than taken on trust.
  *
- * The prompt asks for whole numbers rounded to 5 g and 10 kcal and for a
- * PRINTED set never to be topped up with guesses. Both are restated here
+ * The prompt asks for a PRINTED set never to be topped up with guesses, and
+ * `nutritionFor` rounds estimates to 5 g and 10 kcal. Both are restated here
  * because a prompt is a request and this is the last place that can still
  * say no: a model that returns `31.4` or quietly estimates two of four
  * values has not malfunctioned in any way the API reports, and the result
@@ -518,6 +533,53 @@ export function readNutrition(
 }
 
 /**
+ * What the recipe's nutrition box gets: the printed figures if there are any,
+ * otherwise the model's estimate, rounded and marked as one.
+ *
+ * Never a mix. A printed set, even a partial one, wins outright and the
+ * estimate is dropped: topping up a card's printed protein with an estimated
+ * fat would make the whole set look printed. Exported for tests.
+ */
+export function nutritionFor(
+  printed: z.infer<typeof extractionSchema>["nutrition"],
+  estimate: z.infer<typeof extractionSchema>["estimatedNutrition"],
+): Pick<ExtractedRecipe, MacroKey | "nutritionEstimated"> {
+  const stated = readNutrition(printed);
+  if (MACRO_KEYS.some((key) => stated[key] != null)) {
+    return { ...stated, nutritionEstimated: false };
+  }
+
+  const guessed = readNutrition(estimate);
+  if (MACRO_KEYS.every((key) => guessed[key] == null)) {
+    return { ...guessed, nutritionEstimated: false };
+  }
+  return {
+    caloriesKcal: roundEstimate(guessed.caloriesKcal, 10),
+    proteinG: roundGrams(guessed.proteinG),
+    carbsG: roundGrams(guessed.carbsG),
+    fatG: roundGrams(guessed.fatG),
+    nutritionEstimated: true,
+  };
+}
+
+/**
+ * An estimate is rounded so it does not look more precise than it is: 640
+ * kcal rather than 637, 25 g rather than 23. Small amounts keep their own
+ * number, since 2 g of fat rounded to 0 or 5 would say something else.
+ */
+function roundGrams(value: number | null | undefined): number | null {
+  if (value == null) return null;
+  return value < 10 ? value : roundEstimate(value, 5);
+}
+
+function roundEstimate(
+  value: number | null | undefined,
+  step: number,
+): number | null {
+  return value == null ? null : Math.round(value / step) * step;
+}
+
+/**
  * One macro: a non-negative whole number, or nothing.
  *
  * Rounded to an integer because the column is one, and because a
@@ -545,7 +607,7 @@ function toExtractedRecipe(
     cookMinutes: parsed.cookMinutes ?? null,
     restMinutes: parsed.restMinutes ?? null,
     ...readOvenTemp(parsed.ovenTemp, parsed.ovenTempUnit),
-    ...readNutrition(parsed.nutrition),
+    ...nutritionFor(parsed.nutrition, parsed.estimatedNutrition),
     course: parsed.course ?? null,
     equipment: parsed.equipment.map((e) => e.trim()).filter(Boolean),
     sourceUrl: null,

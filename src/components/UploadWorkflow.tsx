@@ -405,6 +405,9 @@ export function UploadWorkflow({
       proteinG: recipe.proteinG ?? null,
       carbsG: recipe.carbsG ?? null,
       fatG: recipe.fatG ?? null,
+      // Worked out from the ingredients because the source printed none.
+      // The form says so, and stops saying so once a figure is changed.
+      nutritionEstimated: recipe.nutritionEstimated ?? false,
       // What the importer read the dish as. Shown on the review form so a
       // wrong guess is corrected before it is saved, not after.
       course: recipe.course ?? null,

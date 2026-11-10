@@ -20,6 +20,7 @@ const blank: RecipeInput = {
   proteinG: null,
   carbsG: null,
   fatG: null,
+  nutritionEstimated: false,
   course: null,
   sourceUrl: null,
   sourceName: null,
