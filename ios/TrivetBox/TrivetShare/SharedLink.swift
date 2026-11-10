@@ -53,18 +53,66 @@ enum SharedLink {
         return host.hasPrefix("www.") ? String(host.dropFirst(4)) : host
     }
 
-    /// Leave the link for the app. One at a time: a new share replaces the
+    /// The folder beside the record that holds shared files.
+    /// Must match `PendingShare.filesFolder` in the app.
+    static let filesFolder = "pending-share-files"
+
+    /// Leave the link for the app. One share at a time: a new one replaces the
     /// last. The time is kept so the app can drop a share left for a day.
     static func save(_ url: URL) throws {
+        try write(["kind": "link", "link": url.absoluteString])
+    }
+
+    /// Leave text for the app: words read off screenshots (`screenshots` is
+    /// how many), or a recipe shared as text (`screenshots` nil).
+    static func save(text: String, screenshots: Int?) throws {
+        var record: [String: Any] = ["kind": "text", "text": text]
+        if let screenshots { record["screenshots"] = screenshots }
+        try write(record)
+    }
+
+    /// A file to leave for the app: its bytes, the name and type the upload
+    /// page will give it.
+    struct SharedFile {
+        let data: Data
+        let name: String
+        let type: String
+    }
+
+    /// Leave photos or a PDF for the app, copied into the App Group folder.
+    static func save(files: [SharedFile]) throws {
+        let folder = try groupFolder()
+        let filesURL = folder.appendingPathComponent(filesFolder, isDirectory: true)
+        try? FileManager.default.removeItem(at: filesURL)
+        try FileManager.default.createDirectory(at: filesURL, withIntermediateDirectories: true)
+
+        var entries: [[String: Any]] = []
+        for (index, file) in files.enumerated() {
+            let stored = "\(index)"
+            try file.data.write(to: filesURL.appendingPathComponent(stored), options: .atomic)
+            entries.append(["name": file.name, "type": file.type, "size": file.data.count, "file": stored])
+        }
+        try write(["kind": "files", "files": entries], keepFiles: true)
+    }
+
+    private static func groupFolder() throws -> URL {
         guard let folder = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroup
         ) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        let record: [String: Any] = [
-            "link": url.absoluteString,
-            "sharedAt": Date().timeIntervalSince1970,
-        ]
+        return folder
+    }
+
+    /// The record the app reads. A share that is not files removes the files
+    /// a previous share left, so they cannot outlive it.
+    private static func write(_ record: [String: Any], keepFiles: Bool = false) throws {
+        let folder = try groupFolder()
+        if !keepFiles {
+            try? FileManager.default.removeItem(at: folder.appendingPathComponent(filesFolder))
+        }
+        var record = record
+        record["sharedAt"] = Date().timeIntervalSince1970
         let data = try JSONSerialization.data(withJSONObject: record)
         try data.write(to: folder.appendingPathComponent(fileName), options: .atomic)
     }

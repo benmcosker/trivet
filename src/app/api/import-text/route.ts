@@ -66,7 +66,13 @@ async function handle(request: Request) {
     );
   }
 
-  const extraction = await extractRecipeFromText(pasted);
+  // Text the share sheet read off screenshots, rather than text somebody
+  // copied. Only changes what the model is told to expect.
+  const extraction = await extractRecipeFromText({
+    text: pasted.text,
+    link: pasted.link,
+    fromScreenshots: body?.origin === "screenshots",
+  });
   if (!extraction.ok) {
     return NextResponse.json({ error: extraction.error }, { status: 422 });
   }
