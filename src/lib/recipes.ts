@@ -230,8 +230,12 @@ export type RecipeWithRelations = Prisma.RecipeGetPayload<{
 
 async function withReviewSummaries<T extends { id: string }>(
   recipes: T[],
+  householdId: string,
 ): Promise<(T & { reviews: ReviewSummary })[]> {
-  const summaries = await getReviewSummaries(recipes.map((r) => r.id));
+  const summaries = await getReviewSummaries(
+    recipes.map((r) => r.id),
+    householdId,
+  );
   return recipes.map((recipe) => ({
     ...recipe,
     reviews: summaries.get(recipe.id) ?? NO_REVIEWS,
@@ -256,6 +260,7 @@ export async function searchRecipes(
       },
       include: recipeInclude,
     }),
+    options.householdId,
   );
 
   // `IN (...)` does not preserve order, so restore the ranking from the search.
@@ -301,7 +306,7 @@ export async function getRecipe(
   });
   if (!recipe) return null;
 
-  const [withSummary] = await withReviewSummaries([recipe]);
+  const [withSummary] = await withReviewSummaries([recipe], householdId);
   return withSummary;
 }
 

@@ -45,6 +45,23 @@ export default function TermsPage() {
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
+        Shared recipes and reviews
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        A household can share its recipes with every other household, and
+        members can review the recipes they can see. Shared recipes and reviews
+        must be about cooking, and must not be offensive, abusive, hateful,
+        sexual, or copied from someone who has not given permission. There is no
+        tolerance for objectionable content or abusive members.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        Anyone can report a shared recipe or a review from its page, or hide the
+        household it came from. Reports are read within a day. Content that
+        breaks these rules is removed, and the accounts of those who post it are
+        closed.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
         Text messages
       </Typography>
       <Typography sx={{ mb: 1 }}>

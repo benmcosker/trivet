@@ -99,9 +99,13 @@ export default function PrivacyPage() {
         Keeping and deleting
       </Typography>
       <Typography sx={{ mb: 3 }}>
-        Information is kept while the account exists. Email{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> to have an
-        account, and everything in it, deleted.
+        Information is kept while the account exists. An account can be deleted
+        at any time from the Household page, under Delete my account. If others
+        share the household, they keep its recipes, plans and lists; the last
+        person to leave takes the household and everything in it with them,
+        including any recipes it shared. You can also email{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> to have it done
+        for you.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>

@@ -5,6 +5,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { notFound } from "next/navigation";
 
+import { AdminReports } from "@/components/AdminReports";
 import { AppShell } from "@/components/AppShell";
 import {
   adminEmails,
@@ -13,6 +14,7 @@ import {
   maskAddress,
   type AdminHousehold,
 } from "@/lib/admin";
+import { listOpenReports } from "@/lib/moderation";
 import { requireUser } from "@/lib/session";
 
 /** "2026-09-06", or a word when there is no date. */
@@ -156,7 +158,10 @@ export default async function AdminPage() {
     notFound();
   }
 
-  const households = await adminOverview();
+  const [households, reports] = await Promise.all([
+    adminOverview(),
+    listOpenReports(),
+  ]);
   const people = households.reduce((n, h) => n + h.members.length, 0);
 
   return (
@@ -170,6 +175,8 @@ export default async function AdminPage() {
         {people === 1 ? "person" : "people"}. Counts and dates only - nothing
         anybody cooked, planned or shopped for.
       </Typography>
+
+      <AdminReports reports={reports} />
 
       {households.length === 0 ? (
         <Typography color="text.secondary">No households yet.</Typography>

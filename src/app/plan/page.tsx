@@ -101,7 +101,10 @@ export default async function PlanPage({ searchParams }: PageProps<"/plan">) {
 
   // Review scores on the picker tiles: choosing dinner is exactly when it helps
   // to see which of these the household actually liked.
-  const summaries = await getReviewSummaries(recipes.map((r) => r.id));
+  const summaries = await getReviewSummaries(
+    recipes.map((r) => r.id),
+    householdId,
+  );
 
   const groceries = buildShoppingList({ meals, pantry, skips, extras });
 

@@ -31,6 +31,7 @@ import {
 import { RecipePlaceholder } from "@/components/RecipePlaceholder";
 import { PageTransition } from "@/components/PageTransition";
 import { RecipeReviews } from "@/components/RecipeReviews";
+import { ReportOrHide } from "@/components/ReportOrHide";
 import { ServingScaler } from "@/components/ServingScaler";
 import { ReviewStars } from "@/components/ReviewStars";
 import { getMyReview, listReviews } from "@/lib/reviews";
@@ -55,7 +56,7 @@ export default async function RecipePage({
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const [reviews, myReview, history] = await Promise.all([
-    listReviews(recipe.id),
+    listReviews(recipe.id, user.householdId),
     getMyReview(recipe.id, user.id),
     // Up to today: next week's plan is not something already eaten.
     mealHistory(user.householdId, {
@@ -520,6 +521,7 @@ export default async function RecipePage({
               reviews={reviews}
               myReview={myReview}
               currentUserId={user.id}
+              householdId={user.householdId}
             />
           </CardContent>
         </Card>
@@ -560,6 +562,21 @@ export default async function RecipePage({
             </>
           ) : null}
         </Typography>
+        {!mine && recipe.isShared ? (
+          // Another household's recipe: Apple's guideline 1.2 asks that it can
+          // be reported, and its household hidden.
+          <Box sx={{ mt: 1 }}>
+            <ReportOrHide
+              target={{ recipeId: recipe.id }}
+              household={{
+                id: recipe.householdId,
+                name: recipe.household.name,
+              }}
+              what="recipe"
+              afterHide="library"
+            />
+          </Box>
+        ) : null}
       </PageTransition>
     </AppShell>
   );

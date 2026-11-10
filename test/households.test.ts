@@ -476,7 +476,10 @@ describe.skipIf(!hasDb)("two households", () => {
         body: null,
       });
 
-      expect(await getReviewSummary(id)).toEqual({ average: 4, count: 2 });
+      expect(await getReviewSummary(id, ours.householdId)).toEqual({
+        average: 4,
+        count: 2,
+      });
     });
 
     it("refuses a review on a recipe the household cannot see", async () => {
@@ -490,7 +493,10 @@ describe.skipIf(!hasDb)("two households", () => {
           body: null,
         }),
       ).rejects.toThrow(/No such recipe/);
-      expect(await getReviewSummary(id)).toEqual({ average: null, count: 0 });
+      expect(await getReviewSummary(id, ours.householdId)).toEqual({
+        average: null,
+        count: 0,
+      });
     });
 
     it("still refuses a review on a recipe that does not exist", async () => {
@@ -512,7 +518,10 @@ describe.skipIf(!hasDb)("two households", () => {
       });
       await saveReview(id, partner, ours.householdId, { stars: 3, body: null });
 
-      expect(await getReviewSummary(id)).toEqual({ average: 4, count: 2 });
+      expect(await getReviewSummary(id, ours.householdId)).toEqual({
+        average: 4,
+        count: 2,
+      });
     });
   });
 

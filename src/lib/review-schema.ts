@@ -62,5 +62,11 @@ export type ReviewWithAuthor = {
   body: string | null;
   createdAt: Date;
   updatedAt: Date;
-  author: { id: string; name: string };
+  author: {
+    id: string;
+    name: string;
+    /** So a review from another household can be reported or hidden. */
+    householdId: string | null;
+    householdName: string | null;
+  };
 };
