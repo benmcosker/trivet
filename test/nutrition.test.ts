@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { readNutrition } from "@/lib/extract-recipe";
+import { nutritionFor, readNutrition } from "@/lib/extract-recipe";
 import { toRecipeInput } from "@/lib/recipe-mutations";
 import { recipeInput } from "@/lib/recipe-schema";
 
@@ -151,5 +151,42 @@ describe("the edit form's starting values", () => {
     expect(parsed.success).toBe(true);
     expect(parsed.data?.caloriesKcal).toBe(620);
     expect(parsed.data?.fatG).toBe(26);
+  });
+});
+
+describe("nutritionFor: printed figures, or an estimate, never both", () => {
+  const empty = {
+    caloriesKcal: null,
+    proteinG: null,
+    carbsG: null,
+    fatG: null,
+  };
+  const estimate = { caloriesKcal: 637, proteinG: 23, carbsG: 51, fatG: 7 };
+
+  it("keeps printed figures exactly and drops the estimate", () => {
+    expect(nutritionFor({ ...empty, proteinG: 31 }, estimate)).toEqual({
+      ...empty,
+      proteinG: 31,
+      nutritionEstimated: false,
+    });
+  });
+
+  it("uses a rounded estimate when nothing is printed, and says so", () => {
+    expect(nutritionFor(null, estimate)).toEqual({
+      caloriesKcal: 640,
+      proteinG: 25,
+      carbsG: 50,
+      fatG: 7,
+      nutritionEstimated: true,
+    });
+    expect(nutritionFor(empty, estimate).nutritionEstimated).toBe(true);
+  });
+
+  it("has nothing to say when neither is there", () => {
+    expect(nutritionFor(null, null)).toEqual({
+      ...empty,
+      nutritionEstimated: false,
+    });
+    expect(nutritionFor(null, empty).nutritionEstimated).toBe(false);
   });
 });

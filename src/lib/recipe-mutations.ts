@@ -51,6 +51,7 @@ export function toRecipeInput(recipe: RecipeWithRelations): RecipeInput {
     proteinG: recipe.proteinG,
     carbsG: recipe.carbsG,
     fatG: recipe.fatG,
+    nutritionEstimated: recipe.nutritionEstimated,
     course: recipe.course,
     sourceUrl: recipe.sourceUrl,
     sourceName: recipe.sourceName,
@@ -127,6 +128,11 @@ export async function createRecipe(
       yieldNote: emptyToNull(input.yieldNote),
       equipment: input.equipment,
       ...nutritionColumns(input),
+      // An estimate from the importer, kept labelled only if there are
+      // figures to label.
+      nutritionEstimated:
+        input.nutritionEstimated &&
+        MACRO_KEYS.some((key) => input[key] != null),
       // `?? null`, not undefined: clearing it on the form has to clear it.
       course: input.course ?? null,
       notes: emptyToNull(input.notes),

@@ -99,6 +99,28 @@ describe.skipIf(!hasDb)("recipe mutations", () => {
     expect(recipe.tags.map((t) => t.tag.name)).toEqual(["Weeknight"]);
   });
 
+  it("keeps an importer's estimate labelled, but only with figures to label", async () => {
+    const labelled = await createRecipe(
+      recipeInput.parse({
+        ...base,
+        caloriesKcal: 600,
+        nutritionEstimated: true,
+      }),
+      householdId,
+      userId,
+    );
+    const bare = await createRecipe(
+      recipeInput.parse({ ...base, title: "Bare", nutritionEstimated: true }),
+      householdId,
+      userId,
+    );
+    const flag = async (id: string) =>
+      (await prisma.recipe.findUniqueOrThrow({ where: { id } }))
+        .nutritionEstimated;
+    expect(await flag(labelled)).toBe(true);
+    expect(await flag(bare)).toBe(false);
+  });
+
   it("drops the Estimated label once somebody edits the figures", async () => {
     const macros = { caloriesKcal: 600, proteinG: 30, carbsG: 50, fatG: 25 };
     const id = await createRecipe(

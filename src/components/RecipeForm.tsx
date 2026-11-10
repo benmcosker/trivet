@@ -93,6 +93,10 @@ export function RecipeForm({
         ]),
       ) as Record<MacroKey, string>,
   );
+  /** The figures are the importer's estimate, until somebody edits one. */
+  const [estimated, setEstimated] = useState(
+    initial.nutritionEstimated ?? false,
+  );
   const [equipment, setEquipment] = useState<string[]>(initial.equipment);
   const [equipmentDraft, setEquipmentDraft] = useState("");
   const [sourceUrl, setSourceUrl] = useState(initial.sourceUrl ?? "");
@@ -179,6 +183,7 @@ export function RecipeForm({
       yieldNote: yieldNote || null,
       course: course || null,
       ...macroFields(),
+      nutritionEstimated: estimated,
       equipment,
       sourceUrl: sourceUrl || null,
       sourceName: sourceName || null,
@@ -342,15 +347,25 @@ export function RecipeForm({
                   fullWidth
                 />
               </Grid>
+              {estimated ? (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Estimated from the ingredients, since the recipe printed
+                    none. The recipe will say so. Change any figure to use your
+                    own instead.
+                  </Typography>
+                </Grid>
+              ) : null}
               {MACRO_KEYS.map((key) => (
                 <Grid size={{ xs: 6, sm: 3 }} key={key}>
                   <TextField
                     label={MACRO_RANGE[key].label}
                     type="number"
                     value={macros[key]}
-                    onChange={(e) =>
-                      setMacros((m) => ({ ...m, [key]: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setMacros((m) => ({ ...m, [key]: e.target.value }));
+                      setEstimated(false);
+                    }}
                     helperText={
                       key === "caloriesKcal"
                         ? "Per serving, kcal"
