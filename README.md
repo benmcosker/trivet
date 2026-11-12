@@ -1,11 +1,15 @@
 # Trivet
 
 Recipe box, weekly meal planner and grocery list for one household.
-Add a recipe from a link, a PDF, or a photograph of a printed or handwritten
-card, plan a dinner for each night from your library, and take the resulting
-shopping list to the shop.
+Add a recipe from a link, a PDF, a photograph of a printed or handwritten
+card, pasted text, or screenshots of a caption shared from your phone, plan a
+dinner for each night from your library, and take the resulting shopping list
+to the shop.
 
-Live at [trivetbox.com](https://trivetbox.com), and on iPhone in a family beta.
+Live at [trivetbox.com](https://trivetbox.com), and on iPhone in a family beta
+(TestFlight, build 5). Releases are tagged: `v2.0.0` is the current one, with
+its notes on GitHub, and each TestFlight build gets an `app-<version>-<build>`
+tag (`app-1.0-5`) so a tester's report can be traced to the code they ran.
 The [case study](docs/case-study.pdf) covers why it works the way it does: the
 problem, the decisions, what was cut, and what comes next.
 
@@ -67,14 +71,18 @@ the same URL and this command does not need editing every time.
 - **Recipe library.** Create, edit and delete recipes with ingredients, method,
   servings, timings, oven temperature, resting time, yield, equipment and tags -
   everything a recipe card prints, so you never have to reopen the original.
-  Calories, protein, carbs and fat per serving are recorded when the source
-  states them, and never worked out when it does not.
+  Calories, protein, carbs and fat per serving are transcribed when the source
+  states them; when it states none, the importer estimates them from the
+  ingredients and the recipe says "Per serving, estimated". Changing any figure
+  drops the label. Each recipe also records its course (dinner, side,
+  breakfast, dessert, snack, other), with a page to sort the library by it.
 - **Search.** Full-text plus substring matching across titles, descriptions,
   method text, ingredients and tags, with tag filters. Search state lives in the
   URL, so a filtered view is linkable.
-- **Adding a recipe: a link, a PDF or a photograph.** Paste the address of a
-  recipe page, or upload a card, and Claude reads it into fields, landing on a
-  review screen before anything is saved. A site that only answers a real
+- **Adding a recipe: a link, a PDF, a photograph or some text.** Paste the
+  address of a recipe page, upload a card (several photos read as one recipe),
+  or paste a recipe copied from a message or a note, and Claude reads it into
+  fields, landing on a review screen before anything is saved. A site that only answers a real
   browser is named as such, with a way round it: print the page to a PDF and
   bring that in instead. A PDF also gives up its dish photo, which is pulled out and attached.
   Photographs are accepted as JPEG, PNG, GIF or WebP - the four formats the
@@ -91,11 +99,16 @@ the same URL and this command does not need editing every time.
 - **Weekly planner.** A dinner a night, picked from tiles showing the dish
   photo, title and its rating. An evening can take up to three dinners and a
   side: the first is the photo, the rest are a line each under it, and every
-  one of them scales into the shopping list the same way.
+  one of them scales into the shopping list the same way. The planner shows
+  this week and next, and can suggest dinners for the open evenings from the
+  library: what has not been planned for a while, what fits a weeknight
+  (quick Monday to Thursday), and the household's regulars, with stars only as
+  a tiebreaker.
 - **A cooking view.** `/recipes/<id>/cook` is the recipe as something you are
   in the middle of: one step at a time in large type, ingredients a tap away
   without losing your place, and the screen held awake so a propped-up phone
-  does not sleep between steps. Where you got to survives a reload.
+  does not sleep between steps. Where you got to survives a reload. Finishing
+  counts the dish as made, and a recipe shows when it was last cooked.
 - **Pantry.** The staples you always have in, managed as a list of their own.
   Nothing in it ever reaches a shopping list, however many recipes call for it.
 - **Grocery list.** Ingredients roll up across the week's meals, scaled to the
@@ -104,14 +117,30 @@ the same URL and this command does not need editing every time.
 - **Anything else you need.** Kitchen roll, dish soap, a birthday cake - things
   no recipe asks for go on the week's list by hand, sorted into the aisle
   they'll be found in, and travel with it to the shop hand-off and the text.
-- **Shopping hand-off.** Send the week's list to Amazon Fresh or Whole Foods (a
-  search link per ingredient plus a copyable list). An Instacart provider that
-  builds a real cart is written and tested but hidden until a key exists — see
-  below.
+- **Shopping hand-off.** Text the week's list (below), or copy it. An Instacart
+  provider that builds a real cart is written and tested but hidden until a
+  production key exists, which Instacart is not issuing - see below. The Amazon
+  Fresh and Whole Foods buttons were removed: with no ordering API they could
+  only open a search per ingredient.
 - **An activity overview.** `/admin` lists the households, how much each is
   using the planner, and how many cards they have uploaded. Counts and dates
-  only. Reachable by the addresses in `ADMIN_EMAILS` and answering 404 to
-  everybody else.
+  only. It also holds the report queue (below). Reachable by the addresses in
+  `ADMIN_EMAILS` and answering 404 to everybody else.
+- **Reporting and hiding shared content.** On another household's shared
+  recipe, and on a review from one, **Report** (a reason and a note, emailed to
+  the admins and queued on `/admin`, where a recipe can be taken out of the
+  shared library or a review deleted) and **Hide** that household (its shared
+  recipes and reviews leave your library, search, averages and recipe pages;
+  undone from the Household page). Apple's guideline 1.2; the rules are in the
+  terms.
+- **Deleting your account,** from the Household page, confirmed by typing your
+  email. If others stay, the household keeps everything you added; the last
+  person out takes the household, its shared recipes and its stored files.
+  Apple's guideline 5.1.1(v).
+- **Loading.** Each main page shows its outline while it loads - its heading,
+  then striped placeholders laid out as the page lays them out - so nothing
+  jumps when it arrives. Designed in
+  [`design_handoff_trivet_loading/`](design_handoff_trivet_loading/).
 - **Texting the list.** Everyone in the household who has agreed to be texted
   gets the week's shopping as an SMS, split into readable parts. Giving a number
   is optional, and a number alone sends nothing - only those who ticked the box
@@ -123,8 +152,24 @@ A thin native app in [`ios/`](ios/) wraps trivetbox.com in a SwiftUI web view:
 a home-screen icon, sign-in that persists, the camera for recipe cards, and
 links to other sites opened in Safari. Every feature still lives on the website,
 so a change ships to the app the moment it ships to the web. It is in a family
-beta through TestFlight. [`ios/README.md`](ios/README.md) covers building it,
-sending a build to TestFlight, and its known gaps.
+beta through TestFlight (build 5). [`ios/README.md`](ios/README.md) covers
+building it, sending a build to TestFlight, and its known gaps.
+
+What is native, because the web cannot do it:
+
+- **Share to Trivet.** A share extension puts Trivet in the iPhone share sheet
+  for a recipe page from Safari or Chrome, a recipe in Notes or Messages, a
+  photo of a card, a PDF, or screenshots of a TikTok or Instagram caption -
+  neither app lets a caption be copied, so screenshots are the way in. The
+  screenshots are read on the phone with Vision's text recognition, and only
+  the words travel; the sheet shows what it read before you leave. Trivet then
+  opens on the Add a recipe page with the share already being read.
+  [`SHARE-SHEET-PLAN.md`](SHARE-SHEET-PLAN.md),
+  [`design_handoff_trivet_share/`](design_handoff_trivet_share/).
+- **Launch and opening.** A launch screen in Trivet's colours with the mark,
+  then the same mark with its centre simmering until the first page fades in,
+  instead of a white screen. After eight seconds it says the connection is
+  slow; with no connection at all, a plain screen with Try again.
 
 A React Native rebuild was considered and set aside: it meant rewriting every
 screen for little the web didn't already do. The beta decides what, if anything,
@@ -137,21 +182,31 @@ goes native.
   list only when someone chooses to, back in range. Designed in
   [`design_handoff_trivet_offline/`](design_handoff_trivet_offline/) and planned
   in [`OFFLINE-BROWSING-PLAN.md`](OFFLINE-BROWSING-PLAN.md); not built yet.
-- **A share sheet.** Share a recipe website or a photo of a card into Trivet from
-  any app. TikTok maybe, if its share includes the caption; Instagram no.
+- **How we eat, by person.** Each person at the table (account or not) has a
+  diet, each recipe records the strictest diet it fits, and the library follows
+  the person signed in. [`DIET-PLAN.md`](DIET-PLAN.md); not built yet.
+- **Cook with an ingredient.** Start from one ingredient and get dishes from
+  your library, then from a short curated list of recipe sites.
+  [`COOK-WITH-PLAN.md`](COOK-WITH-PLAN.md); not built yet.
+- **Channels.** Curated collections owned by Trivet or a local food partner,
+  which households can follow. Partners are free; Trivet has no ads.
+  [`CHANNELS-PLAN.md`](CHANNELS-PLAN.md); exploratory.
+- **The public App Store,** as a free download with a one-time household
+  unlock, no subscription. Not planned in detail yet.
 
 ## Stack
 
-| Concern   | Choice                                        |
-| --------- | --------------------------------------------- |
-| Framework | Next.js 16 (App Router) + React 19            |
-| Language  | TypeScript                                    |
-| UI        | Material UI 9 (emotion), light + dark         |
-| Database  | Postgres via Prisma 7                         |
-| Auth      | Better Auth (email + password, invite-gated)  |
-| Storage   | Vercel Blob, with a local-disk driver for dev |
-| AI        | Claude, for reading recipe cards              |
-| Tests     | Vitest, against a real Postgres               |
+| Concern   | Choice                                                       |
+| --------- | ------------------------------------------------------------ |
+| Framework | Next.js 16 (App Router) + React 19                           |
+| Language  | TypeScript                                                   |
+| UI        | Material UI 9 (emotion), light + dark                        |
+| Database  | Postgres via Prisma 7                                        |
+| Auth      | Better Auth (email + password, invite-gated)                 |
+| Storage   | Vercel Blob, with a local-disk driver for dev                |
+| AI        | Claude: reading cards, pages and text; estimating nutrition  |
+| iOS       | SwiftUI web view + share extension (Vision text recognition) |
+| Tests     | Vitest, against a real Postgres                              |
 
 ## Getting started
 
@@ -214,17 +269,19 @@ schema is present.
 
 ## Scripts
 
-| Script               | Does                                         |
-| -------------------- | -------------------------------------------- |
-| `npm run dev`        | Dev server                                   |
-| `npm run build`      | Production build                             |
-| `npm test`           | Vitest once (**truncates the dev database**) |
-| `npm run lint`       | ESLint                                       |
-| `npm run typecheck`  | Route types + `tsc --noEmit`                 |
-| `npm run format`     | Prettier                                     |
-| `npm run db:migrate` | Create and apply a migration                 |
-| `npm run db:deploy`  | Apply migrations (production)                |
-| `npm run db:studio`  | Prisma Studio                                |
+| Script                   | Does                                                                      |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `npm run dev`            | Dev server                                                                |
+| `npm run build`          | Production build                                                          |
+| `npm test`               | Vitest once (**truncates the dev database**)                              |
+| `npm run lint`           | ESLint                                                                    |
+| `npm run typecheck`      | Route types + `tsc --noEmit`                                              |
+| `npm run format`         | Prettier                                                                  |
+| `npm run db:migrate`     | Create and apply a migration                                              |
+| `npm run db:deploy`      | Apply migrations (production)                                             |
+| `npm run db:studio`      | Prisma Studio                                                             |
+| `npm run library:export` | Export the shared library for a rewrite (`.library/`, never committed)    |
+| `npm run library:apply`  | Apply a reviewed rewrite of the shared library (dry run unless `--write`) |
 
 The integration tests share one database and clean up after themselves, which
 means running them against a database you care about will empty it.
@@ -420,27 +477,16 @@ integration surface — nothing after the hand-off is visible to this app.
 
 **Amazon cannot build a cart at all.** There is no public Amazon Fresh or Whole
 Foods ordering API; access is granted case by case through a business
-arrangement with Amazon's Fresh team. The add-to-cart URL
-(`/gp/aws/cart/add.html?ASIN.1=…`) still works but needs ASINs, which means the
-Product Advertising API — an Associates account with qualifying sales, and one
-that does not reliably cover Fresh or Whole Foods grocery items. So the Amazon
-providers do the honest thing: a search link per ingredient plus the list as
-plain text. The UI says so rather than implying a basket was filled.
+arrangement with Amazon's Fresh team. The Amazon buttons that opened a search
+per ingredient were removed in October: nobody adds a week's shopping to a
+basket one search at a time.
 
-If you later obtain real Fresh API access, `src/lib/shopping/amazon.ts` is the
-only file that needs to change — the provider interface already allows a `cart`
-hand-off, and `ShoppingProvider` already distinguishes the two kinds.
-
-**The Amazon storefront search aliases are unverified.** `i=amazonfresh` and
-`i=wholefoods` scope a search to those storefronts, but amazon.com is blocked
-from the environment this was built in, so the links were never followed. They
-are trivially checkable in a browser: the link either lands in the right store
-or it does not.
-
-**Instacart cannot be switched on at present.** As of August 2026 Instacart is
-not accepting new developer applications and offers no waitlist, which rules out
-development and production keys alike — this is not a lead time to plan around,
-it is a closed door.
+**Instacart cannot be switched on at present.** Instacart's developer page still
+says it is not accepting new applications and has no waitlist (checked again in
+November 2026). A development key reaches only Instacart's test server, where a
+list opens but cannot be checked out, so it is not worth setting in production.
+A monthly reminder re-checks the page; once Trivet is on the public App Store,
+the plan is to ask Instacart about an integration directly.
 
 The integration is kept intact rather than deleted, but it says nothing about
 itself: no boot warning, no entry in `/api/health`, and no greyed-out button on
@@ -450,9 +496,10 @@ returns, which filters on `available` rather than naming Instacart — so settin
 `INSTACART_API_KEY` is the whole of the work if applications reopen.
 
 The integration is kept rather than removed: it is written and tested, and works
-the day applications reopen. Until then the Instacart button is disabled and says
-why. Amazon Fresh and Whole Foods need no key and no approval, so they are the
-shopping path that works today.
+the day a production key exists: set `INSTACART_API_KEY`, set
+`INSTACART_API_BASE` to `https://connect.instacart.com`, and redeploy. Until
+then the planner shows no Instacart button, and texting the list is the
+hand-off.
 
 **The Instacart request shape is written from documentation, not from a live
 call.** No API key was available while building it, and the docs host is
