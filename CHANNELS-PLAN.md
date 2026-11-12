@@ -43,8 +43,8 @@ admins, can change it.
 - **Trivet's own curation is a channel too.** The base-recipes library could
   be _From Trivet's kitchen_, alongside seasonal or weeknight collections,
   with no partner involved.
-- **Honest by design:** a channel's chip always says whose it is, and if a
-  channel is ever paid, the channel says so, in one place.
+- **Honest by design:** a channel's chip always says whose it is, and marks
+  a partner as a partner (see Money).
 
 ## What channels add to Cook with
 
@@ -66,13 +66,20 @@ and get the same answer.
 - Every suggestion says where it came from: your library, a channel, or a
   site.
 
+## Money
+
+Settled with Ben, 12 November. Trivet's only income is the one-time household
+unlock. No ads, and partners are not an income stream: a channel is free for a
+partner, an exchange of good local recipes and what's fresh for a little local
+visibility. At most Ben might receive some store credit from a partner. That
+is still a connection worth disclosing, and the partner label on every chip and
+channel page is the disclosure: nobody should take a partner's picks for
+neutral recommendations.
+
 ## Open questions
 
 1. **Can a channel add sites** to Cook with's curated list, or only recipes?
-2. **Partner terms:** is a channel free for a partner, paid, or an exchange
-   (they promote Trivet to their customers)? This decides how the paid label
-   reads, and whether it is needed at all.
-3. **Where people are:** does a partner's this-week list reach every follower,
+2. **Where people are:** does a partner's this-week list reach every follower,
    or only households near it?
 
 ## Phases, when it is time
@@ -91,5 +98,5 @@ did.
 
 - Ordering from a partner through Trivet. Shopping hand-off is a separate
   problem (see Instacart in the README).
-- Ads, or any placement a partner pays for without a label.
+- Ads, and paid placement of any kind.
 - Recipes from video.
