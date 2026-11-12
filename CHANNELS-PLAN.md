@@ -1,4 +1,4 @@
-# Channels, and cooking from one ingredient: plan
+# Channels: plan
 
 An exploratory plan, written down so the thinking survives the conversation it
 came from (Ben, 12 November). Nothing here is scheduled. It is meant to be
@@ -6,16 +6,13 @@ useful in conversations with local food partners as much as for building.
 
 ## Context
 
-Two ideas that turned out to be one:
+**Local food partners.** A fishmonger, a farm or a CSA could recommend
+recipes, say what is in this week, and appear in a household's suggestions.
+That needs a way for someone other than the household to put curated things
+in front of it. Tags cannot do that safely.
 
-- **Cook with what you've got.** Start from a star ingredient (some grouper
-  from the fishmonger) and get a short list of dishes, from the household's own
-  library and, beyond it, from a curated set of good recipe sites.
-- **Local food partners.** A fishmonger, a farm or a CSA could recommend
-  recipes, say what is in this week, and appear in those suggestions.
-
-Both need a way for someone other than the household to put curated things in
-front of it. Tags cannot do that safely.
+This plan builds on `COOK-WITH-PLAN.md` (cooking from one ingredient), which
+stands on its own and can come first. Channels add one layer to it.
 
 ## Why not tags
 
@@ -49,44 +46,17 @@ admins, can change it.
 - **Honest by design:** a channel's chip always says whose it is, and if a
   channel is ever paid, the channel says so, in one place.
 
-## Cook with an ingredient
+## What channels add to Cook with
 
-The first feature built on channels. Type an ingredient (or tap one on a
-partner's this-week list) and get a short list, in three labelled layers:
+`COOK-WITH-PLAN.md` answers an ingredient from two layers: your library, then
+curated sites. Channels add a layer between them:
 
-1. **Your library:** recipes already in Trivet that use it, or a close
-   stand-in (snapper or cod for grouper). Plannable at once.
+1. Your library.
 2. **Channels you follow:** their picks for that ingredient, first.
-3. **Curated sites:** Claude's web search, restricted to a list of domains
-   (`allowed_domains` on the web search tool), reads results from those sites
-   only and returns a structured list: the dish, the site, roughly how long and
-   how hard, one line on why it suits the ingredient, and the link.
+3. Curated sites.
 
-Each result has **Add to Trivet**, which is the existing link import with its
-review step. Sites that refuse a server still get the print-to-PDF handoff.
-
-### The curated sites
-
-The editorial heart of the feature. Sites that answered a server in the
-October measurement (`design_handoff_trivet_url_import/README.md`) can be
-searched and imported: Smitten Kitchen, Bon Appétit, Epicurious, BBC Good
-Food, Love and Lemons, King Arthur Baking, America's Test Kitchen, Once Upon a
-Chef, among others. Sites that refuse a server (Serious Eats, Simply Recipes,
-Allrecipes, The Kitchn) or sit behind a paywall (NYT Cooking) can be searched
-but need the PDF step to import.
-
-### Copyright
-
-A list of titles and links, as a search engine shows, is fine. Imports stay
-private to the household, as they are today. Anything that later joins the
-shared library goes through the same rewrite as the rest of it: Trivet's own
-words, "Adapted from".
-
-### Cost
-
-Each lookup is one model call plus a few searches; web search is billed per
-search. Small per lookup, but it should have a daily allowance, as card
-imports do (`claimUploadSlot`). Confirm current pricing before building.
+A partner's this-week list also becomes a way in: tap "grouper" on Red's list
+and get the same answer.
 
 ## Settled so far
 
@@ -95,31 +65,23 @@ imports do (`claimUploadSlot`). Confirm current pricing before building.
   managing their own channel comes later, when a real partner needs it.
 - Every suggestion says where it came from: your library, a channel, or a
   site.
-- Results are a list to choose from. Nothing is added without the review
-  step.
 
 ## Open questions
 
-1. **Where does "cook with" live?** A box on the Recipes page, on the planner
-   when filling an empty night, on a channel's this-week list, or all three?
-2. **Who curates the site list?** Trivet only, or channels can add their own?
-3. **Household signals:** should results lean on what a household has cooked
-   and rated, its courses, and (if built) each person's diet from
-   `DIET-PLAN.md`?
-4. **Partner terms:** is a channel free for a partner, paid, or an exchange
+1. **Can a channel add sites** to Cook with's curated list, or only recipes?
+2. **Partner terms:** is a channel free for a partner, paid, or an exchange
    (they promote Trivet to their customers)? This decides how the paid label
    reads, and whether it is needed at all.
-5. **Where people are:** does a partner's this-week list reach every follower,
+3. **Where people are:** does a partner's this-week list reach every follower,
    or only households near it?
 
 ## Phases, when it is time
 
-1. **Cook with an ingredient, library and sites only.** No channels yet. It
-   stands on its own and tests whether people use it.
-2. **Channels, admin-curated.** _From Trivet's kitchen_ first, then one real
+0. **Cook with an ingredient** (`COOK-WITH-PLAN.md`), with no channels.
+1. **Channels, admin-curated.** _From Trivet's kitchen_ first, then one real
    partner set up by hand.
-3. **Following and this-week lists**, feeding suggestions and the planner.
-4. **Partner self-service**, if and when partners want to manage their own,
+2. **Following and this-week lists**, feeding suggestions and the planner.
+3. **Partner self-service**, if and when partners want to manage their own,
    with the moderation and reporting that already cover shared content.
 
 Each phase gets a design board first, as the share sheet and loading states
