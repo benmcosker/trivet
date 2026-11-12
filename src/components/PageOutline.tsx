@@ -86,27 +86,93 @@ export function PageOutline({
                 mb: 3,
               }}
             />
+            {/*
+             * The featured recipe at the top of the library, as `RecipeHero`
+             * lays it out: photo beside its words on a wide screen, above
+             * them on a phone.
+             */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1.35fr 1fr" },
+                gap: { xs: 2, sm: 3, md: "52px" },
+                pb: { xs: "32px", sm: "56px" },
+                borderBottom: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Box
+                sx={{
+                  height: { xs: 190, sm: 340, md: 480 },
+                  background: stripes,
+                }}
+              />
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  gap: "22px",
+                }}
+              >
+                <Bar width="30%" height={10} />
+                <Box
+                  sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
+                >
+                  <Bar width="90%" height={36} />
+                  <Bar width="55%" height={36} />
+                </Box>
+                <Box
+                  sx={{
+                    display: { xs: "none", sm: "flex" },
+                    flexDirection: "column",
+                    gap: 1.25,
+                  }}
+                >
+                  <Bar width="80%" />
+                  <Bar width="72%" />
+                  <Bar width="40%" />
+                </Box>
+                <Bar width="45%" height={10} />
+              </Box>
+            </Box>
+
+            {/*
+             * The grid under it, as the library lays it out: one column on a
+             * phone with the photo beside the words, two and then three with
+             * the photo above.
+             */}
             <Box
               sx={{
                 display: "grid",
                 gridTemplateColumns: {
-                  xs: "repeat(2, minmax(0, 1fr))",
-                  sm: "repeat(3, minmax(0, 1fr))",
-                  md: "repeat(4, minmax(0, 1fr))",
+                  xs: "1fr",
+                  sm: "repeat(2, minmax(0, 1fr))",
+                  md: "repeat(3, minmax(0, 1fr))",
                 },
-                gap: { xs: "20px 14px", md: "32px 24px" },
+                gap: "44px 40px",
+                pt: "44px",
               }}
             >
-              {WIDTHS.map((width, index) => (
+              {WIDTHS.slice(0, 6).map((width, index) => (
                 <Box
                   key={index}
-                  sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "116px 1fr", sm: "1fr" },
+                    alignItems: { xs: "center", sm: "start" },
+                    gap: { xs: 2, sm: 1.25 },
+                  }}
                 >
                   <Box
                     sx={{ height: { xs: 116, sm: 230 }, background: stripes }}
                   />
-                  <Bar width={width} />
-                  <Bar width={SHORT[index]} />
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
+                  >
+                    <Bar width={width} />
+                    <Bar width={SHORT[index]} />
+                  </Box>
                 </Box>
               ))}
             </Box>
