@@ -23,6 +23,8 @@ nonisolated private let ink = dynamic(light: 0x1a1815, dark: 0xf4efe4)
 nonisolated private let softInk = dynamic(light: 0x2c2820, dark: 0xe9e3d6)
 nonisolated private let green = dynamic(light: 0x2f6f4e, dark: 0x5fae86)
 nonisolated private let clay = dynamic(light: 0xa44a24, dark: 0xe08f63)
+nonisolated private let muted = dynamic(light: 0x4a453c, dark: 0xcfc7b6)
+nonisolated private let rule = dynamic(light: 0xcfc6b2, dark: 0x403830)
 
 /// The hosts that stay inside the app. Must match WKAppBoundDomains in
 /// ios/TrivetBox/Info.plist: a navigation to any other host fails in the web
@@ -35,6 +37,8 @@ final class WebState {
     let home: URL
     /// The no-connection screen is showing.
     var showOffline = false
+    /// No page has appeared yet: the opening screen covers the web view.
+    var isOpening = true
     /// A page has loaded since launch. After that a failed load leaves the
     /// page on screen, as Safari would, instead of covering it.
     @ObservationIgnored var hasLoaded = false
@@ -105,6 +109,10 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             TrivetWebView(state: state)
+            if state.isOpening && !state.showOffline {
+                OpeningView(retry: state.retry)
+                    .transition(.opacity)
+            }
             if state.showOffline {
                 NoConnectionView(retry: state.retry)
             }
@@ -196,6 +204,10 @@ struct TrivetWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            if state.isOpening {
+                // The first page fades in over the opening screen.
+                withAnimation(.easeOut(duration: 0.3)) { state.isOpening = false }
+            }
             state.hasLoaded = true
             state.showOffline = false
             state.pageLoaded(webView.url)
@@ -236,6 +248,86 @@ struct TrivetWebView: UIViewRepresentable {
             NSURLErrorInternationalRoamingOff,
             NSURLErrorDataNotAllowed,
         ]
+    }
+}
+
+/// From the launch screen to the first page. Drawn in
+/// design_handoff_trivet_loading/ (states 2 and 3).
+///
+/// The mark sits exactly where the launch screen put it, so the app seems to
+/// wake up rather than change screens: its clay centre simmers, a slow pulse.
+/// After a second, *Opening your kitchen* fades in beneath; after eight,
+/// it says the connection is slow and offers Try again. A lost connection is
+/// still NoConnectionView's. With Reduce Motion on, the mark stays still.
+struct OpeningView: View {
+    let retry: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var simmering = false
+    @State private var showLine = false
+    @State private var slow = false
+    /// Restarts the timers when Try again is pressed.
+    @State private var attempt = 0
+
+    var body: some View {
+        ZStack {
+            paper
+            TrivetMark(drawsHub: false)
+                .frame(width: 72, height: 72)
+                .overlay {
+                    Circle()
+                        .fill(clay)
+                        .frame(width: 72 * 7 / 32, height: 72 * 7 / 32)
+                        .scaleEffect(simmering ? 0.72 : 1)
+                        .opacity(simmering ? 0.55 : 1)
+                }
+                .overlay(alignment: .top) {
+                    VStack(spacing: 18) {
+                        Text(slow ? "Still opening. The connection is slow." : "Opening your kitchen")
+                            .font(.system(size: 17, weight: .light, design: .serif))
+                            .italic()
+                            .foregroundStyle(muted)
+                            .multilineTextAlignment(.center)
+                        if slow {
+                            Button {
+                                attempt += 1
+                                retry()
+                            } label: {
+                                Text("Try again")
+                                    .textCase(.uppercase)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .tracking(1.8)
+                                    .foregroundStyle(ink)
+                                    .padding(.horizontal, 18)
+                                    .frame(minHeight: 44)
+                                    .overlay(Rectangle().stroke(rule, lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .frame(width: 300)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .offset(y: 72 + 18)
+                    .opacity(showLine ? 1 : 0)
+                }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("Opening Trivet")
+        }
+        // Centred on the whole screen, as the launch screen centres its image.
+        .ignoresSafeArea()
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                simmering = true
+            }
+        }
+        .task(id: attempt) {
+            slow = false
+            try? await Task.sleep(for: .seconds(1.2))
+            withAnimation(.easeOut(duration: 0.4)) { showLine = true }
+            try? await Task.sleep(for: .seconds(6.8))
+            withAnimation(.easeOut(duration: 0.3)) { slow = true }
+        }
     }
 }
 
@@ -283,8 +375,13 @@ struct NoConnectionView: View {
 }
 
 /// The Trivet mark: a ring on three legs with a clay hub, from ios/app-icon.svg.
+/// `drawsHub: false` leaves the hub for the caller to draw, so it can move.
 struct TrivetMark: View {
+    var drawsHub = true
+
     var body: some View {
+        // A plain copy for the drawing closure, which runs off the main actor.
+        let hub = drawsHub
         Canvas { context, size in
             let s = min(size.width, size.height) / 32
             func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * s, y: y * s) }
@@ -298,12 +395,18 @@ struct TrivetMark: View {
 
             context.stroke(ring, with: .color(green), style: line)
             context.stroke(legs, with: .color(green), style: line)
-            context.fill(
-                Path(ellipseIn: CGRect(x: 12.5 * s, y: 12.5 * s, width: 7 * s, height: 7 * s)),
-                with: .color(clay)
-            )
+            if hub {
+                context.fill(
+                    Path(ellipseIn: CGRect(x: 12.5 * s, y: 12.5 * s, width: 7 * s, height: 7 * s)),
+                    with: .color(clay)
+                )
+            }
         }
     }
+}
+
+#Preview("Opening") {
+    OpeningView(retry: {})
 }
 
 #Preview("No connection") {

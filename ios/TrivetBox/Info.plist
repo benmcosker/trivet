@@ -14,6 +14,22 @@
 		Lives beside the TrivetBox folder, not in it: that folder syncs into the
 		target, and an Info.plist inside it would be copied as a resource too.
 	-->
+	<!--
+		The launch screen: Trivet's paper with the mark in the middle, light and
+		dark, instead of the blank white iOS draws by default. Apple allows a
+		colour and an image here, nothing more. OpeningView in ContentView.swift
+		draws the mark in the same place, so the app seems to wake up rather than
+		change screens. See design_handoff_trivet_loading/.
+	-->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageName</key>
+		<string>LaunchMark</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<false/>
+	</dict>
 	<key>WKAppBoundDomains</key>
 	<array>
 		<string>trivetbox.com</string>
