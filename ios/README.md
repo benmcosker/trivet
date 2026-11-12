@@ -53,6 +53,16 @@ screen. To see it, turn on Airplane Mode and launch the app from closed. Its
 copy says the app needs a connection; it changes to the designed wording when
 the offline shopping list ships.
 
+## Launch and opening
+
+The launch screen is the paper colour with the Trivet mark (`UILaunchScreen` in
+`Info.plist`, assets `LaunchBackground` and `LaunchMark`, light and dark). The
+mark PNGs are drawn from the same SVG as the app icon; redraw them if it
+changes. Until the first page loads, `OpeningView` in `ContentView.swift` shows
+the mark in the same place with its centre simmering, then _Opening your
+kitchen_, then after eight seconds a Try again. See
+`design_handoff_trivet_loading/`.
+
 ## Share to Trivet
 
 `TrivetShare` is a share extension: it puts **Trivet** in the iPhone share
