@@ -49,7 +49,8 @@ The app's first screen, until the first page finishes loading. The mark is in
 exactly the place the launch screen put it, so nothing jumps: the launch screen
 appears to come alive. After 1.2 s, *Opening your kitchen* fades in 18 pt
 below the mark, Newsreader italic 300, 17 pt, `text.muted`. When the first page
-has loaded, it fades in over this in 0.3 s.
+has loaded, and after a 0.15 s beat for it to be drawn, it fades in over
+this in 0.35 s.
 
 With Reduce Motion on, the mark stays still.
 

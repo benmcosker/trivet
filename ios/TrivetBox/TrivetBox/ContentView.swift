@@ -112,6 +112,10 @@ struct ContentView: View {
             if state.isOpening && !state.showOffline {
                 OpeningView(retry: state.retry)
                     .transition(.opacity)
+                    // Kept above the web view while it fades out. Without
+                    // this, SwiftUI drops a view that is leaving a ZStack
+                    // behind its siblings, and the fade happens out of sight.
+                    .zIndex(1)
             }
             if state.showOffline {
                 NoConnectionView(retry: state.retry)
@@ -205,8 +209,14 @@ struct TrivetWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             if state.isOpening {
-                // The first page fades in over the opening screen.
-                withAnimation(.easeOut(duration: 0.3)) { state.isOpening = false }
+                // The first page fades in over the opening screen. A beat
+                // first: "finished" means the page has loaded, not that it
+                // has been drawn, and fading to a half-painted page reads as
+                // a jump.
+                let state = state
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    withAnimation(.easeOut(duration: 0.35)) { state.isOpening = false }
+                }
             }
             state.hasLoaded = true
             state.showOffline = false
