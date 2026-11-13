@@ -143,6 +143,11 @@ export const auth = betterAuth({
       ],
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
+      // Tools that sign in through a callback on the person's own machine
+      // (Claude Code, Cursor, the MCP Inspector) rarely say they are native
+      // apps, and as "web" clients their http://localhost callback would be
+      // refused. Inferred from the callback instead; PKCE is still required.
+      clientRegistrationDefaultApplicationType: "infer",
     }),
     cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
   ],

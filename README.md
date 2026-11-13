@@ -212,7 +212,10 @@ on their own subscription; Trivet only answers with data. The plan is
 In the Claude app or on claude.ai: **Settings → Connectors → Add custom
 connector**, paste `https://trivetbox.com/api/mcp`, then sign in to Trivet and
 approve on the consent screen. Other assistants that support remote MCP servers
-with OAuth take the same address. Nothing to install, and nothing in the iPhone
+with OAuth take the same address, including tools that sign in through a
+callback on your own computer, such as Claude Code
+(`claude mcp add --transport http trivet https://trivetbox.com/api/mcp`) or
+Cursor. Nothing to install, and nothing in the iPhone
 app: the assistant talks to the website.
 
 To disconnect: **Household → Connected assistants → Disconnect.** The assistant
