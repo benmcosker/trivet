@@ -60,7 +60,7 @@ export function SiteFooter() {
           Text messages
         </Link>
         <Link href="/assistants" variant="body2">
-          Assistants
+          AI assistants
         </Link>
       </Box>
     </Box>
