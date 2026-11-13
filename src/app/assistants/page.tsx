@@ -24,7 +24,7 @@ export const metadata: Metadata = {
  * page's Connected assistants card and the consent screen.
  */
 
-const STEPS: ReactNode[] = [
+const CLAUDE_STEPS: ReactNode[] = [
   <>
     On claude.ai or in the Claude desktop app, open <strong>Settings</strong>,
     then <strong>Connectors</strong>.
@@ -39,6 +39,27 @@ const STEPS: ReactNode[] = [
   </>,
   <>
     Choose what it may do, then <strong>Connect</strong> again. That&apos;s it.
+  </>,
+];
+
+/**
+ * From OpenAI's own guide to adding a custom MCP server
+ * (developers.openai.com/api/docs/guides/custom-mcp-server). ChatGPT signs in
+ * with a Client ID Metadata Document or dynamic registration, both of which
+ * Trivet accepts.
+ */
+const CHATGPT_STEPS: ReactNode[] = [
+  <>
+    In ChatGPT, open <strong>Plugins</strong>, choose <strong>Add</strong> (top
+    right), then <strong>Add custom MCP server</strong>.
+  </>,
+  <>
+    Call it Trivet, paste the address above, choose <strong>OAuth</strong>, then{" "}
+    <strong>Create</strong>.
+  </>,
+  <>Trivet&apos;s sign-in opens; sign in as you always do.</>,
+  <>
+    Choose what it may do, then <strong>Connect</strong>. That&apos;s it.
   </>,
 ];
 
@@ -71,6 +92,43 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
+function Steps({ steps }: { steps: ReactNode[] }) {
+  return (
+    <Box
+      component="ol"
+      sx={{
+        m: 0,
+        p: 0,
+        listStyle: "none",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
+      {steps.map((step, index) => (
+        <Box component="li" key={index} sx={{ display: "flex", gap: 2 }}>
+          <Typography
+            component="span"
+            sx={{
+              flex: "0 0 24px",
+              fontFamily: fonts.sans,
+              fontWeight: 700,
+              fontSize: 14,
+              color: "primary.main",
+              pt: "3px",
+            }}
+          >
+            {index + 1}
+          </Typography>
+          <Typography component="span" sx={{ lineHeight: 1.55 }}>
+            {step}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 function List({ items }: { items: string[] }) {
   return (
     <Box component="ul" sx={{ m: 0, pl: 2.25 }}>
@@ -96,9 +154,9 @@ export default function AssistantsPage() {
         variant="subtitle1"
         sx={{ mt: 3, maxWidth: 640, fontStyle: "normal" }}
       >
-        Connect Claude, or another AI assistant, to your {APP_NAME} once. Then
-        ask it about your recipes, your week and your shopping list in plain
-        words. It answers from your recipe box, not the internet&apos;s.
+        Connect Claude, ChatGPT or another AI assistant to your {APP_NAME} once.
+        Then ask it about your recipes, your week and your shopping list in
+        plain words. It answers from your recipe box, not the internet&apos;s.
       </Typography>
 
       <Box
@@ -130,42 +188,20 @@ export default function AssistantsPage() {
         }}
       >
         <Section title="In Claude">
-          <Box
-            component="ol"
-            sx={{
-              m: 0,
-              p: 0,
-              listStyle: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            {STEPS.map((step, index) => (
-              <Box component="li" key={index} sx={{ display: "flex", gap: 2 }}>
-                <Typography
-                  component="span"
-                  sx={{
-                    flex: "0 0 24px",
-                    fontFamily: fonts.sans,
-                    fontWeight: 700,
-                    fontSize: 14,
-                    color: "primary.main",
-                    pt: "3px",
-                  }}
-                >
-                  {index + 1}
-                </Typography>
-                <Typography component="span" sx={{ lineHeight: 1.55 }}>
-                  {step}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
+          <Steps steps={CLAUDE_STEPS} />
           <Typography variant="body2" color="text.muted" sx={{ maxWidth: 480 }}>
             Added on the web or desktop, it shows in the Claude iPhone app too.
             In a chat, check {APP_NAME} is switched on in the menu under{" "}
             <strong>+</strong>.
+          </Typography>
+        </Section>
+
+        <Section title="In ChatGPT">
+          <Steps steps={CHATGPT_STEPS} />
+          <Typography variant="body2" color="text.muted" sx={{ maxWidth: 480 }}>
+            Custom servers depend on your ChatGPT plan, and some plans need
+            Developer mode switched on in Settings first. Added on the web, it
+            shows in the ChatGPT app too.
           </Typography>
         </Section>
 
