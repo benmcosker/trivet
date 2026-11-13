@@ -5,12 +5,16 @@ import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Divider from "@mui/material/Divider";
+import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 import { disconnectAssistantAction } from "@/app/household/assistant-actions";
+import { fonts } from "@/theme/theme";
+
+import { CopyAddress } from "./CopyAddress";
 
 export type ConnectedAssistant = {
   clientId: string;
@@ -23,21 +27,60 @@ export type ConnectedAssistant = {
   lastChange: string | null;
 };
 
+const linkSx = {
+  fontFamily: fonts.sans,
+  fontSize: "0.75rem",
+  fontWeight: 700,
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  textDecoration: "none",
+  py: 1.5,
+} as const;
+
 /**
  * The AI assistants this person has connected to Trivet (MCP-PLAN.md), each
- * with a Disconnect that takes effect on its next request. Only drawn when
- * there is one, like Hidden households: nobody needs to read about a feature
- * they have not used.
+ * with a Disconnect that takes effect on its next request.
+ *
+ * Always drawn, unlike Hidden households: this is where people find out the
+ * feature exists. With nothing connected it invites a connection, with the
+ * address to paste and a link to the help page; drawn on the assistants
+ * board (https://claude.ai/artifact/GroZmtNXWFLMiFvP7jNn6b).
  */
 export function ConnectedAssistants({
   assistants,
+  address,
 }: {
   assistants: ConnectedAssistant[];
+  /** Trivet's MCP address, `/api/mcp` on this site. */
+  address: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  if (assistants.length === 0) return null;
+  if (assistants.length === 0) {
+    return (
+      <Card>
+        <CardContent>
+          <Typography variant="h2" sx={{ mb: 0.5 }}>
+            Connected assistants
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Ask Claude, or another AI assistant, about your recipes and your
+            week. Connect it once, with this address.
+          </Typography>
+          <CopyAddress address={address} stacked>
+            <Link href="/assistants" sx={linkSx}>
+              How to connect
+            </Link>
+          </CopyAddress>
+          <Typography variant="body2" color="text.muted" sx={{ mt: 2 }}>
+            It sees what you see, and plans only if you let it. Nothing is
+            connected yet.
+          </Typography>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -46,7 +89,7 @@ export function ConnectedAssistants({
           Connected assistants
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 2 }}>
-          They can see what you see in Trivet, and plan if you allowed it.
+          They see what you see in Trivet, and plan if you allowed it.
           Disconnecting one stops it at once.
         </Typography>
         <Stack divider={<Divider />}>
@@ -91,6 +134,9 @@ export function ConnectedAssistants({
             </Box>
           ))}
         </Stack>
+        <Link href="/assistants" sx={{ ...linkSx, display: "inline-block" }}>
+          Connect another
+        </Link>
       </CardContent>
     </Card>
   );

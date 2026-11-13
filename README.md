@@ -210,6 +210,10 @@ on their own subscription; Trivet only answers with data. The plan is
 
 ### Connecting
 
+The how-to for people lives in the app, at
+[trivetbox.com/assistants](https://trivetbox.com/assistants): public, linked
+from the footer, the Household page and the consent screen. In short:
+
 In the Claude app or on claude.ai: **Settings → Connectors → Add custom
 connector**, paste `https://trivetbox.com/api/mcp`, then sign in to Trivet and
 approve on the consent screen, ticking **Also let it plan** if it may change the
@@ -279,6 +283,14 @@ Once connected, ask in an ordinary chat, with Trivet switched on for that chat
 An assistant connected before planning existed can only look. To let it plan,
 Disconnect it on the Household page, connect it again, and tick **Also let it
 plan**.
+
+### Ready-made asks
+
+Trivet also offers three MCP prompts, which Claude lists under **+** once
+Trivet is connected: **Plan my week** (with anything to take into account),
+**What can I make with…** and **What do I still need to buy?**. Each is a
+starting message that names the tools to use; it mentions planning only to an
+assistant that is allowed to plan.
 
 ### How it works
 

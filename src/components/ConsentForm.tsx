@@ -4,6 +4,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
@@ -67,7 +68,10 @@ export function ConsentForm({
             ({siteHost})
           </Typography>
         ) : null}{" "}
-        would like to use your Trivet.
+        would like to use your Trivet.{" "}
+        <Link href="/assistants" sx={{ fontSize: "0.85em" }}>
+          How this works
+        </Link>
       </Typography>
 
       <Stack spacing={1.5} sx={{ mb: 3 }}>

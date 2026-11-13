@@ -511,3 +511,52 @@ describe("the daily allowance", () => {
     }
   });
 });
+
+describe("the prompts", () => {
+  const connect = async (canPlan: boolean) => {
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await trivetMcpServer({ ...ours, clientId: "claude", canPlan }).connect(
+      serverSide,
+    );
+    const client = new Client({ name: "test", version: "0" });
+    await client.connect(clientSide);
+    return client;
+  };
+  const text = (result: { messages: { content: unknown }[] }) =>
+    (result.messages[0].content as { text: string }).text;
+
+  it("offers the three ready-made asks", async () => {
+    const client = await connect(false);
+    const { prompts } = await client.listPrompts();
+    expect(prompts.map((p) => p.name).sort()).toEqual([
+      "cook_with",
+      "plan_my_week",
+      "still_to_buy",
+    ]);
+    await client.close();
+  });
+
+  it("only mention planning to an assistant allowed to plan", async () => {
+    const looking = await connect(false);
+    const asLooker = text(
+      await looking.getPrompt({
+        name: "plan_my_week",
+        arguments: { wishes: "two fish nights" },
+      }),
+    );
+    expect(asLooker).toContain("two fish nights");
+    expect(asLooker).not.toContain("plan_dinner");
+    await looking.close();
+
+    const planning = await connect(true);
+    expect(
+      text(
+        await planning.getPrompt({
+          name: "cook_with",
+          arguments: { ingredient: "grouper" },
+        }),
+      ),
+    ).toMatch(/grouper[\s\S]*plan_dinner/);
+    await planning.close();
+  });
+});

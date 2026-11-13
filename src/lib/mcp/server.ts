@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
+import { registerPrompts } from "./prompts";
 import {
   addPantryItemTool,
   addToListTool,
@@ -64,7 +65,7 @@ export function trivetMcpServer(
   ctx: WriterContext & { canPlan: boolean },
 ): McpServer {
   const server = new McpServer(
-    { name: "trivet", title: "Trivet", version: "1.1.0" },
+    { name: "trivet", title: "Trivet", version: "1.2.0" },
     {
       instructions: ctx.canPlan
         ? INSTRUCTIONS + PLANNING_INSTRUCTIONS
@@ -198,6 +199,8 @@ export function trivetMcpServer(
     },
     async (input) => outcome(importRecipeLinkTool(input)),
   );
+
+  registerPrompts(server, ctx.canPlan);
 
   if (!ctx.canPlan) return server;
 
