@@ -137,6 +137,16 @@ the same URL and this command does not need editing every time.
   email. If others stay, the household keeps everything you added; the last
   person out takes the household, its shared recipes and its stored files.
   Apple's guideline 5.1.1(v).
+- **AI assistants (MCP).** Someone can connect Claude, or another assistant
+  that speaks the Model Context Protocol, to their Trivet and ask it about
+  their recipes, week, shopping list and pantry in plain words. The server is
+  `/api/mcp`; sign-in is Trivet's own, through Better Auth's OAuth provider,
+  with a consent screen once. Read-only for now: every tool answers for the
+  person's household and the shared library, under the same visibility rules
+  as the site. Connected assistants are listed on the Household page with a
+  Disconnect that stops one at once. In Claude: Settings, Connectors, Add
+  custom connector, `https://trivetbox.com/api/mcp`. Plan in
+  [`MCP-PLAN.md`](MCP-PLAN.md).
 - **Loading.** Each main page shows its outline while it loads - its heading,
   then striped placeholders laid out as the page lays them out - so nothing
   jumps when it arrives. Designed in

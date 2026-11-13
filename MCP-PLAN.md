@@ -107,6 +107,10 @@ they support remote MCP.
 
 ## Phases
 
+Status, 13 November: phases 1 and 2 built, with `suggest_dinners` and the
+per-person request allowance left for phase 3, alongside the writes. The
+consent screen offers planning only once the write tools exist.
+
 1. **Sign-in.** The `mcp()` plugin, its discovery documents, the consent
    screen in Trivet's design, and the connected-assistants list with
    Disconnect.

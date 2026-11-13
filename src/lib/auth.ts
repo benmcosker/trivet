@@ -1,7 +1,11 @@
 import { SmsConsentSource } from "@/generated/prisma/enums";
+import { cimd } from "@better-auth/cimd";
+import { fetchClientMetadataResource } from "@better-auth/cimd/node";
+import { mcp } from "@better-auth/mcp";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { jwt } from "better-auth/plugins";
 
 import { prisma } from "./db";
 import { emailAvailable, getEmailSender } from "./email";
@@ -11,6 +15,7 @@ import {
 } from "./email/reset-password";
 import { checkInvite, inviteRejectionMessage, redeemInvite } from "./invites";
 import { APP_NAME } from "./legal";
+import { BASE_SCOPES, MCP_SCOPES, mcpResource } from "./mcp/resource";
 import { parsePhone } from "./phone";
 
 const SIGN_UP_PATH = "/sign-up/email";
@@ -106,6 +111,41 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
   },
+  /*
+   * Trivet as the sign-in for people's AI assistants (MCP-PLAN.md).
+   *
+   * `mcp()` makes Trivet an OAuth 2.1 provider whose tokens are bound to the
+   * MCP server's address; `jwt()` signs them. An assistant sends the person to
+   * Trivet's own sign-in, then to the consent page, where they approve what
+   * it may do (look; plan too, once the write tools exist). Signing in grants
+   * nothing by itself.
+   *
+   * Assistants register either by Client ID Metadata Documents (`cimd()`,
+   * which MCP now prefers) or by open dynamic registration, which many still
+   * use. Registration alone gives an assistant nothing: every grant still
+   * needs a person to sign in and approve it.
+   */
+  plugins: [
+    jwt(),
+    mcp({
+      loginPage: "/sign-in",
+      consentPage: "/consent",
+      resource: mcpResource(),
+      scopes: [...BASE_SCOPES, MCP_SCOPES.read, MCP_SCOPES.write],
+      // Listed with its scopes rather than left open: the plugin records an
+      // open resource with a null scope list, which Postgres arrays (and so
+      // the Prisma schema) cannot hold.
+      resources: [
+        {
+          identifier: mcpResource(),
+          allowedScopes: [...BASE_SCOPES, MCP_SCOPES.read, MCP_SCOPES.write],
+        },
+      ],
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+    }),
+    cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
+  ],
   hooks: {
     // The recipe library is shared but not public: an account only exists
     // because someone already inside issued an invite. Signup is gated here
