@@ -354,6 +354,28 @@ describe("the write tools", () => {
     return d.toISOString().slice(0, 10);
   };
 
+  it("state every safety hint, as the ChatGPT and Claude directories ask", async () => {
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await trivetMcpServer({ ...writer(), canPlan: true }).connect(serverSide);
+    const client = new Client({ name: "test", version: "0" });
+    await client.connect(clientSide);
+    const { tools } = await client.listTools();
+    await client.close();
+
+    for (const tool of tools) {
+      for (const hint of [
+        "readOnlyHint",
+        "destructiveHint",
+        "idempotentHint",
+        "openWorldHint",
+      ] as const) {
+        expect(typeof tool.annotations?.[hint], `${tool.name} ${hint}`).toBe(
+          "boolean",
+        );
+      }
+    }
+  });
+
   it("are offered only to an assistant the person allowed to plan", async () => {
     const names = async (canPlan: boolean) => {
       const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();

@@ -48,7 +48,15 @@ const weekOfInput = {
     .describe("Any day in the week, as YYYY-MM-DD. Defaults to this week."),
 };
 
-const read = { readOnlyHint: true, openWorldHint: false } as const;
+// Every hint stated, not left to defaults: directories review for it, and
+// a client that assumes the default for a missing one (destructive) would
+// ask the person before every lookup.
+const read = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
 
 function json(value: unknown) {
   return {

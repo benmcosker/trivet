@@ -214,7 +214,9 @@ The how-to for people lives in the app, at
 [trivetbox.com/assistants](https://trivetbox.com/assistants): public, linked
 from the footer, the Household page and the consent screen. In short:
 
-In the Claude app or on claude.ai: **Settings → Connectors → Add custom
+In ChatGPT on the web: **Plugins → + → Add custom MCP server**, paste the
+address, choose OAuth, then sign in and approve (some plans need Developer
+mode on first). In the Claude app or on claude.ai: **Settings → Connectors → Add custom
 connector**, paste `https://trivetbox.com/api/mcp`, then sign in to Trivet and
 approve on the consent screen, ticking **Also let it plan** if it may change the
 plan, pantry and list. Other assistants that support remote MCP servers
