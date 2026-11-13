@@ -9,7 +9,7 @@ import { deletionPreview } from "@/lib/account-deletion";
 import { getHousehold, MAX_HOUSEHOLD_NAME } from "@/lib/household";
 import { INVITE_TTL_DAYS, inviteLink, listPendingInvites } from "@/lib/invites";
 import { listConnectedAssistants } from "@/lib/mcp/access";
-import { MCP_SCOPES } from "@/lib/mcp/resource";
+import { MCP_SCOPES, mcpResource } from "@/lib/mcp/resource";
 import { listHiddenHouseholds } from "@/lib/moderation";
 import { requireHousehold } from "@/lib/session";
 import { smsAvailable } from "@/lib/sms";
@@ -68,6 +68,7 @@ export default async function HouseholdPage() {
 
       <Stack spacing={3} sx={{ mt: 3 }}>
         <ConnectedAssistants
+          address={mcpResource()}
           assistants={assistants.map((assistant) => ({
             clientId: assistant.clientId,
             name: assistant.name,

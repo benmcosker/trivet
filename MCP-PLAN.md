@@ -107,12 +107,10 @@ they support remote MCP.
 
 ## Phases
 
-Status, 13 November: phases 1 to 3 built. Read tools, `suggest_dinners` and
-`import_recipe_link` for every connection (the link saves nothing, so it needs
-no write scope); `plan_dinner`, `add_pantry_item` and `add_to_list` behind
-`plan:write`, on top of `src/lib/plan-mutations.ts`; a record of each change;
-a daily allowance per person. Phase 4 (prompts, the help page) and the design
-board remain.
+Status, 13 November: all four phases built. Phase 4 added the public help
+page (`/assistants`, from the design board
+https://claude.ai/artifact/GroZmtNXWFLMiFvP7jNn6b), a Connected assistants
+card that always shows, and three MCP prompts.
 
 1. **Sign-in.** The `mcp()` plugin, its discovery documents, the consent
    screen in Trivet's design, and the connected-assistants list with

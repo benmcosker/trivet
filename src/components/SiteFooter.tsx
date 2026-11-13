@@ -59,6 +59,9 @@ export function SiteFooter() {
         <Link href="/sms" variant="body2">
           Text messages
         </Link>
+        <Link href="/assistants" variant="body2">
+          Assistants
+        </Link>
       </Box>
     </Box>
   );
