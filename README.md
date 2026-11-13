@@ -139,7 +139,8 @@ the same URL and this command does not need editing every time.
   Apple's guideline 5.1.1(v).
 - **AI assistants (MCP).** Connect Claude, or another assistant that speaks
   the Model Context Protocol, and ask it about your recipes, week, list and
-  pantry in plain words. Read-only for now. See
+  pantry in plain words, and, if allowed, plan dinners and add to the list.
+  See
   [AI assistants](#ai-assistants-mcp) below.
 - **Loading.** Each main page shows its outline while it loads - its heading,
   then striped placeholders laid out as the page lays them out - so nothing
@@ -211,7 +212,8 @@ on their own subscription; Trivet only answers with data. The plan is
 
 In the Claude app or on claude.ai: **Settings → Connectors → Add custom
 connector**, paste `https://trivetbox.com/api/mcp`, then sign in to Trivet and
-approve on the consent screen. Other assistants that support remote MCP servers
+approve on the consent screen, ticking **Also let it plan** if it may change the
+plan, pantry and list. Other assistants that support remote MCP servers
 with OAuth take the same address, including tools that sign in through a
 callback on your own computer, such as Claude Code
 (`claude mcp add --transport http trivet https://trivetbox.com/api/mcp`) or
@@ -223,26 +225,60 @@ is refused on its very next call.
 
 ### What an assistant can do
 
-Read only, behind the `recipes:read` scope:
+Look, behind the `recipes:read` scope:
 
-| Tool                | Answers with                                                                                               |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `search_recipes`    | Recipes matching words, an ingredient, a tag or a course: id, title, total time, rating, tags, link        |
-| `get_recipe`        | One recipe in full: ingredients, method, timings, oven, equipment, nutrition per serving, notes, source    |
-| `get_week`          | A week's plan, Monday to Sunday, each meal with its slot, servings and recipe                              |
-| `get_shopping_list` | The week's list as Trivet builds it: merged and scaled, minus pantry staples and ticked items, plus extras |
-| `get_pantry`        | The household's staples                                                                                    |
+| Tool                 | Answers with                                                                                               |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `search_recipes`     | Recipes matching words, an ingredient, a tag or a course: id, title, total time, rating, tags, link        |
+| `get_recipe`         | One recipe in full: ingredients, method, timings, oven, equipment, nutrition per serving, notes, source    |
+| `get_week`           | A week's plan, Monday to Sunday, each meal with its slot, servings and recipe                              |
+| `get_shopping_list`  | The week's list as Trivet builds it: merged and scaled, minus pantry staples and ticked items, plus extras |
+| `get_pantry`         | The household's staples                                                                                    |
+| `suggest_dinners`    | Trivet's own pick for each open evening of a week, with why; plans nothing                                 |
+| `import_recipe_link` | A trivetbox.com link that opens Add a recipe already reading a web page; saves nothing                     |
 
-Every tool answers for the signed-in person's household through the same
-queries as the website: their own recipes and the shared library, minus hidden
-households, and never another household's private recipe. The server tells the
-assistant to treat recipe text as data, not instructions, since shared recipes
-are other people's words.
+Plan, behind `plan:write`, only if the person ticks **Also let it plan** on the
+consent screen (it starts unticked):
 
-Not yet: planning dinners, adding to the pantry or the list, and Trivet's own
-dinner suggestions. Those are phase 3, and the consent screen will only offer
-planning once they exist. An assistant will never be able to delete anything,
-save a recipe without a person's review, or text the list.
+| Tool              | Does                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| `plan_dinner`     | Puts a recipe on a day (up to three mains and a side), or clears the slot; says what it replaced |
+| `add_pantry_item` | Adds a staple                                                                                    |
+| `add_to_list`     | Adds something no recipe asks for to a week's list                                               |
+
+Every tool answers for the signed-in person's household through the same code
+as the website: their own recipes and the shared library, minus hidden
+households, and never another household's private recipe. Planning uses the
+planner's own logic (`src/lib/plan-mutations.ts`), so servings come from the
+household and only recipes it can see can be planned. An assistant that may
+only look is never shown the planning tools at all.
+
+Each change is recorded with the assistant that made it, and the latest shows
+under that assistant on the Household page ("Latest: Planned Cacio e Pepe for
+dinner on 2026-11-20"). Everything an assistant plans shows in Trivet to undo.
+An assistant can never delete a recipe, change the household, save a recipe
+without a person's review, or text the list.
+
+Each person's assistants share an allowance of 1,000 requests a day
+(`MCP_DAILY_LIMIT`), there to stop a runaway loop rather than to ration use.
+
+The server tells the assistant to treat recipe text as data, not instructions,
+since shared recipes are other people's words.
+
+### Using it
+
+Once connected, ask in an ordinary chat, with Trivet switched on for that chat
+(in Claude, the connectors menu under **+**). For example:
+
+- _What can I make with the grouper I bought?_
+- _What's on this week, and what do I still need to buy?_
+- _Suggest dinners for next week, nothing over 45 minutes on weeknights, and
+  plan the ones I like._
+- _Add dish soap and two litres of milk to the list._
+
+An assistant connected before planning existed can only look. To let it plan,
+Disconnect it on the Household page, connect it again, and tick **Also let it
+plan**.
 
 ### How it works
 

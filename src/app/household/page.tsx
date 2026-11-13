@@ -74,6 +74,7 @@ export default async function HouseholdPage() {
             connected: dayName(assistant.connectedAt),
             lastActive: dayName(assistant.lastActiveAt),
             canPlan: assistant.scopes.includes(MCP_SCOPES.write),
+            lastChange: assistant.lastChange,
           }))}
         />
         <HiddenHouseholds households={hidden} />

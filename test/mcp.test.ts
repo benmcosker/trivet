@@ -14,8 +14,15 @@ const { addExtraItem } = await import("@/lib/extras");
 const { weekStartOf } = await import("@/lib/grocery");
 const { assistantAccess, disconnectAssistant, listConnectedAssistants } =
   await import("@/lib/mcp/access");
+const { claimAssistantCall, recentAssistantActions } =
+  await import("@/lib/mcp/activity");
 const { trivetMcpServer } = await import("@/lib/mcp/server");
 const {
+  addPantryItemTool,
+  addToListTool,
+  importRecipeLinkTool,
+  planDinnerTool,
+  suggestDinnersTool,
   getPantryTool,
   getRecipeTool,
   getShoppingListTool,
@@ -184,7 +191,11 @@ describe("the MCP server", () => {
     await add(theirs, "Their Private Grouper", { ingredient: "grouper" });
 
     const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-    const server = trivetMcpServer({ householdId: ours.householdId });
+    const server = trivetMcpServer({
+      ...ours,
+      clientId: "test",
+      canPlan: false,
+    });
     await server.connect(serverSide);
     const client = new Client({ name: "test", version: "0" });
     await client.connect(clientSide);
@@ -195,7 +206,9 @@ describe("the MCP server", () => {
       "get_recipe",
       "get_shopping_list",
       "get_week",
+      "import_recipe_link",
       "search_recipes",
+      "suggest_dinners",
     ]);
     // Read tools say so, which lets an assistant run them without asking.
     expect(tools.every((t) => t.annotations?.readOnlyHint)).toBe(true);
@@ -294,5 +307,176 @@ describe("connected assistants", () => {
     expect(
       await assistantAccess({ sub: theirs.userId, client_id: "claude" }),
     ).not.toBeNull();
+  });
+});
+
+describe("the write tools", () => {
+  const writer = () => ({ ...ours, clientId: "claude" });
+  const NEXT_WEEK = (() => {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 7);
+    return weekStartOf(d);
+  })();
+  const day = (offset: number) => {
+    const d = new Date(NEXT_WEEK);
+    d.setUTCDate(d.getUTCDate() + offset);
+    return d.toISOString().slice(0, 10);
+  };
+
+  it("are offered only to an assistant the person allowed to plan", async () => {
+    const names = async (canPlan: boolean) => {
+      const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+      await trivetMcpServer({ ...writer(), canPlan }).connect(serverSide);
+      const client = new Client({ name: "test", version: "0" });
+      await client.connect(clientSide);
+      const { tools } = await client.listTools();
+      await client.close();
+      return tools.map((t) => t.name);
+    };
+
+    const looking = await names(false);
+    for (const tool of ["plan_dinner", "add_pantry_item", "add_to_list"]) {
+      expect(looking).not.toContain(tool);
+    }
+    expect(await names(true)).toEqual(
+      expect.arrayContaining(["plan_dinner", "add_pantry_item", "add_to_list"]),
+    );
+  });
+
+  it("plan a dinner the way the planner does, and record who did it", async () => {
+    await prisma.household.update({
+      where: { id: ours.householdId },
+      data: { defaultServings: 6 },
+    });
+    const stew = await add(ours, "Our Stew");
+
+    const planned = await planDinnerTool(writer(), {
+      date: day(1),
+      recipeId: stew.publicId,
+    });
+    expect(planned).toMatchObject({
+      ok: true,
+      planned: "Our Stew",
+      servings: 6,
+      replaced: null,
+    });
+
+    const soup = await add(ours, "Our Soup");
+    expect(
+      await planDinnerTool(writer(), { date: day(1), recipeId: soup.id }),
+    ).toMatchObject({ planned: "Our Soup", replaced: "Our Stew" });
+
+    expect(
+      await planDinnerTool(writer(), { date: day(1), clear: true }),
+    ).toMatchObject({ ok: true, removed: "Our Soup" });
+    expect(await prisma.plannedMeal.count()).toBe(0);
+
+    expect(
+      (await recentAssistantActions(ours.userId)).map((a) => a.summary),
+    ).toEqual([
+      `Took Our Soup off dinner on ${day(1)}`,
+      `Planned Our Soup for dinner on ${day(1)}`,
+      `Planned Our Stew for dinner on ${day(1)}`,
+    ]);
+  });
+
+  it("will not plan another household's private recipe, or a malformed day", async () => {
+    const secret = await add(theirs, "Their Secret");
+    expect(
+      await planDinnerTool(writer(), {
+        date: day(2),
+        recipeId: secret.publicId,
+      }),
+    ).toMatchObject({ ok: false });
+    const mine = await add(ours, "Our Stew");
+    expect(
+      await planDinnerTool(writer(), {
+        date: "2026-02-30",
+        recipeId: mine.publicId,
+      }),
+    ).toMatchObject({ ok: false });
+    expect(await planDinnerTool(writer(), { date: day(2) })).toMatchObject({
+      ok: false,
+    });
+    expect(await prisma.plannedMeal.count()).toBe(0);
+    expect(await recentAssistantActions(ours.userId)).toEqual([]);
+  });
+
+  it("add to the pantry and the list, for this household only", async () => {
+    expect(await addPantryItemTool(writer(), { name: "Rice" })).toMatchObject({
+      ok: true,
+      pantryItem: "Rice",
+    });
+    expect(
+      await addToListTool(writer(), {
+        name: "dish soap",
+        amount: "1 bottle",
+        weekOf: day(0),
+      }),
+    ).toMatchObject({ ok: true, added: "dish soap", amount: "1 bottle" });
+
+    expect(await getPantryTool(ours)).toEqual({ pantry: ["Rice"] });
+    expect(await getPantryTool(theirs)).toEqual({ pantry: [] });
+    expect(
+      (await getShoppingListTool(ours, { weekOf: day(0) })).items.map(
+        (i) => i.name,
+      ),
+    ).toEqual(["dish soap"]);
+    expect(await recentAssistantActions(ours.userId)).toHaveLength(2);
+  });
+
+  it("suggest dinners for open evenings without planning any", async () => {
+    for (const n of [1, 2, 3, 4]) await add(ours, `Dinner ${n}`);
+    const stew = await add(ours, "Our Stew");
+    await planDinnerTool(writer(), { date: day(0), recipeId: stew.publicId });
+
+    const { suggestions } = await suggestDinnersTool(ours, {
+      weekOf: day(0),
+    });
+    expect(suggestions.map((s) => s.date)).toEqual([1, 2, 3, 4, 5, 6].map(day));
+    const picked = suggestions.flatMap((s) => (s.recipe ? [s.recipe] : []));
+    expect(picked.length).toBeGreaterThan(0);
+    expect(picked.map((r) => r.title)).not.toContain("Our Stew");
+    expect(await prisma.plannedMeal.count()).toBe(1);
+  });
+
+  it("hand back an import link and save nothing", () => {
+    const result = importRecipeLinkTool({
+      url: "https://example.com/recipes/grouper",
+    });
+    expect(result).toMatchObject({ ok: true });
+    expect(result.ok && result.link).toMatch(
+      /\/upload\?url=https%3A%2F%2Fexample\.com%2Frecipes%2Fgrouper$/,
+    );
+    expect(importRecipeLinkTool({ url: "javascript:alert(1)" })).toMatchObject({
+      ok: false,
+    });
+  });
+});
+
+describe("the daily allowance", () => {
+  it("refuses an assistant past the day's limit, and starts again tomorrow", async () => {
+    process.env.MCP_DAILY_LIMIT = "2";
+    try {
+      const now = new Date("2026-11-13T10:00:00.000Z");
+      expect(await claimAssistantCall(ours.userId, now)).toEqual({ ok: true });
+      expect(await claimAssistantCall(ours.userId, now)).toEqual({ ok: true });
+      expect(await claimAssistantCall(ours.userId, now)).toEqual({
+        ok: false,
+        retryAfterSeconds: 14 * 60 * 60,
+      });
+      // Someone else's assistants have their own allowance.
+      expect(await claimAssistantCall(theirs.userId, now)).toEqual({
+        ok: true,
+      });
+      expect(
+        await claimAssistantCall(
+          ours.userId,
+          new Date("2026-11-14T00:00:01.000Z"),
+        ),
+      ).toEqual({ ok: true });
+    } finally {
+      delete process.env.MCP_DAILY_LIMIT;
+    }
   });
 });

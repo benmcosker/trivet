@@ -19,6 +19,8 @@ export type ConnectedAssistant = {
   connected: string;
   lastActive: string;
   canPlan: boolean;
+  /** The latest thing it changed, in words, or null if it has only looked. */
+  lastChange: string | null;
 };
 
 /**
@@ -44,8 +46,8 @@ export function ConnectedAssistants({
           Connected assistants
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 2 }}>
-          They can see what you see in Trivet. Disconnecting one stops it at
-          once.
+          They can see what you see in Trivet, and plan if you allowed it.
+          Disconnecting one stops it at once.
         </Typography>
         <Stack divider={<Divider />}>
           {assistants.map((assistant) => (
@@ -68,6 +70,11 @@ export function ConnectedAssistants({
                   connected {assistant.connected} · last active{" "}
                   {assistant.lastActive}
                 </Typography>
+                {assistant.lastChange ? (
+                  <Typography variant="body2" color="text.secondary">
+                    Latest: {assistant.lastChange}
+                  </Typography>
+                ) : null}
               </Box>
               <Button
                 size="small"

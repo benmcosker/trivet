@@ -88,9 +88,10 @@ export function ConsentForm({
           />
         ) : null}
         <Typography color="text.secondary" variant="body2">
-          It can never delete anything, save a recipe without your review, or
-          text anyone. You can disconnect it at any time from the Household
-          page.
+          It can never delete a recipe, change your household, save a recipe
+          without your review, or text anyone. Whatever it plans shows in Trivet
+          for you to undo, and you can disconnect it at any time from the
+          Household page.
         </Typography>
       </Stack>
 

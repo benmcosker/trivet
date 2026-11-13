@@ -73,6 +73,16 @@ export async function listConnectedAssistants(userId: string) {
     latest.map((row) => [row.clientId, row._max.createdAt]),
   );
 
+  // The latest thing each one changed, so "who planned this?" has an answer
+  // on the page as well as in the record.
+  const actions = await prisma.assistantAction.findMany({
+    where: { userId, clientId: { in: consents.map((c) => c.clientId) } },
+    orderBy: { createdAt: "desc" },
+    distinct: ["clientId"],
+    select: { clientId: true, summary: true },
+  });
+  const lastChange = new Map(actions.map((a) => [a.clientId, a.summary]));
+
   return consents.map((consent) => ({
     clientId: consent.clientId,
     name: consent.oauthclient.name ?? "An assistant",
@@ -80,5 +90,6 @@ export async function listConnectedAssistants(userId: string) {
     scopes: consent.scopes,
     connectedAt: consent.createdAt,
     lastActiveAt: lastActive.get(consent.clientId) ?? consent.createdAt,
+    lastChange: lastChange.get(consent.clientId) ?? null,
   }));
 }

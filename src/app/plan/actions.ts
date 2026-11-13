@@ -7,7 +7,7 @@ import { sideMarker } from "@/lib/side-marker";
 import { prisma } from "@/lib/db";
 import { weekStartOf } from "@/lib/grocery";
 import { FIRST_DINNER } from "@/lib/meal-slots";
-import { visibleRecipes } from "@/lib/recipe-visibility";
+import { planMeal, setDayServings } from "@/lib/plan-mutations";
 import { weekShoppingList } from "@/lib/week-list";
 import { getProvider, type HandoffResult } from "@/lib/shopping";
 import { createRecipe } from "@/lib/recipe-mutations";
@@ -20,119 +20,24 @@ import { findSide } from "@/lib/sides";
 import { textShoppingList } from "@/lib/sms/shopping-list";
 import { requireHousehold } from "@/lib/session";
 
+/** Put a recipe in a slot, or clear it. The logic is in `plan-mutations.ts`. */
 export async function setPlannedMealAction(input: {
   date: string;
   slot: MealSlot;
   recipeId: string | null;
 }): Promise<void> {
   const { householdId } = await requireHousehold();
-
-  const date = new Date(`${input.date}T00:00:00.000Z`);
-
-  if (!input.recipeId) {
-    // Clearing a slot: delete rather than storing an empty row.
-    await prisma.plannedMeal.deleteMany({
-      where: { householdId, date, slot: input.slot },
-    });
-  } else {
-    /*
-     * Anything this household can see can be planned - its own, and whatever
-     * other households have shared. Checked rather than trusted: the id comes
-     * from a form post, so without this a guessed id would put another
-     * family's private dish on the week and its ingredients on the shopping
-     * list, which is a way of reading a recipe without opening it.
-     *
-     * A reference, not a copy. The plan stores the id, so the owner's later
-     * edits reach a meal somebody else has already planned - which is the
-     * point of sharing rather than handing out duplicates.
-     */
-    const recipe = await prisma.recipe.findFirst({
-      where: { AND: [{ id: input.recipeId }, visibleRecipes(householdId)] },
-      select: { id: true, servings: true },
-    });
-    if (!recipe) return;
-
-    /*
-     * How many this evening is for.
-     *
-     * Decided here rather than sent from the browser. The household's own
-     * number is the answer when it has one, and what the recipe makes when it
-     * does not - and either way it is clamped against this recipe, so a dish
-     * that serves twelve is not quietly planned for a household of four.
-     *
-     * It used to arrive in the action's input, which meant a form post could
-     * say five thousand and get a shopping list for five thousand. Nothing
-     * outside this file decides it now.
-     */
-    const household = await defaultServingsFor(householdId);
-    const servings = clampServings(
-      household ?? recipe.servings,
-      recipe.servings,
-    );
-
-    await prisma.plannedMeal.upsert({
-      where: {
-        householdId_date_slot: { householdId, date, slot: input.slot },
-      },
-      create: {
-        householdId,
-        date,
-        slot: input.slot,
-        recipeId: input.recipeId,
-        servings,
-      },
-      update: { recipeId: input.recipeId, servings },
-    });
-  }
-
+  await planMeal(householdId, input);
   revalidatePath("/plan");
 }
 
-/**
- * How many people one evening is cooking for.
- *
- * Set on the day rather than on each dish, because that is the question being
- * answered: six are coming on Saturday, not "the main is for six and the side
- * is for four". An evening whose side feeds four while its main feeds six
- * produces a shopping list that is right about neither, and nobody wants to
- * say the number three times.
- *
- * Each meal is clamped against its own recipe, so one big dish on the table
- * keeps its own count instead of being scaled down to meet the day's.
- */
+/** How many one evening is for. The logic is in `plan-mutations.ts`. */
 export async function setDayServingsAction(input: {
   date: string;
   servings: number;
 }): Promise<void> {
   const { householdId } = await requireHousehold();
-
-  const date = new Date(`${input.date}T00:00:00.000Z`);
-
-  const meals = await prisma.plannedMeal.findMany({
-    where: { householdId, date },
-    select: { id: true, recipe: { select: { servings: true } } },
-  });
-
-  /*
-   * One transaction rather than a loop of updates: a day left half scaled is
-   * the inconsistency this action exists to prevent, and it would be silent -
-   * the page would show six and the list would buy for both.
-   *
-   * A meal with no recipe is a typed-in title like "leftovers". It has no
-   * ingredients, so its servings reach no shopping list, but it is kept in
-   * step anyway so the evening reads as one number.
-   */
-  await prisma.$transaction(
-    meals.map((meal) =>
-      prisma.plannedMeal.update({
-        where: { id: meal.id },
-        data: {
-          servings: clampServings(input.servings, meal.recipe?.servings ?? 1),
-        },
-      }),
-    ),
-  );
-
+  await setDayServings(householdId, input);
   revalidatePath("/plan");
 }
 
