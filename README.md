@@ -137,6 +137,10 @@ the same URL and this command does not need editing every time.
   email. If others stay, the household keeps everything you added; the last
   person out takes the household, its shared recipes and its stored files.
   Apple's guideline 5.1.1(v).
+- **AI assistants (MCP).** Connect Claude, or another assistant that speaks
+  the Model Context Protocol, and ask it about your recipes, week, list and
+  pantry in plain words. Read-only for now. See
+  [AI assistants](#ai-assistants-mcp) below.
 - **Loading.** Each main page shows its outline while it loads - its heading,
   then striped placeholders laid out as the page lays them out - so nothing
   jumps when it arrives. Designed in
@@ -194,6 +198,87 @@ goes native.
 - **The public App Store,** as a free download with a one-time household
   unlock, no subscription. Not planned in detail yet.
 
+## AI assistants (MCP)
+
+Trivet is an MCP server, so a person can connect their own AI assistant to
+their Trivet once and then ask it things like _"what can I make with the
+grouper I bought?"_, _"what's on the plan this week?"_ or _"what's on the list
+that we don't already have?"_. The thinking happens in the person's assistant,
+on their own subscription; Trivet only answers with data. The plan is
+[`MCP-PLAN.md`](MCP-PLAN.md).
+
+### Connecting
+
+In the Claude app or on claude.ai: **Settings → Connectors → Add custom
+connector**, paste `https://trivetbox.com/api/mcp`, then sign in to Trivet and
+approve on the consent screen. Other assistants that support remote MCP servers
+with OAuth take the same address, including tools that sign in through a
+callback on your own computer, such as Claude Code
+(`claude mcp add --transport http trivet https://trivetbox.com/api/mcp`) or
+Cursor. Nothing to install, and nothing in the iPhone
+app: the assistant talks to the website.
+
+To disconnect: **Household → Connected assistants → Disconnect.** The assistant
+is refused on its very next call.
+
+### What an assistant can do
+
+Read only, behind the `recipes:read` scope:
+
+| Tool                | Answers with                                                                                               |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `search_recipes`    | Recipes matching words, an ingredient, a tag or a course: id, title, total time, rating, tags, link        |
+| `get_recipe`        | One recipe in full: ingredients, method, timings, oven, equipment, nutrition per serving, notes, source    |
+| `get_week`          | A week's plan, Monday to Sunday, each meal with its slot, servings and recipe                              |
+| `get_shopping_list` | The week's list as Trivet builds it: merged and scaled, minus pantry staples and ticked items, plus extras |
+| `get_pantry`        | The household's staples                                                                                    |
+
+Every tool answers for the signed-in person's household through the same
+queries as the website: their own recipes and the shared library, minus hidden
+households, and never another household's private recipe. The server tells the
+assistant to treat recipe text as data, not instructions, since shared recipes
+are other people's words.
+
+Not yet: planning dinners, adding to the pantry or the list, and Trivet's own
+dinner suggestions. Those are phase 3, and the consent screen will only offer
+planning once they exist. An assistant will never be able to delete anything,
+save a recipe without a person's review, or text the list.
+
+### How it works
+
+- **`/api/mcp`:** the MCP endpoint, Streamable HTTP and stateless. Each
+  request builds a server for the person the token belongs to
+  ([`src/lib/mcp/`](src/lib/mcp/)).
+- **Sign-in:** Better Auth's `mcp()` plugin makes Trivet the OAuth 2.1
+  provider, with `jwt()` signing the tokens. Assistants register by Client ID
+  Metadata Document (`@better-auth/cimd`) or by dynamic registration.
+  Registering grants nothing: every grant needs a person to sign in and
+  approve it on `/consent`.
+- **Discovery:** `/.well-known/oauth-protected-resource`,
+  `/.well-known/oauth-authorization-server` and
+  `/.well-known/openid-configuration`. A call without a token gets a 401 that
+  points the assistant at them.
+- **Checks on every call:** the token's signature, expiry, scope, and that it
+  was issued for `/api/mcp`; then that the person's consent is still on file
+  and they still belong to a household. That last check is what makes
+  Disconnect immediate rather than waiting for the token to expire.
+- **Address:** tokens are bound to `BETTER_AUTH_URL`, so a domain change
+  means everyone reconnects ([`DEPLOYING.md`](DEPLOYING.md)).
+
+### Trying it locally
+
+With `npm run dev` on port 3000 and a local account (`npm run browse:seed`,
+then `npm run seed:demo` for a library to ask about), point the
+[MCP Inspector](https://github.com/modelcontextprotocol/inspector) at
+`http://localhost:3000/api/mcp`:
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+It runs the same sign-in and consent as Claude does, then lists the tools to
+call by hand. `test/mcp.test.ts` covers the household scoping and Disconnect.
+
 ## Stack
 
 | Concern   | Choice                                                       |
@@ -203,6 +288,7 @@ goes native.
 | UI        | Material UI 9 (emotion), light + dark                        |
 | Database  | Postgres via Prisma 7                                        |
 | Auth      | Better Auth (email + password, invite-gated)                 |
+| MCP       | MCP TypeScript SDK; Better Auth as the assistants' OAuth     |
 | Storage   | Vercel Blob, with a local-disk driver for dev                |
 | AI        | Claude: reading cards, pages and text; estimating nutrition  |
 | iOS       | SwiftUI web view + share extension (Vision text recognition) |

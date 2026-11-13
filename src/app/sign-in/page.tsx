@@ -9,8 +9,10 @@ import { getCurrentUser } from "@/lib/session";
 export default async function SignInPage({
   searchParams,
 }: PageProps<"/sign-in">) {
-  if (await getCurrentUser()) redirect("/recipes");
-  const { deleted } = await searchParams;
+  const { deleted, sig } = await searchParams;
+  // Signed in already goes to the library - except mid-way through an AI
+  // assistant's sign-in (a signed `sig` in the address), which has to carry on.
+  if (!sig && (await getCurrentUser())) redirect("/recipes");
 
   return (
     <AppShell>

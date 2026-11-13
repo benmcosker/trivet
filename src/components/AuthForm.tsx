@@ -77,6 +77,15 @@ export function AuthForm({
       return;
     }
 
+    // Signing in on an AI assistant's behalf (MCP-PLAN.md): the server answers
+    // with where to go next - the consent page, or straight back to the
+    // assistant - instead of the library.
+    const next = result.data as { redirect?: boolean; url?: string } | null;
+    if (next?.redirect && next.url) {
+      window.location.href = next.url;
+      return;
+    }
+
     router.push("/recipes");
     router.refresh();
   }

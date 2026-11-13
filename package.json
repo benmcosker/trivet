@@ -31,9 +31,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
+    "@better-auth/cimd": "1.7.17",
+    "@better-auth/mcp": "1.7.17",
+    "@better-auth/oauth-provider": "1.7.17",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
     "@mui/material-nextjs": "^9.4.0",

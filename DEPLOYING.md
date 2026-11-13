@@ -135,6 +135,11 @@ Changing the domain means changing `BETTER_AUTH_URL` to match and redeploying -
 Vercel snapshots environment variables at build time, so editing the value alone
 changes nothing about the running deployment.
 
+It is also the address AI assistants know Trivet by: the MCP endpoint is
+`BETTER_AUTH_URL` plus `/api/mcp`, and every assistant's token is issued by,
+and bound to, that origin. A domain change disconnects every assistant; each
+person reconnects it once with the new address.
+
 ## 4. Environment variables
 
 Set these in **Settings → Environment Variables**, for Production and Preview:

@@ -10,6 +10,8 @@ import { prisma } from "@/lib/db";
  * mid-signup, or the wreckage of a failed one - has nothing to cascade from.
  */
 export async function resetDatabase(): Promise<void> {
+  // Assistants' registrations, which their consents and tokens cascade from.
+  await prisma.oauthClient.deleteMany();
   await prisma.household.deleteMany();
   await prisma.tag.deleteMany();
   await prisma.session.deleteMany();
