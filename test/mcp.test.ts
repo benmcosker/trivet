@@ -122,9 +122,40 @@ describe("the read tools", () => {
     expect(
       (await searchRecipesTool(ours, { course: "DINNER", limit: 2 })).recipes,
     ).toHaveLength(2);
+    expect(await searchRecipesTool(ours, { course: "DESSERT" })).toMatchObject({
+      total: 0,
+      recipes: [],
+      nextOffset: null,
+    });
+  });
+
+  it("say how many match and page through all of them", async () => {
+    for (let n = 1; n <= 25; n++) {
+      await add(ours, `Chicken ${n}`, { ingredient: "chicken" });
+    }
+    await add(ours, "Lentil Soup", { ingredient: "lentils" });
+
+    const first = await searchRecipesTool(ours, { query: "chicken" });
+    expect(first).toMatchObject({ total: 25, showing: "1-20", nextOffset: 20 });
+    expect(first.recipes).toHaveLength(20);
+
+    const rest = await searchRecipesTool(ours, {
+      query: "chicken",
+      offset: 20,
+    });
+    expect(rest).toMatchObject({
+      total: 25,
+      showing: "21-25",
+      nextOffset: null,
+    });
+    const seen = new Set(
+      [...first.recipes, ...rest.recipes].map((r) => r.title),
+    );
+    expect(seen.size).toBe(25);
+
     expect(
-      (await searchRecipesTool(ours, { course: "DESSERT" })).recipes,
-    ).toHaveLength(0);
+      await searchRecipesTool(ours, { query: "chicken", limit: 50 }),
+    ).toMatchObject({ total: 25, nextOffset: null });
   });
 
   it("show only this household's week, list and pantry", async () => {

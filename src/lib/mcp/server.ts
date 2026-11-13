@@ -12,6 +12,7 @@ import {
   importRecipeLinkTool,
   PLANNABLE_SLOTS,
   planDinnerTool,
+  SEARCH_PAGE_MAX,
   searchRecipesTool,
   suggestDinnersTool,
   type WriterContext,
@@ -76,7 +77,7 @@ export function trivetMcpServer(
     {
       title: "Search recipes",
       description:
-        "Search the household's recipe library (their own recipes and the shared library) by words, an ingredient, a tag or a course. Returns up to 25 recipes with id, title, total time, rating, tags and link. Leave every field empty to list the most recent.",
+        "Search the household's recipe library (their own recipes and the shared library) by words, an ingredient, a tag or a course. Returns a page of recipes (20 unless limit says otherwise, at most 50) with id, title, total time, rating, tags and link, plus the total that match. When nextOffset is not null there are more: call again with offset set to it. Leave every field empty to list the whole library, newest first.",
       inputSchema: {
         query: z
           .string()
@@ -91,7 +92,19 @@ export function trivetMcpServer(
           .optional()
           .describe("A tag name, e.g. 'Weeknight' or 'Grill'."),
         course: z.enum(COURSES).optional(),
-        limit: z.number().int().min(1).max(25).optional(),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(SEARCH_PAGE_MAX)
+          .optional()
+          .describe("How many to return. Defaults to 20."),
+        offset: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .describe("Skip this many, to page through: use nextOffset."),
       },
       annotations: read,
     },

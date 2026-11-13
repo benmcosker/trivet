@@ -6,6 +6,7 @@ import { addPantryItem, listPantryItems } from "../pantry";
 import { planDate, planMeal, plannerLibrary } from "../plan-mutations";
 import type { RecipeCourse } from "@/generated/prisma/enums";
 import {
+  countSearchRecipes,
   getRecipe,
   searchRecipes,
   slugifyTag,
@@ -64,6 +65,9 @@ function summary(recipe: RecipeWithRelations) {
   };
 }
 
+/** Most recipes one call returns; `offset` reaches the rest. */
+export const SEARCH_PAGE_MAX = 50;
+
 export async function searchRecipesTool(
   ctx: ToolContext,
   input: {
@@ -71,21 +75,32 @@ export async function searchRecipesTool(
     tag?: string;
     course?: (typeof COURSES)[number];
     limit?: number;
+    offset?: number;
   },
 ) {
-  const limit = Math.min(Math.max(input.limit ?? 10, 1), 25);
+  const limit = Math.min(Math.max(input.limit ?? 20, 1), SEARCH_PAGE_MAX);
+  const offset = Math.max(input.offset ?? 0, 0);
   // The search covers titles, descriptions, method and ingredients, so an
   // ingredient ("grouper") is a query like any other.
-  const recipes = await searchRecipes({
+  const options = {
     householdId: ctx.householdId,
     query: input.query,
     tagSlugs: input.tag ? [slugifyTag(input.tag)] : undefined,
-    limit: input.course ? 100 : limit,
-  });
-  const matching = input.course
-    ? recipes.filter((r) => r.course === input.course)
-    : recipes;
-  return { recipes: matching.slice(0, limit).map(summary) };
+    course: input.course,
+  };
+  // The total with the page, so an assistant knows when it has seen only
+  // part of the answer, and how to ask for the rest.
+  const [recipes, total] = await Promise.all([
+    searchRecipes({ ...options, limit, offset }),
+    countSearchRecipes(options),
+  ]);
+  const shownTo = offset + recipes.length;
+  return {
+    total,
+    showing: recipes.length === 0 ? "none" : `${offset + 1}-${shownTo}`,
+    nextOffset: shownTo < total ? shownTo : null,
+    recipes: recipes.map(summary),
+  };
 }
 
 export async function getRecipeTool(ctx: ToolContext, input: { id: string }) {

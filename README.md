@@ -227,15 +227,15 @@ is refused on its very next call.
 
 Look, behind the `recipes:read` scope:
 
-| Tool                 | Answers with                                                                                               |
-| -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `search_recipes`     | Recipes matching words, an ingredient, a tag or a course: id, title, total time, rating, tags, link        |
-| `get_recipe`         | One recipe in full: ingredients, method, timings, oven, equipment, nutrition per serving, notes, source    |
-| `get_week`           | A week's plan, Monday to Sunday, each meal with its slot, servings and recipe                              |
-| `get_shopping_list`  | The week's list as Trivet builds it: merged and scaled, minus pantry staples and ticked items, plus extras |
-| `get_pantry`         | The household's staples                                                                                    |
-| `suggest_dinners`    | Trivet's own pick for each open evening of a week, with why; plans nothing                                 |
-| `import_recipe_link` | A trivetbox.com link that opens Add a recipe already reading a web page; saves nothing                     |
+| Tool                 | Answers with                                                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `search_recipes`     | Recipes matching words, an ingredient, a tag or a course, 20 at a time (up to 50), with the total and how to page through the rest |
+| `get_recipe`         | One recipe in full: ingredients, method, timings, oven, equipment, nutrition per serving, notes, source                            |
+| `get_week`           | A week's plan, Monday to Sunday, each meal with its slot, servings and recipe                                                      |
+| `get_shopping_list`  | The week's list as Trivet builds it: merged and scaled, minus pantry staples and ticked items, plus extras                         |
+| `get_pantry`         | The household's staples                                                                                                            |
+| `suggest_dinners`    | Trivet's own pick for each open evening of a week, with why; plans nothing                                                         |
+| `import_recipe_link` | A trivetbox.com link that opens Add a recipe already reading a web page; saves nothing                                             |
 
 Plan, behind `plan:write`, only if the person ticks **Also let it plan** on the
 consent screen (it starts unticked):

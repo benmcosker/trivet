@@ -1,3 +1,4 @@
+import type { RecipeCourse } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "./db";
@@ -24,6 +25,8 @@ export type RecipeSearchOptions = {
   query?: string;
   /** Tag slugs. A recipe must carry every slug listed to match. */
   tagSlugs?: string[];
+  /** Only recipes sorted into this course. */
+  course?: RecipeCourse;
   /**
    * Defaults to newest, which defers to relevance when there is also a search
    * query: a search for "lemon" answering with the least relevant match simply
@@ -85,7 +88,14 @@ function searchWhere(options: RecipeSearchOptions): Prisma.Sql {
         `
       : Prisma.empty;
 
-  if (query === "") return Prisma.sql`${visible} ${tagFilter}`;
+  // Compared as text: the parameter arrives as text, and Postgres has no
+  // equality between an enum and text without a cast.
+  const courseFilter = options.course
+    ? Prisma.sql`AND r."course"::text = ${options.course}`
+    : Prisma.empty;
+  const filters = Prisma.sql`${tagFilter} ${courseFilter}`;
+
+  if (query === "") return Prisma.sql`${visible} ${filters}`;
 
   // Escape LIKE wildcards so a user typing "100%" searches for that literally.
   const like = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
@@ -108,7 +118,7 @@ function searchWhere(options: RecipeSearchOptions): Prisma.Sql {
         WHERE rt."recipeId" = r."id" AND t."name" ILIKE ${like}
       )
     )
-    ${tagFilter}`;
+    ${filters}`;
 }
 
 /**
