@@ -3,6 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 
 import { auth } from "@/lib/auth";
 import { assistantAccess } from "@/lib/mcp/access";
+import { claimAssistantCall } from "@/lib/mcp/activity";
 import { MCP_SCOPES, mcpResource } from "@/lib/mcp/resource";
 import { trivetMcpServer } from "@/lib/mcp/server";
 
@@ -39,7 +40,28 @@ const handler = requireMcpAuth(
       );
     }
 
-    const server = trivetMcpServer({ householdId: access.householdId });
+    // A daily allowance per person, so a runaway assistant loop cannot
+    // hammer the database (MCP-PLAN.md, Safety).
+    const allowance = await claimAssistantCall(access.userId);
+    if (!allowance.ok) {
+      const response = refused(
+        429,
+        "Trivet has had a lot of requests from your assistants today. Try again tomorrow.",
+      );
+      response.headers.set("retry-after", String(allowance.retryAfterSeconds));
+      return response;
+    }
+
+    // Planning only if the person allowed it on the consent screen, which
+    // the token's scopes record.
+    const scopes =
+      typeof claims.scope === "string" ? claims.scope.split(" ") : [];
+    const server = trivetMcpServer({
+      householdId: access.householdId,
+      userId: access.userId,
+      clientId: access.clientId,
+      canPlan: scopes.includes(MCP_SCOPES.write),
+    });
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,

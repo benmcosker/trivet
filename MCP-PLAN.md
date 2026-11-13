@@ -107,9 +107,12 @@ they support remote MCP.
 
 ## Phases
 
-Status, 13 November: phases 1 and 2 built, with `suggest_dinners` and the
-per-person request allowance left for phase 3, alongside the writes. The
-consent screen offers planning only once the write tools exist.
+Status, 13 November: phases 1 to 3 built. Read tools, `suggest_dinners` and
+`import_recipe_link` for every connection (the link saves nothing, so it needs
+no write scope); `plan_dinner`, `add_pantry_item` and `add_to_list` behind
+`plan:write`, on top of `src/lib/plan-mutations.ts`; a record of each change;
+a daily allowance per person. Phase 4 (prompts, the help page) and the design
+board remain.
 
 1. **Sign-in.** The `mcp()` plugin, its discovery documents, the consent
    screen in Trivet's design, and the connected-assistants list with

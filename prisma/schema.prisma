@@ -87,17 +87,19 @@ model User {
   householdId String?
   household   Household? @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
-  recipes       Recipe[]
-  invitesSent   Invite[]          @relation("InviteSender")
-  inviteUsed    Invite?           @relation("InviteRedeemer")
-  shoppingRuns  ShoppingHandoff[]
-  shoppingTexts ShoppingText[]
-  pantryItems   PantryItem[]
-  weeklySkips   WeeklySkip[]
-  extraItems    ExtraItem[]
-  reviews       RecipeReview[]
-  uploadQuotas  UploadQuota[]
-  reports       ContentReport[]
+  recipes          Recipe[]
+  invitesSent      Invite[]          @relation("InviteSender")
+  inviteUsed       Invite?           @relation("InviteRedeemer")
+  shoppingRuns     ShoppingHandoff[]
+  shoppingTexts    ShoppingText[]
+  pantryItems      PantryItem[]
+  weeklySkips      WeeklySkip[]
+  extraItems       ExtraItem[]
+  reviews          RecipeReview[]
+  uploadQuotas     UploadQuota[]
+  assistantActions AssistantAction[]
+  assistantQuotas  AssistantQuota[]
+  reports          ContentReport[]
 
   /// AI assistants this person has connected (MCP-PLAN.md); Better Auth's.
   oauthclients       OauthClient[]
@@ -1004,4 +1006,38 @@ model OauthClientAssertion {
   expiresAt DateTime
 
   @@map("oauthClientAssertion")
+}
+
+/// What a connected AI assistant changed, on whose behalf (MCP-PLAN.md), so
+/// "who planned this?" has an answer. One row per write tool call that did
+/// something; reads are not recorded.
+model AssistantAction {
+  id        String   @id @default(cuid())
+  /// The OAuth client: its registered name is on `OauthClient`.
+  clientId  String
+  /// The tool, e.g. `plan_dinner`.
+  tool      String
+  /// What it did, in words, e.g. "Planned Cacio e Pepe for 2026-11-17".
+  summary   String
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("assistant_action")
+}
+
+/// How many MCP requests a person's assistants made on one day, so a runaway
+/// assistant loop cannot hammer the database. Shaped like `UploadQuota`.
+model AssistantQuota {
+  /// Midnight UTC on the day being counted.
+  day   DateTime @db.Date
+  count Int      @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, day])
+  @@map("assistant_quota")
 }

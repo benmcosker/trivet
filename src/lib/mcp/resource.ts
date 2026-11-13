@@ -40,8 +40,8 @@ export const BASE_SCOPES = [
 ] as const;
 
 /**
- * Whether the consent screen offers planning. Off until the write tools
- * exist (MCP-PLAN.md phase 3): nobody should be asked to allow something
- * Trivet cannot yet do, and a consent without it grants looking only.
+ * Whether the consent screen offers planning: on now the write tools exist
+ * (MCP-PLAN.md phase 3). Unticked by default, so looking is what a person
+ * allows unless they choose more.
  */
-export const PLANNING_OFFERED = false;
+export const PLANNING_OFFERED = true;
