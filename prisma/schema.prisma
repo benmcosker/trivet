@@ -99,6 +99,7 @@ model User {
   uploadQuotas     UploadQuota[]
   assistantActions AssistantAction[]
   assistantQuotas  AssistantQuota[]
+  mcpRequestLogs   McpRequestLog[]
   reports          ContentReport[]
 
   /// AI assistants this person has connected (MCP-PLAN.md); Better Auth's.
@@ -1053,4 +1054,35 @@ model AssistantQuota {
 
   @@id([userId, day])
   @@map("assistant_quota")
+}
+
+/// Every request to /api/mcp, for the admin's eyes only (/admin/assistants).
+/// Temporary, while assistants are new: kept 14 days, switched off with
+/// MCP_REQUEST_LOG=off, and removable as a unit. What a person typed to their
+/// assistant never reaches Trivet; this holds the tool calls it chose to make.
+model McpRequestLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  /// The JSON-RPC method: initialize, tools/list, tools/call, ...
+  method     String
+  /// For tools/call: which tool, and its arguments as JSON (shortened).
+  tool       String?
+  arguments  String?
+  /// HTTP status, and ok / error / refused, with any message (shortened).
+  status     Int
+  outcome    String
+  detail     String?
+  /// A few facts from the answer, as JSON: how many recipes a search
+  /// found, which recipe was opened, what was planned. Never the answer.
+  result     String?
+  durationMs Int
+  /// The OAuth client, when the token named one.
+  clientId   String?
+
+  /// Null for a request refused before anyone was identified.
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("mcp_request_log")
 }

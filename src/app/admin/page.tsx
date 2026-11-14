@@ -1,6 +1,7 @@
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { notFound } from "next/navigation";
@@ -174,6 +175,10 @@ export default async function AdminPage() {
         {households.length === 1 ? "household" : "households"}, {people}{" "}
         {people === 1 ? "person" : "people"}. Counts and dates only - nothing
         anybody cooked, planned or shopped for.
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 3 }}>
+        <Link href="/admin/assistants">Assistant requests</Link>: what AI
+        assistants asked Trivet, kept 14 days.
       </Typography>
 
       <AdminReports reports={reports} />
