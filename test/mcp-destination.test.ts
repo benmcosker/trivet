@@ -15,6 +15,8 @@ describe("destinationOf", () => {
     ["https://claude.ai/api/mcp/auth_callback", "Claude"],
     ["https://chatgpt.com/connector_platform_oauth_redirect", "ChatGPT"],
     ["https://gemini.google.com/oauth/callback", "Gemini"],
+    // What Gemini actually used when Ben connected it, 14 November.
+    ["https://oauth-redirect.googleusercontent.com/r/gemini-app", "Gemini"],
   ])("recognises %s as %s", (uri, assistant) => {
     expect(destinationOf(uri)).toMatchObject({ kind: "known", assistant });
   });
@@ -41,6 +43,15 @@ describe("destinationOf", () => {
     });
   });
 
+  it("trusts Google's callback host exactly, not its neighbours", () => {
+    expect(
+      destinationOf("https://someone.googleusercontent.com/cb"),
+    ).toMatchObject({ kind: "other" });
+    expect(
+      destinationOf("https://x.oauth-redirect.googleusercontent.com/cb"),
+    ).toMatchObject({ kind: "other" });
+  });
+
   it("has nothing to show without a usable address", () => {
     expect(destinationOf(undefined)).toEqual({ kind: "missing" });
     expect(destinationOf("not a url")).toEqual({ kind: "missing" });
@@ -59,6 +70,21 @@ describe("looksLikeImpersonation", () => {
       looksLikeImpersonation(
         "ChatGPT",
         destinationOf("https://claude.ai/api/mcp/auth_callback"),
+      ),
+    ).toBe(true);
+  });
+
+  it("accepts Gemini as it really connects, and refuses a fake Google", () => {
+    expect(
+      looksLikeImpersonation(
+        "Google",
+        destinationOf("https://oauth-redirect.googleusercontent.com/r/x"),
+      ),
+    ).toBe(false);
+    expect(
+      looksLikeImpersonation(
+        "Google",
+        destinationOf("https://evil.example/cb"),
       ),
     ).toBe(true);
   });
@@ -88,6 +114,7 @@ describe("looksLikeImpersonation", () => {
     expect(claimedAssistant("ChatGPT for Trivet")).toBe("ChatGPT");
     expect(claimedAssistant("chat gpt")).toBe("ChatGPT");
     expect(claimedAssistant("gemini")).toBe("Gemini");
+    expect(claimedAssistant("Google")).toBe("Gemini");
     expect(claimedAssistant("Claudette's Kitchen")).toBeNull();
   });
 });

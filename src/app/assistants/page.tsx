@@ -63,6 +63,28 @@ const CHATGPT_STEPS: ReactNode[] = [
   </>,
 ];
 
+/**
+ * As Ben connected Gemini on 14 November: Connectors, +, Connect to an MCP
+ * server, then Google's own account-linking screens before Trivet's.
+ */
+const GEMINI_STEPS: ReactNode[] = [
+  <>
+    In Gemini on the web, open <strong>Connectors</strong> and choose{" "}
+    <strong>+</strong> (top right), then{" "}
+    <strong>Connect to an MCP server</strong>.
+  </>,
+  <>
+    Paste the address above and choose <strong>Next</strong>. Google asks you to
+    accept the risks of a custom app and to link your account: accept, then{" "}
+    <strong>Agree and continue</strong>.
+  </>,
+  <>Trivet&apos;s sign-in opens; sign in as you always do.</>,
+  <>
+    Choose what it may do and <strong>Connect</strong>, then{" "}
+    <strong>Connect</strong> once more in Gemini to save it.
+  </>,
+];
+
 const ASKS = [
   "What can I make with the grouper I bought?",
   "What's on this week, and what do I still need to buy?",
@@ -154,9 +176,10 @@ export default function AssistantsPage() {
         variant="subtitle1"
         sx={{ mt: 3, maxWidth: 640, fontStyle: "normal" }}
       >
-        Connect Claude, ChatGPT or another AI assistant to your {APP_NAME} once.
-        Then ask it about your recipes, your week and your shopping list in
-        plain words. It answers from your recipe box, not the internet&apos;s.
+        Connect Claude, ChatGPT, Gemini or another AI assistant to your{" "}
+        {APP_NAME} once. Then ask it about your recipes, your week and your
+        shopping list in plain words. It answers from your recipe box, not the
+        internet&apos;s.
       </Typography>
 
       <Box
@@ -202,6 +225,15 @@ export default function AssistantsPage() {
             Custom servers depend on your ChatGPT plan, and some plans need
             Developer mode switched on in Settings first. Added on the web, it
             shows in the ChatGPT app too.
+          </Typography>
+        </Section>
+
+        <Section title="In Gemini">
+          <Steps steps={GEMINI_STEPS} />
+          <Typography variant="body2" color="text.muted" sx={{ maxWidth: 480 }}>
+            Custom connectors depend on your Google account and where you live.
+            Trivet shows as Google on its own screen, sending you back to
+            Google&apos;s account-linking address.
           </Typography>
         </Section>
 

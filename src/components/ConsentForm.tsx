@@ -72,7 +72,8 @@ export function ConsentForm({
       <Typography sx={{ mt: -2, mb: 3 }} color="text.secondary">
         {destination.kind === "known" ? (
           <>
-            Approving sends you back to <strong>{destination.host}</strong>.
+            Approving sends you back to <strong>{destination.assistant}</strong>
+            , at {destination.host}.
           </>
         ) : destination.kind === "local" ? (
           <>Approving sends you back to an app on this computer.</>
