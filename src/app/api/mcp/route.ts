@@ -73,9 +73,17 @@ const handler = requireMcpAuth(
       void server.close();
     }
   },
-  // The token must be bound to this endpoint, not to the sign-in server it
-  // came from (the default).
-  { resource: mcpResource(), requiredScopes: [MCP_SCOPES.read] },
+  {
+    // The token must be bound to this endpoint, not to the sign-in server it
+    // came from (the default).
+    resource: mcpResource(),
+    requiredScopes: [MCP_SCOPES.read],
+    // What the first 401 tells an assistant to ask for. Both, so the
+    // consent screen can offer planning: ChatGPT asks for exactly what this
+    // names, and with read alone the person was never given the choice.
+    // Asking is not granting: planning stays an unticked box on /consent.
+    challengeScopes: [MCP_SCOPES.read, MCP_SCOPES.write],
+  },
 );
 
 export { handler as GET, handler as POST, handler as DELETE };
