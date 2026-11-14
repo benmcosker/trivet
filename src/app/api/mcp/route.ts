@@ -1,9 +1,11 @@
 import { requireMcpAuth } from "@better-auth/mcp";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { after } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { assistantAccess } from "@/lib/mcp/access";
 import { claimAssistantCall } from "@/lib/mcp/activity";
+import { recordMcpExchange, requestLogEnabled } from "@/lib/mcp/request-log";
 import { MCP_SCOPES, mcpResource } from "@/lib/mcp/resource";
 import { trivetMcpServer } from "@/lib/mcp/server";
 
@@ -26,10 +28,14 @@ function refused(status: number, message: string): Response {
   );
 }
 
-const handler = requireMcpAuth(
+/** Who each request turned out to be, for the request log. */
+const identified = new WeakMap<Request, { userId: string; clientId: string }>();
+
+const protectedHandler = requireMcpAuth(
   auth,
   async (request, claims) => {
     const access = await assistantAccess(claims);
+    if (access) identified.set(request, access);
     if (!access) {
       // Disconnected on the Household page, or the person left their
       // household. The token still verifies, so say why rather than 401,
@@ -85,5 +91,38 @@ const handler = requireMcpAuth(
     challengeScopes: [MCP_SCOPES.read, MCP_SCOPES.write],
   },
 );
+
+/**
+ * Every request, written to the admin's request log once it has been
+ * answered (`request-log.ts`; temporary). `after` runs once the response is
+ * sent, so logging never slows an answer and a logging failure never breaks
+ * one.
+ */
+async function handler(request: Request): Promise<Response> {
+  if (!requestLogEnabled()) return protectedHandler(request);
+
+  const started = Date.now();
+  const requestBody =
+    request.method === "POST" ? await request.clone().text() : "";
+  const response = await protectedHandler(request);
+  const copy = response.clone();
+
+  after(async () => {
+    try {
+      const who = identified.get(request);
+      await recordMcpExchange({
+        requestBody,
+        status: response.status,
+        responseBody: await copy.text(),
+        durationMs: Date.now() - started,
+        userId: who?.userId ?? null,
+        clientId: who?.clientId ?? null,
+      });
+    } catch (error) {
+      console.error("[mcp] could not log a request", error);
+    }
+  });
+  return response;
+}
 
 export { handler as GET, handler as POST, handler as DELETE };
