@@ -50,14 +50,19 @@ const CLAUDE_STEPS: ReactNode[] = [
  */
 const CHATGPT_STEPS: ReactNode[] = [
   <>
-    In ChatGPT, open <strong>Plugins</strong>, choose <strong>Add</strong> (top
-    right), then <strong>Add custom MCP server</strong>.
+    In ChatGPT on the web, open <strong>Plugins</strong>, choose{" "}
+    <strong>Add</strong> (top right), then{" "}
+    <strong>Add custom MCP server</strong>.
   </>,
   <>
-    Call it Trivet, paste the address above, choose <strong>OAuth</strong>, then{" "}
-    <strong>Create</strong>.
+    Call it Trivet, paste the address above and choose <strong>OAuth</strong>.
+    Tick <strong>I understand and want to continue</strong>, then{" "}
+    <strong>Create as a plugin</strong>.
   </>,
-  <>Trivet&apos;s sign-in opens; sign in as you always do.</>,
+  <>
+    Choose <strong>Connect Trivet</strong>. Trivet&apos;s sign-in opens; sign in
+    as you always do.
+  </>,
   <>
     Choose what it may do, then <strong>Connect</strong>. That&apos;s it.
   </>,
