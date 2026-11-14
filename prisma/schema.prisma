@@ -169,6 +169,19 @@ model Verification {
   @@map("verification")
 }
 
+/// Better Auth's request counts, one row per caller and rule, so that the
+/// limits on sign-in and on registering an assistant hold across all of
+/// Vercel's instances rather than per instance in memory (security review,
+/// November). `lastRequest` is milliseconds since the epoch.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
 // ---------------------------------------------------------------------------
 // Access control
 // ---------------------------------------------------------------------------

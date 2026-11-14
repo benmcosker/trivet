@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { ConsentForm } from "@/components/ConsentForm";
 import { prisma } from "@/lib/db";
+import { PaperNote } from "@/components/PaperNote";
+import { destinationOf, looksLikeImpersonation } from "@/lib/mcp/destination";
 import { MCP_SCOPES, PLANNING_OFFERED } from "@/lib/mcp/resource";
 import { getCurrentUser } from "@/lib/session";
 
@@ -27,21 +29,35 @@ export default async function ConsentPage({
   const client = clientId
     ? await prisma.oauthClient.findUnique({
         where: { clientId },
-        select: { name: true, uri: true },
+        select: { name: true },
       })
     : null;
+  const assistant = client?.name?.trim() || "An AI assistant";
+  // Where the code goes, not where the registrant says it lives: see
+  // `destination.ts`.
+  const destination = destinationOf(
+    typeof params.redirect_uri === "string" ? params.redirect_uri : undefined,
+  );
 
   return (
     <AppShell>
       <Typography variant="h1" sx={{ mb: 1 }}>
         Connect an assistant
       </Typography>
-      <ConsentForm
-        assistant={client?.name?.trim() || "An AI assistant"}
-        assistantSite={client?.uri ?? null}
-        requested={[...requested]}
-        canPlan={PLANNING_OFFERED && requested.has(MCP_SCOPES.write)}
-      />
+      {destination.kind === "missing" ? (
+        <PaperNote label="Can't connect">
+          This request doesn&apos;t say which assistant it&apos;s for or where
+          to go back to. Start again from your assistant&apos;s settings.
+        </PaperNote>
+      ) : (
+        <ConsentForm
+          assistant={assistant}
+          destination={destination}
+          impersonating={looksLikeImpersonation(assistant, destination)}
+          requested={[...requested]}
+          canPlan={PLANNING_OFFERED && requested.has(MCP_SCOPES.write)}
+        />
+      )}
     </AppShell>
   );
 }

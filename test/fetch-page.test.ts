@@ -1,3 +1,6 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,6 +10,11 @@ import {
   isPublicHost,
   type PageFetcher,
 } from "@/lib/fetch-page";
+import {
+  NonPublicAddressError,
+  publicOnlyFetch,
+  publicOnlyLookup,
+} from "@/lib/public-fetch";
 
 /**
  * Every test here drives the fetch through its seam.
@@ -229,16 +237,26 @@ describe("isPublicHost", () => {
     "192.168.1.1",
     "169.254.169.254",
     "::1",
+    // Disguised forms the old hand-written check let through.
+    "::ffff:127.0.0.1",
+    "[::ffff:7f00:1]",
+    "metadata.google.internal",
+    "fd00::1",
   ])("keeps the server away from %s", (host) => {
     expect(isPublicHost(host)).toBe(false);
   });
 
-  it.each(["example.com", "www.smittenkitchen.example", "8.8.8.8"])(
-    "allows %s",
-    (host) => {
-      expect(isPublicHost(host)).toBe(true);
-    },
-  );
+  it.each([
+    "example.com",
+    "www.smittenkitchen.example",
+    "8.8.8.8",
+    // Names that merely start like a private IPv6 range, which the old
+    // check refused.
+    "fdmeals.example",
+    "fcm.googleapis.com",
+  ])("allows %s", (host) => {
+    expect(isPublicHost(host)).toBe(true);
+  });
 });
 
 describe("fetchImageBytes", () => {
@@ -396,5 +414,65 @@ describe("a site that is only busy", () => {
     });
 
     expect(result).toEqual({ ok: false, failure: "refused", status: 503 });
+  });
+});
+
+describe("publicOnlyLookup", () => {
+  const resolving = (...addresses: string[]) =>
+    ((
+      _host: string,
+      _options: unknown,
+      callback: (e: Error | null, a: unknown) => void,
+    ) =>
+      callback(
+        null,
+        addresses.map((address) => ({
+          address,
+          family: address.includes(":") ? 6 : 4,
+        })),
+      )) as never;
+
+  const ask = (resolve: never, all = false) =>
+    new Promise<{ error: Error | null; address: unknown }>((done) =>
+      publicOnlyLookup(
+        "recipes.example",
+        { all },
+        (error, address) => done({ error, address }),
+        resolve,
+      ),
+    );
+
+  it("connects to a name that resolves only to public addresses", async () => {
+    const { error, address } = await ask(resolving("93.184.216.34"));
+    expect(error).toBeNull();
+    expect(address).toBe("93.184.216.34");
+  });
+
+  it("refuses a public-looking name that resolves inward", async () => {
+    const { error } = await ask(resolving("169.254.169.254"));
+    expect(error).toBeInstanceOf(NonPublicAddressError);
+  });
+
+  it("refuses a name with even one inward answer among public ones", async () => {
+    const { error } = await ask(resolving("93.184.216.34", "10.0.0.5"), true);
+    expect(error).toBeInstanceOf(NonPublicAddressError);
+  });
+});
+
+describe("publicOnlyFetch", () => {
+  it("cannot reach a server on this machine, whatever the name", async () => {
+    const server = createServer((_req, res) => res.end("internal"));
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    const { port } = server.address() as AddressInfo;
+    try {
+      await expect(
+        publicOnlyFetch(`http://localhost:${port}/`, {}),
+      ).rejects.toThrow();
+      // The same server, reached with an ordinary fetch, proves it was up.
+      const plain = await fetch(`http://127.0.0.1:${port}/`);
+      expect(await plain.text()).toBe("internal");
+    } finally {
+      server.close();
+    }
   });
 });
