@@ -1072,6 +1072,9 @@ model McpRequestLog {
   status     Int
   outcome    String
   detail     String?
+  /// A few facts from the answer, as JSON: how many recipes a search
+  /// found, which recipe was opened, what was planned. Never the answer.
+  result     String?
   durationMs Int
   /// The OAuth client, when the token named one.
   clientId   String?

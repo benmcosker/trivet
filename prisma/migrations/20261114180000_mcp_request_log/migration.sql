@@ -11,6 +11,7 @@ CREATE TABLE "mcp_request_log" (
     "status" INTEGER NOT NULL,
     "outcome" TEXT NOT NULL,
     "detail" TEXT,
+    "result" TEXT,
     "durationMs" INTEGER NOT NULL,
     "clientId" TEXT,
     "userId" TEXT,

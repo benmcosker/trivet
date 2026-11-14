@@ -32,6 +32,36 @@ describe("describeExchange", () => {
       status: 200,
       outcome: "ok",
       detail: null,
+      result: null,
+    });
+  });
+
+  it("keeps a few facts from a tool's answer, not the answer", () => {
+    const answer = (text: unknown) =>
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        result: { content: [{ type: "text", text: JSON.stringify(text) }] },
+      });
+    const [search] = describeExchange(
+      JSON.stringify(call(1, "search_recipes", { query: "chicken" })),
+      200,
+      answer({ total: 54, recipes: [{ title: "A long recipe" }] }),
+    );
+    expect(JSON.parse(search.result!)).toEqual({ total: 54 });
+    const [planned] = describeExchange(
+      JSON.stringify(call(1, "plan_dinner", { date: "2026-11-19" })),
+      200,
+      answer({
+        ok: true,
+        planned: "Cacio e Pepe",
+        date: "2026-11-19",
+        slot: "DINNER",
+        replaced: null,
+      }),
+    );
+    expect(JSON.parse(planned.result!)).toMatchObject({
+      planned: "Cacio e Pepe",
     });
   });
 

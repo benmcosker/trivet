@@ -57,7 +57,59 @@ export type LoggedRequest = {
   status: number;
   outcome: "ok" | "error" | "refused";
   detail: string | null;
+  /** A few facts from a successful tool's answer, as JSON. */
+  result: string | null;
 };
+
+/**
+ * The facts worth keeping from a tool's answer, so the admin page can say
+ * "54 found" or "Opened Zuni Chicken" without keeping the answer itself.
+ */
+export function resultFacts(
+  tool: string | null,
+  text: unknown,
+): Record<string, unknown> | null {
+  if (!tool || typeof text !== "string") return null;
+  const answer = parse(text) as Record<string, unknown> | null;
+  if (!answer || typeof answer !== "object") return null;
+  const count = (key: string) =>
+    Array.isArray(answer[key]) ? (answer[key] as unknown[]).length : undefined;
+  switch (tool) {
+    case "search_recipes":
+      return { total: answer.total ?? count("recipes") };
+    case "get_recipe":
+      return { title: answer.title };
+    case "get_week":
+      return { weekStarting: answer.weekStarting };
+    case "get_shopping_list":
+      return { items: count("items"), weekStarting: answer.weekStarting };
+    case "get_pantry":
+      return { items: count("pantry") };
+    case "suggest_dinners":
+      return {
+        suggested: Array.isArray(answer.suggestions)
+          ? (answer.suggestions as { recipe?: unknown }[]).filter(
+              (s) => s.recipe,
+            ).length
+          : undefined,
+      };
+    case "plan_dinner":
+      return answer.cleared
+        ? { removed: answer.removed }
+        : {
+            planned: answer.planned,
+            date: answer.date,
+            slot: answer.slot,
+            replaced: answer.replaced,
+          };
+    case "add_pantry_item":
+      return { added: answer.pantryItem };
+    case "add_to_list":
+      return { added: answer.added };
+    default:
+      return null;
+  }
+}
 
 /**
  * What one HTTP exchange amounts to, one entry per message in it. Pure, so
@@ -84,6 +136,7 @@ export function describeExchange(
         status,
         outcome: status >= 400 ? "refused" : "ok",
         detail: typeof refusal === "string" ? shorten(refusal) : null,
+        result: null,
       },
     ];
   }
@@ -98,12 +151,17 @@ export function describeExchange(
         : toolError && typeof answer?.result?.content?.[0]?.text === "string"
           ? answer.result.content[0].text
           : null;
+    const tool =
+      isCall && typeof message.params?.name === "string"
+        ? message.params.name
+        : null;
+    const facts =
+      answer && !answer.error && !toolError
+        ? resultFacts(tool, answer.result?.content?.[0]?.text)
+        : null;
     return {
       method: message.method ?? "(none)",
-      tool:
-        isCall && typeof message.params?.name === "string"
-          ? message.params.name
-          : null,
+      tool,
       arguments:
         isCall && message.params?.arguments !== undefined
           ? shorten(JSON.stringify(message.params.arguments))
@@ -111,6 +169,7 @@ export function describeExchange(
       status,
       outcome: answer?.error || toolError ? "error" : "ok",
       detail: errorText ? shorten(errorText) : null,
+      result: facts ? shorten(JSON.stringify(facts)) : null,
     };
   });
 }
