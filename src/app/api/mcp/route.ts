@@ -98,19 +98,46 @@ const protectedHandler = requireMcpAuth(
  * sent, so logging never slows an answer and a logging failure never breaks
  * one.
  */
+/**
+ * GET (a standing stream of server messages) and DELETE (ending a session)
+ * have nothing to do on a stateless server that answers each POST in full.
+ * The MCP spec's answer for that is 405, which assistants treat as "not
+ * offered" and carry on; passed to the transport instead, they came back
+ * 400 and showed up as problems in the request log.
+ */
+function notOffered(): Response {
+  return Response.json(
+    {
+      jsonrpc: "2.0",
+      error: {
+        code: -32000,
+        message:
+          "Trivet answers each request over POST and keeps no stream or session open.",
+      },
+      id: null,
+    },
+    { status: 405, headers: { allow: "POST" } },
+  );
+}
+
+async function answer(request: Request): Promise<Response> {
+  return request.method === "POST" ? protectedHandler(request) : notOffered();
+}
+
 async function handler(request: Request): Promise<Response> {
-  if (!requestLogEnabled()) return protectedHandler(request);
+  if (!requestLogEnabled()) return answer(request);
 
   const started = Date.now();
   const requestBody =
     request.method === "POST" ? await request.clone().text() : "";
-  const response = await protectedHandler(request);
+  const response = await answer(request);
   const copy = response.clone();
 
   after(async () => {
     try {
       const who = identified.get(request);
       await recordMcpExchange({
+        httpMethod: request.method,
         requestBody,
         status: response.status,
         responseBody: await copy.text(),

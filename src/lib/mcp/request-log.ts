@@ -119,9 +119,26 @@ export function describeExchange(
   requestBody: string,
   status: number,
   responseBody: string,
+  httpMethod = "POST",
 ): LoggedRequest[] {
   const messages = asList<Message>(parse(requestBody));
   const answers = asList<Answer>(parse(responseBody));
+
+  // A GET or DELETE: no JSON-RPC in it, and turned away with 405 by design.
+  if (httpMethod !== "POST") {
+    const reason = answers[0]?.error?.message;
+    return [
+      {
+        method: `HTTP ${httpMethod}`,
+        tool: null,
+        arguments: null,
+        status,
+        outcome: status === 405 ? "ok" : status >= 400 ? "refused" : "ok",
+        detail: typeof reason === "string" ? shorten(reason) : null,
+        result: null,
+      },
+    ];
+  }
   const answerFor = (id: Message["id"]) =>
     id == null ? undefined : answers.find((a) => a.id === id);
 
@@ -176,6 +193,7 @@ export function describeExchange(
 
 /** Write an exchange down, and let go of anything past retention. */
 export async function recordMcpExchange(input: {
+  httpMethod?: string;
   requestBody: string;
   status: number;
   responseBody: string;
@@ -187,6 +205,7 @@ export async function recordMcpExchange(input: {
     input.requestBody,
     input.status,
     input.responseBody,
+    input.httpMethod,
   ).map((row) => ({
     ...row,
     durationMs: input.durationMs,

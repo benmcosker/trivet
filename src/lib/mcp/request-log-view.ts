@@ -47,7 +47,10 @@ const HANDSHAKES = new Set([
 ]);
 
 export const isHandshake = (row: Pick<LogRow, "method">) =>
-  HANDSHAKES.has(row.method) || row.method.startsWith("notifications/");
+  HANDSHAKES.has(row.method) ||
+  row.method.startsWith("notifications/") ||
+  // A GET for a stream, or a DELETE for a session: turned away by design.
+  row.method.startsWith("HTTP ");
 
 function json(text: string | null): Record<string, unknown> {
   if (!text) return {};
@@ -106,7 +109,13 @@ export function lineFor(row: LogRow): Line {
           : row.status === 429
             ? "over the daily allowance"
             : `status ${row.status}`;
-    return { ...base, words: [{ text: `Refused: ${why}` }], flag: "REFUSED" };
+    // The reason as it was given, so a refusal says what went wrong.
+    return {
+      ...base,
+      words: [{ text: `Refused: ${why}` }],
+      note: row.detail,
+      flag: "REFUSED",
+    };
   }
 
   const failed = row.outcome === "error";

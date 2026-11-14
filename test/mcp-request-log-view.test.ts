@@ -79,11 +79,22 @@ describe("lineFor", () => {
     expect(text(row({ outcome: "refused", status: 403 }))).toBe(
       "Refused: this assistant was disconnected",
     );
+    // The stored reason rides along, so a refusal says what went wrong.
+    expect(
+      lineFor(
+        row({
+          outcome: "refused",
+          status: 400,
+          detail: "Bad Request: Unsupported protocol version",
+        }),
+      ).note,
+    ).toBe("Bad Request: Unsupported protocol version");
   });
 
   it("tells handshakes from calls", () => {
     expect(isHandshake({ method: "initialize" })).toBe(true);
     expect(isHandshake({ method: "notifications/initialized" })).toBe(true);
+    expect(isHandshake({ method: "HTTP GET" })).toBe(true);
     expect(isHandshake({ method: "tools/call" })).toBe(false);
   });
 });

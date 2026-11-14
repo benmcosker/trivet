@@ -122,6 +122,25 @@ describe("describeExchange", () => {
     });
   });
 
+  it("records a GET or DELETE as turned away by design, not a problem", () => {
+    const [row] = describeExchange(
+      "",
+      405,
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: null,
+        error: { message: "POST only" },
+      }),
+      "GET",
+    );
+    expect(row).toMatchObject({
+      method: "HTTP GET",
+      status: 405,
+      outcome: "ok",
+      detail: "POST only",
+    });
+  });
+
   it("shortens very long arguments", () => {
     const [row] = describeExchange(
       JSON.stringify(call(1, "search_recipes", { query: "x".repeat(5000) })),
