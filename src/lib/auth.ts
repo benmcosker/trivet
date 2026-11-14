@@ -15,6 +15,7 @@ import {
 } from "./email/reset-password";
 import { checkInvite, inviteRejectionMessage, redeemInvite } from "./invites";
 import { APP_NAME } from "./legal";
+import { pruneUnapprovedAssistants } from "./mcp/access";
 import { BASE_SCOPES, MCP_SCOPES, mcpResource } from "./mcp/resource";
 import { parsePhone } from "./phone";
 
@@ -125,6 +126,26 @@ export const auth = betterAuth({
    * use. Registration alone gives an assistant nothing: every grant still
    * needs a person to sign in and approve it.
    */
+  /*
+   * Limits on how often anyone can try a password or register an assistant,
+   * per caller. Kept in the database: Vercel runs many short-lived
+   * instances, and the default in-memory counts started from nothing in
+   * each, which is no limit at all to someone guessing passwords. On in
+   * production only (Better Auth's default), so tests and local development
+   * can sign in freely.
+   */
+  rateLimit: {
+    storage: "database",
+    customRules: {
+      // Ten tries in five minutes is plenty for a person and slow for a
+      // guesser; Better Auth's own default (3 in 10 seconds) still applies
+      // to the other sign-in routes.
+      "/sign-in/email": { window: 300, max: 10 },
+      // Registering an assistant needs no account, so it is the one write
+      // anyone on the internet can make. A real assistant registers once.
+      "/oauth2/register": { window: 3600, max: 10 },
+    },
+  },
   plugins: [
     jwt(),
     mcp({
@@ -182,6 +203,15 @@ export const auth = betterAuth({
     // an account that reached this point without consuming an invite is
     // exactly what the gate exists to prevent.
     after: createAuthMiddleware(async (ctx) => {
+      // Each new assistant registration clears out old ones nobody ever
+      // approved, so open registration cannot pile up rows (see
+      // `pruneUnapprovedAssistants`). Never allowed to fail the request.
+      if (ctx.path === "/oauth2/register") {
+        await pruneUnapprovedAssistants().catch((error) =>
+          console.error("[mcp] could not prune registrations", error),
+        );
+        return;
+      }
       if (ctx.path !== SIGN_UP_PATH) return;
 
       const userId = ctx.context.newSession?.user.id;

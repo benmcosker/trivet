@@ -1,3 +1,7 @@
+import { isPublicRoutableHost } from "@better-auth/core/utils/host";
+
+import { publicOnlyFetch } from "./public-fetch";
+
 /**
  * Fetching somebody else's recipe page, server-side.
  *
@@ -101,31 +105,18 @@ const BUSY_STATUSES = new Set([429]);
  * own network position, which is the shape of a server-side request forgery.
  * This is the cheap half of the defence - a literal address pointing at the
  * loopback, link-local or private ranges, or at a name that cannot be on the
- * public web. It does not stop a public name that resolves inward, which
- * would need a resolve-then-connect of its own; worth doing if this ever
- * runs somewhere with an interesting internal network.
+ * public web. A public name that resolves inward is caught later, at
+ * connect time, by `publicOnlyFetch`, which every fetch here uses unless a
+ * test hands in its own.
  */
 export function isPublicHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-
   if (host === "localhost" || host.endsWith(".localhost")) return false;
   if (host.endsWith(".local") || host.endsWith(".internal")) return false;
-  if (host === "::1" || host.startsWith("fc") || host.startsWith("fd")) {
-    return false;
-  }
-  if (host.startsWith("fe80:")) return false;
-
-  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (ipv4) {
-    const [a, b] = ipv4.slice(1).map(Number);
-    if (a === 0 || a === 10 || a === 127) return false;
-    if (a === 169 && b === 254) return false;
-    if (a === 172 && b >= 16 && b <= 31) return false;
-    if (a === 192 && b === 168) return false;
-    if (a >= 224) return false;
-  }
-
-  return true;
+  // Literal addresses, and names like metadata.google.internal: the same
+  // rule the assistants' sign-in library applies, which also knows the
+  // IPv4-mapped and other disguised forms of an inward address.
+  return isPublicRoutableHost(host);
 }
 
 /**
@@ -211,7 +202,7 @@ export async function fetchPage(
   } = {},
 ): Promise<PageFetchResult> {
   const {
-    fetchImpl = globalThis.fetch,
+    fetchImpl = publicOnlyFetch,
     timeoutMs = PAGE_TIMEOUT_MS,
     maxBytes = MAX_PAGE_BYTES,
   } = options;
@@ -283,7 +274,7 @@ export async function fetchImageBytes(
   } = {},
 ): Promise<Uint8Array | null> {
   const {
-    fetchImpl = globalThis.fetch,
+    fetchImpl = publicOnlyFetch,
     timeoutMs = PAGE_TIMEOUT_MS,
     maxBytes = MAX_IMAGE_FETCH_BYTES,
   } = options;

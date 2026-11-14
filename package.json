@@ -32,6 +32,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
     "@better-auth/cimd": "1.7.17",
+    "@better-auth/core": "1.7.17",
     "@better-auth/mcp": "1.7.17",
     "@better-auth/oauth-provider": "1.7.17",
     "@emotion/cache": "^11.14.0",
@@ -50,6 +51,7 @@
     "pdf-lib": "^1.17.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "undici": "6.29.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -70,7 +72,7 @@
   },
   "description": "Recipe box, weekly meal planner and grocery list for one household.",
   "overrides": {
-    "undici": "^6.29.1",
+    "undici": "$undici",
     "source-map-js": "^1.2.2",
     "fast-uri": "^3.1.9",
     "vite": "^8.3.5"

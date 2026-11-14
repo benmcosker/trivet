@@ -93,3 +93,39 @@ export async function listConnectedAssistants(userId: string) {
     lastChange: lastChange.get(consent.clientId) ?? null,
   }));
 }
+
+/** How long a registration may wait for someone to approve it. */
+export const UNAPPROVED_TTL_DAYS = 7;
+
+/**
+ * Delete assistant registrations nobody approved within a week.
+ *
+ * Registering needs no account (that is how assistants arrive), so it is
+ * the one thing anyone on the internet can write. A registration that no
+ * person ever consented to, and that holds no tokens, gives nobody anything
+ * and can go. A connected assistant always has a consent, so it is never
+ * touched; one disconnected long ago goes too, which is right: it would
+ * have to register again anyway. Bounded, so one call never does much.
+ */
+export async function pruneUnapprovedAssistants(
+  now: Date = new Date(),
+): Promise<number> {
+  const cutoff = new Date(
+    now.getTime() - UNAPPROVED_TTL_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const stale = await prisma.oauthClient.findMany({
+    where: {
+      createdAt: { lt: cutoff },
+      oauthconsents: { none: {} },
+      oauthrefreshtokens: { none: {} },
+      oauthaccesstokens: { none: {} },
+    },
+    select: { id: true },
+    take: 200,
+  });
+  if (stale.length === 0) return 0;
+  const { count } = await prisma.oauthClient.deleteMany({
+    where: { id: { in: stale.map((c) => c.id) } },
+  });
+  return count;
+}

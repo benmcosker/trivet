@@ -12,8 +12,12 @@ const { InMemoryTransport } =
 const { prisma } = await import("@/lib/db");
 const { addExtraItem } = await import("@/lib/extras");
 const { weekStartOf } = await import("@/lib/grocery");
-const { assistantAccess, disconnectAssistant, listConnectedAssistants } =
-  await import("@/lib/mcp/access");
+const {
+  assistantAccess,
+  disconnectAssistant,
+  listConnectedAssistants,
+  pruneUnapprovedAssistants,
+} = await import("@/lib/mcp/access");
 const { claimAssistantCall, recentAssistantActions } =
   await import("@/lib/mcp/activity");
 const { trivetMcpServer } = await import("@/lib/mcp/server");
@@ -580,5 +584,48 @@ describe("the prompts", () => {
       ),
     ).toMatch(/grouper[\s\S]*plan_dinner/);
     await planning.close();
+  });
+});
+
+describe("pruning unapproved registrations", () => {
+  const register = (clientId: string, daysAgo: number) => {
+    const at = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+    return prisma.oauthClient.create({
+      data: {
+        id: clientId,
+        clientId,
+        name: clientId,
+        createdAt: at,
+        updatedAt: at,
+      },
+    });
+  };
+
+  it("removes week-old registrations nobody approved, and nothing else", async () => {
+    await register("old-unapproved", 8);
+    await register("new-unapproved", 1);
+    await register("old-connected", 30);
+    await prisma.oauthConsent.create({
+      data: {
+        id: "consent-1",
+        clientId: "old-connected",
+        userId: ours.userId,
+        scopes: ["recipes:read"],
+        resources: [],
+        requestedUserInfoClaims: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    expect(await pruneUnapprovedAssistants()).toBe(1);
+    const left = await prisma.oauthClient.findMany({
+      select: { clientId: true },
+      orderBy: { clientId: "asc" },
+    });
+    expect(left.map((c) => c.clientId)).toEqual([
+      "new-unapproved",
+      "old-connected",
+    ]);
   });
 });
