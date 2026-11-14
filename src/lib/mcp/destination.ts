@@ -10,10 +10,20 @@
  * and says so plainly when it isn't one of the assistants people mean.
  */
 
-const KNOWN: { name: string; hosts: string[] }[] = [
+/**
+ * `hosts` match the host or any subdomain of it. `exact` match only that
+ * host: Gemini returns through Google's account-linking callback,
+ * oauth-redirect.googleusercontent.com, and other googleusercontent.com
+ * hosts serve anyone's content, so nothing beside it may count.
+ */
+const KNOWN: { name: string; hosts: string[]; exact?: string[] }[] = [
   { name: "Claude", hosts: ["claude.ai", "claude.com"] },
   { name: "ChatGPT", hosts: ["chatgpt.com", "chat.openai.com"] },
-  { name: "Gemini", hosts: ["gemini.google.com"] },
+  {
+    name: "Gemini",
+    hosts: ["gemini.google.com"],
+    exact: ["oauth-redirect.googleusercontent.com"],
+  },
 ];
 
 const LOCAL = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
@@ -39,8 +49,10 @@ export function destinationOf(redirectUri: string | undefined): Destination {
   const host = url.hostname.toLowerCase();
   if (LOCAL.has(host)) return { kind: "local" };
   if (url.protocol !== "https:") return { kind: "other", host };
-  const known = KNOWN.find((entry) =>
-    entry.hosts.some((h) => host === h || host.endsWith(`.${h}`)),
+  const known = KNOWN.find(
+    (entry) =>
+      entry.exact?.includes(host) ||
+      entry.hosts.some((h) => host === h || host.endsWith(`.${h}`)),
   );
   return known
     ? { kind: "known", host, assistant: known.name }
@@ -55,7 +67,8 @@ export function claimedAssistant(name: string): string | null {
   const lower = name.toLowerCase();
   if (/\bclaude\b/.test(lower)) return "Claude";
   if (/chat\s*gpt|openai/.test(lower)) return "ChatGPT";
-  if (/\bgemini\b/.test(lower)) return "Gemini";
+  // Gemini registers itself as "Google".
+  if (/\bgemini\b|\bgoogle\b/.test(lower)) return "Gemini";
   return null;
 }
 
