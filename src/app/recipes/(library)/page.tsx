@@ -18,6 +18,7 @@ import { listTagsWithCounts } from "@/lib/recipe-mutations";
 import { PAGE_SIZE, pageCount, parsePage } from "@/lib/recipe-page";
 import { parseSort } from "@/lib/recipe-sort";
 import { countRecipes, countSearchRecipes, searchRecipes } from "@/lib/recipes";
+import { historyLine, mealHistory } from "@/lib/meal-history";
 import { requireHousehold } from "@/lib/session";
 
 export default async function RecipesPage({
@@ -76,7 +77,22 @@ export default async function RecipesPage({
 
   // **The absent argument was the bug.** Without a limit this defaulted to 50
   // while the eyebrow above the grid counted the whole box.
-  const recipes = await searchRecipes({ ...search, limit: PAGE_SIZE, offset });
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const [recipes, history] = await Promise.all([
+    searchRecipes({ ...search, limit: PAGE_SIZE, offset }),
+    /*
+     * Only for the recipe's outline: tapping a card shows the recipe's top
+     * half at once, "made" line included, so the photo lands where the page
+     * will put it (see `opening-recipe.ts`). Up to today, as the recipe page
+     * counts it.
+     */
+    mealHistory(householdId, {
+      plannedBefore: new Date(
+        Date.parse(`${todayIso}T00:00:00.000Z`) + 86_400_000,
+      ),
+    }),
+  ]);
+  const madeLine = (id: string) => historyLine(history.get(id), todayIso);
 
   const hero = heroOnThisPage && recipes.length > 0 ? recipes[0] : null;
   const grid = hero ? recipes.slice(1) : recipes;
@@ -274,7 +290,9 @@ export default async function RecipesPage({
           </Typography>
         ) : (
           <>
-            {hero ? <RecipeHero recipe={hero} /> : null}
+            {hero ? (
+              <RecipeHero recipe={hero} madeLine={madeLine(hero.id)} />
+            ) : null}
 
             <Box
               sx={{
@@ -294,6 +312,7 @@ export default async function RecipesPage({
                 <RecipeGridCard
                   key={recipe.id}
                   recipe={recipe}
+                  madeLine={madeLine(recipe.id)}
                   // With no hero, the first row is the fold rather than below
                   // it. Three cards, not the twenty-one under them.
                   priority={!hero && index < 3}

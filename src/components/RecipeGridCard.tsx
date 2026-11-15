@@ -1,12 +1,14 @@
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Link from "next/link";
 
 import type { RecipeWithRelations } from "@/lib/recipes";
 import { photoTransitionName } from "@/lib/photo-transition";
 import { recipePath } from "@/lib/recipe-url";
 import { recipeMetaParts } from "@/lib/recipe-meta";
 
+import { OpeningCue } from "./OpeningCue";
+import { recipeFacts } from "./RecipeFacts";
+import { RecipeLink } from "./RecipeLink";
 import { RecipeMetaLine } from "./RecipeMetaLine";
 import { RecipePhoto } from "./RecipePhoto";
 import { RecipePlaceholder } from "./RecipePlaceholder";
@@ -23,6 +25,16 @@ const MAX_TAGS_ON_CARD = 3;
  * rendering five silently drags its neighbours out of line.
  */
 const CARD_ROWS = 5;
+
+/**
+ * Three cards per row on a desktop, two on a tablet, one on a phone. The last
+ * value is a fixed width rather than a fraction: past the page's max width the
+ * card stops growing, and a vw figure would keep asking for larger files that
+ * are never drawn. Also handed to the recipe's outline, so it shows the file
+ * already downloaded for the card.
+ */
+const CARD_PHOTO_SIZES =
+  "(max-width: 600px) 116px, (max-width: 900px) 50vw, (max-width: 1440px) 32vw, 430px";
 
 /**
  * One recipe in the library grid.
@@ -60,8 +72,11 @@ const CARD_ROWS = 5;
 export function RecipeGridCard({
   recipe,
   priority = false,
+  madeLine = null,
 }: {
   recipe: RecipeWithRelations;
+  /** How often the household has made it, for the recipe's outline. */
+  madeLine?: string | null;
   /**
    * Load this card's photo eagerly.
    *
@@ -83,7 +98,7 @@ export function RecipeGridCard({
 
   return (
     /*
-     * A plain <Link> with a Box inside, rather than `component={Link}` on the
+     * A plain link with a Box inside, rather than `component={Link}` on the
      * Box. That prop hands MUI a component function, and a function cannot
      * cross from a server component into a client one - the same boundary
      * LinkButton exists for. It typechecks and it builds; it fails at render.
@@ -93,12 +108,16 @@ export function RecipeGridCard({
      * anchor in the middle would make the card a grid of its own with nothing
      * to borrow.
      */
-    <Link
-      href={recipePath(recipe)}
-      // Declares the direction for `PageTransition`. Untagged links move no
-      // page at all, so this is opt-in rather than something every anchor in
-      // the app inherits.
-      transitionTypes={["nav-forward"]}
+    <RecipeLink
+      opening={{
+        path: recipePath(recipe),
+        id: recipe.id,
+        title: recipe.title,
+        imageUrl: recipe.imageUrl,
+        sizes: CARD_PHOTO_SIZES,
+        facts: recipeFacts(recipe, recipePath(recipe)),
+        madeLine,
+      }}
       style={{ textDecoration: "none", color: "inherit", display: "contents" }}
     >
       <Box
@@ -137,15 +156,11 @@ export function RecipeGridCard({
           }}
         >
           {recipe.imageUrl ? (
-            // Three cards per row on a desktop, two on a tablet, one on a phone.
-            // The last value is a fixed width rather than a fraction: past the
-            // page's max width the card stops growing, and a vw figure would keep
-            // asking for larger files that are never drawn.
             <RecipePhoto
               src={recipe.imageUrl}
               height={{ xs: 116, sm: 230 }}
               rounded={0}
-              sizes="(max-width: 600px) 116px, (max-width: 900px) 50vw, (max-width: 1440px) 32vw, 430px"
+              sizes={CARD_PHOTO_SIZES}
               priority={priority}
               transitionName={photoTransitionName(recipe.id)}
             />
@@ -186,7 +201,7 @@ export function RecipeGridCard({
             minWidth: 0,
           }}
         >
-          {recipe.title}
+          <OpeningCue>{recipe.title}</OpeningCue>
         </Typography>
 
         <Box sx={{ gridColumn: textColumn, alignSelf: "start", minWidth: 0 }}>
@@ -232,6 +247,6 @@ export function RecipeGridCard({
           ) : null}
         </Box>
       </Box>
-    </Link>
+    </RecipeLink>
   );
 }
