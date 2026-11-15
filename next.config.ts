@@ -1,6 +1,24 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    /**
+     * Keep a page you just left for half a minute, so going straight back to
+     * it - the recipe page's Recipes link, mostly - reuses it instead of
+     * fetching it again.
+     *
+     * Without this, going back to the library showed its loading outline
+     * first, and a page that arrives through an outline gets no view
+     * transition: the fade back from a recipe was lost (#166). Reused, the
+     * library comes back at once and the `nav-back` transition runs.
+     *
+     * Anything you change yourself still shows: the server actions call
+     * `revalidatePath`, which clears this. What can be up to 30 seconds old
+     * is a change made somewhere else - another phone, or an AI assistant -
+     * on a page you only just left. The wordmark always loads fresh.
+     */
+    staleTimes: { dynamic: 30 },
+  },
   images: {
     /**
      * Dish photos live in Vercel Blob, on a per-store subdomain. Next refuses
