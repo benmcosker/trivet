@@ -17,6 +17,7 @@
     "seed:demo": "tsx scripts/seed-demo-library.ts",
     "library:export": "tsx scripts/library-export.ts",
     "library:apply": "tsx scripts/library-apply.ts",
+    "photos:todo": "tsx scripts/photos-todo.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy && prisma generate",

@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { clearNeedsPhoto } from "./photo-todo";
 import { deleteFile, storeFile } from "./storage";
 
 /**
@@ -32,6 +33,8 @@ export async function setRecipeImage(
     where: { id: recipeId },
     data: { imageUrl: stored.url },
   });
+  // A new photo is what the "Needs photo" list was waiting for.
+  await clearNeedsPhoto(recipeId);
 
   await discard(existing.imageUrl, stored.url);
 
