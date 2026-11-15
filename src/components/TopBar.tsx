@@ -129,8 +129,14 @@ export function TopBar({
           py: { xs: 2, md: 2.5 },
         }}
       >
+        {/*
+         * A plain anchor, not a Next link: the wordmark is the way to start
+         * over, so it loads the app afresh - every page refetched, nothing
+         * kept from the last half-minute (see `staleTimes` in
+         * next.config.ts) - rather than moving within it.
+         */}
         <Box
-          component={Link}
+          component="a"
           href="/"
           aria-label="Trivet, home"
           sx={{
