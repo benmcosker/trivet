@@ -96,8 +96,19 @@ be a string`. The way through is the Unix socket and peer auth, with a role
 Each carries a date, because what they record can change and a confident
 undated note is one nobody thinks to re-test.
 
+- **A plain `loading.tsx` above a recipe page cancels the photo morph** (15
+  November 2026). Measured in Chromium against a production build: with the
+  old photo-less recipe outline (or the library's, which covered every page
+  under `recipes/`), tapping a card shows the outline first and no
+  `::view-transition-group(recipe-photo-…)` ever runs. So the library's
+  outline lives in the `(library)` route group, and the recipe's outline
+  (`RecipeOutline`) is drawn from what the tapped card hands over
+  (`opening-recipe.ts`): the photo morphs into it at once, and it sits at
+  exactly the y the page puts it (604px on a 390px phone, 494px at 1280,
+  measured both) because both use `RecipeFacts`. Any new outline that could
+  stand between two ends of a named `ViewTransition` needs the same check.
 - **The phone header on `/recipes` is 309px, not 500** (24 October 2026).
-  A comment in `src/app/recipes/page.tsx` said the header "ran to 500px on an
+  A comment in `src/app/recipes/(library)/page.tsx` said the header "ran to 500px on an
   852px screen"; measured on a seeded 113-dish library at 393x852 it was
   407.4px, and 500 could not be reproduced. **Write down the number you
   measured, not the one you remember** - an undated round figure is how a

@@ -2,12 +2,14 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import Link from "next/link";
 
 import { heroEyebrow, recipeMetaParts, splitTitle } from "@/lib/recipe-meta";
 import type { RecipeWithRelations } from "@/lib/recipes";
 import { formatOvenTempShort } from "@/lib/temperature";
 
+import { OpeningCue } from "./OpeningCue";
+import { recipeFacts } from "./RecipeFacts";
+import { RecipeLink } from "./RecipeLink";
 import { RecipeMetaLine } from "./RecipeMetaLine";
 import { photoTransitionName } from "@/lib/photo-transition";
 import { recipePath } from "@/lib/recipe-url";
@@ -28,6 +30,9 @@ const MAX_HERO_TAGS = 3;
  */
 const HERO_PHOTO_HEIGHT = { xs: 190, sm: 340, md: 480 };
 
+/** Also handed to the recipe's outline; see `opening-recipe.ts`. */
+const HERO_PHOTO_SIZES = "(max-width: 900px) 100vw, 55vw";
+
 /**
  * The newest recipe, given the front page.
  *
@@ -38,19 +43,33 @@ const HERO_PHOTO_HEIGHT = { xs: 190, sm: 340, md: 480 };
  * Shown only on the unfiltered view: once you have searched or picked a
  * collection, the newest match is not news, it is just the first result.
  */
-export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
+export function RecipeHero({
+  recipe,
+  madeLine = null,
+}: {
+  recipe: RecipeWithRelations;
+  /** How often the household has made it, for the recipe's outline. */
+  madeLine?: string | null;
+}) {
   const { head, tail } = splitTitle(recipe.title);
   const oven = formatOvenTempShort(recipe.ovenTemp, recipe.ovenTempUnit);
 
   const eyebrow = heroEyebrow(recipe.createdAt);
 
   return (
-    // A plain <Link> wrapping a Box, not `component={Link}` on the Box: passing
+    // A plain link wrapping a Box, not `component={Link}` on the Box: passing
     // a component function from a server component into MUI's client code
     // typechecks, builds, and then fails at render.
-    <Link
-      href={recipePath(recipe)}
-      transitionTypes={["nav-forward"]}
+    <RecipeLink
+      opening={{
+        path: recipePath(recipe),
+        id: recipe.id,
+        title: recipe.title,
+        imageUrl: recipe.imageUrl,
+        sizes: HERO_PHOTO_SIZES,
+        facts: recipeFacts(recipe, recipePath(recipe)),
+        madeLine,
+      }}
       style={{ textDecoration: "none", color: "inherit", display: "block" }}
     >
       <Box
@@ -75,7 +94,7 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
               height={HERO_PHOTO_HEIGHT}
               rounded={0}
               priority
-              sizes="(max-width: 900px) 100vw, 55vw"
+              sizes={HERO_PHOTO_SIZES}
               transitionName={photoTransitionName(recipe.id)}
             />
           ) : (
@@ -104,16 +123,18 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
               textWrap: "pretty",
             }}
           >
-            {head}
-            {tail ? (
-              <Box
-                component="span"
-                sx={{ fontStyle: "italic", fontWeight: 300 }}
-              >
-                {" "}
-                {tail}
-              </Box>
-            ) : null}
+            <OpeningCue>
+              {head}
+              {tail ? (
+                <Box
+                  component="span"
+                  sx={{ fontStyle: "italic", fontWeight: 300 }}
+                >
+                  {" "}
+                  {tail}
+                </Box>
+              ) : null}
+            </OpeningCue>
           </Typography>
 
           {recipe.description ? (
@@ -166,6 +187,6 @@ export function RecipeHero({ recipe }: { recipe: RecipeWithRelations }) {
           ) : null}
         </Stack>
       </Box>
-    </Link>
+    </RecipeLink>
   );
 }

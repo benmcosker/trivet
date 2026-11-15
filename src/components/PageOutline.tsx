@@ -22,29 +22,35 @@ const breathe = keyframes`
   50% { opacity: 0.55; }
 `;
 
-const waiting = {
+export const waiting = {
   animation: `${breathe} 1.8s ease-in-out infinite`,
   "@media (prefers-reduced-motion: reduce)": { animation: "none" },
 } as const;
 
-const stripes =
+export const stripes =
   "repeating-linear-gradient(135deg, var(--mui-palette-background-stripeA) 0 11px, var(--mui-palette-background-stripeB) 11px 22px)";
 
-function Bar({ width, height = 12 }: { width: string; height?: number }) {
+export function Bar({
+  width,
+  height = 12,
+}: {
+  width: string;
+  height?: number;
+}) {
   return (
     <Box sx={{ height, width, bgcolor: "background.stripeB", flexShrink: 0 }} />
   );
 }
 
 /** Varied, so a column of placeholders does not read as a table. */
-const WIDTHS = ["88%", "74%", "92%", "80%", "70%", "86%", "78%", "90%"];
+export const WIDTHS = ["88%", "74%", "92%", "80%", "70%", "86%", "78%", "90%"];
 const SHORT = ["52%", "40%", "60%", "46%", "55%", "38%", "48%", "44%"];
 
 export function PageOutline({
   kind,
   title,
 }: {
-  kind: "library" | "week" | "list" | "recipe";
+  kind: "library" | "week" | "list";
   /** The page's heading, when it is the same whatever loads. */
   title?: string;
 }) {
@@ -57,7 +63,7 @@ export function PageOutline({
           sx={{
             mb: 2.5,
             // The library's heading is set smaller on a phone than the
-            // theme's h1 (see recipes/page.tsx); the outline matches it, so
+            // theme's h1 (see recipes/(library)/page.tsx); the outline matches it, so
             // nothing jumps when the page arrives.
             ...(kind === "library"
               ? {
@@ -228,33 +234,6 @@ export function PageOutline({
               </Box>
             ))}
           </Box>
-        ) : null}
-
-        {kind === "recipe" ? (
-          <>
-            <Box
-              sx={{ height: { xs: 160, sm: 380 }, background: stripes, mb: 3 }}
-            />
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "1fr 2fr" },
-                gap: 3,
-              }}
-            >
-              {[5, 4].map((rows, column) => (
-                <Box
-                  key={column}
-                  sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
-                >
-                  <Bar width="40%" height={20} />
-                  {WIDTHS.slice(0, rows).map((width, index) => (
-                    <Bar key={index} width={width} />
-                  ))}
-                </Box>
-              ))}
-            </Box>
-          </>
         ) : null}
       </Box>
     </Box>

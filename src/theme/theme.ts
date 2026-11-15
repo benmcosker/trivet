@@ -394,11 +394,21 @@ const identity: ThemeOptions = {
          * The blur covers pixel interpolation while a 230px card stretches to
          * a 380px header. 400ms is long enough to read as one object moving
          * and short enough not to feel like waiting.
+         *
+         * Only on the journey itself, which the link tags `nav-forward` or
+         * `nav-back`. The recipe's outline already holds the photo in its
+         * final place (`RecipeOutline`), and when the page replaces it React
+         * pairs the two again, in a transition with no type. Nothing moves
+         * then, and a blur on a photo standing still reads as a flicker, so
+         * that one is left as the browser's plain crossfade of a picture into
+         * itself. A browser without transition types drops this rule and
+         * morphs unblurred.
          */
         "::view-transition-group(.morph)": { animationDuration: "400ms" },
-        "::view-transition-image-pair(.morph)": {
-          animationName: "photo-morph",
-        },
+        ":root:active-view-transition-type(nav-forward, nav-back)::view-transition-image-pair(.morph)":
+          {
+            animationName: "photo-morph",
+          },
         "@keyframes photo-morph": { "30%": { filter: "blur(3px)" } },
 
         /*

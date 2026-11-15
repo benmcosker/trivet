@@ -1,10 +1,7 @@
 import { AppShell } from "@/components/AppShell";
 import { PageOutline } from "@/components/PageOutline";
 
-/**
- * A plain outline, so this page does not borrow the library's tiles from
- * `recipes/loading.tsx` above it.
- */
+/** Shown at once while the page loads. See `PageOutline`. */
 export default function Loading() {
   return (
     <AppShell>
