@@ -359,19 +359,25 @@ You need a Postgres instance. Anything works locally; production is Neon.
 
 ### Environment
 
-| Variable                | Needed for            | Notes                                              |
-| ----------------------- | --------------------- | -------------------------------------------------- |
-| `DATABASE_URL`          | everything            | Postgres connection string                         |
-| `BETTER_AUTH_SECRET`    | sessions              | `openssl rand -base64 32`                          |
-| `BETTER_AUTH_URL`       | sessions              | The app's own origin                               |
-| `ANTHROPIC_API_KEY`     | reading a card        | Without it, upload returns a clear 422             |
-| `UPLOAD_DAILY_LIMIT`    | capping the bill      | Cards per person per day. Unset means 30           |
-| `INSTACART_API_KEY`     | sending a cart        | Without it, the planner says so and stays usable   |
-| `INSTACART_API_BASE`    | sending a cart        | Dev server by default; switch for production       |
-| `BLOB_READ_WRITE_TOKEN` | uploads in production | Unset locally: files go to `public/uploads/`       |
-| `TWILIO_ACCOUNT_SID`    | texting the list      | All three are needed; any missing hides the button |
-| `TWILIO_AUTH_TOKEN`     | texting the list      | The account's auth token, not an API key secret    |
-| `TWILIO_FROM_NUMBER`    | texting the list      | E.164, e.g. `+15085551212`                         |
+| Variable                 | Needed for            | Notes                                              |
+| ------------------------ | --------------------- | -------------------------------------------------- |
+| `DATABASE_URL`           | everything            | Postgres connection string                         |
+| `BETTER_AUTH_SECRET`     | sessions              | `openssl rand -base64 32`                          |
+| `BETTER_AUTH_URL`        | sessions              | The app's own origin                               |
+| `ANTHROPIC_API_KEY`      | reading a card        | Without it, upload returns a clear 422             |
+| `UPLOAD_DAILY_LIMIT`     | capping the bill      | Cards per person per day. Unset means 30           |
+| `INSTACART_API_KEY`      | sending a cart        | Without it, the planner says so and stays usable   |
+| `INSTACART_API_BASE`     | sending a cart        | Dev server by default; switch for production       |
+| `BLOB_READ_WRITE_TOKEN`  | uploads in production | Unset locally: files go to `public/uploads/`       |
+| `TWILIO_ACCOUNT_SID`     | texting the list      | All three are needed; any missing hides the button |
+| `TWILIO_AUTH_TOKEN`      | texting the list      | The account's auth token, not an API key secret    |
+| `TWILIO_FROM_NUMBER`     | texting the list      | E.164, e.g. `+15085551212`                         |
+| `SENTRY_DSN`             | error reports         | The Sentry project's DSN; unset means no reporting |
+| `NEXT_PUBLIC_SENTRY_DSN` | error reports         | The same DSN, for the browser; needs a redeploy    |
+| `SENTRY_AUTH_TOKEN`      | readable stack traces | Uploads source maps at build. Mark it sensitive    |
+| `SENTRY_ORG`             | readable stack traces | The Sentry organisation's slug                     |
+| `SENTRY_PROJECT`         | readable stack traces | `trivet`                                           |
+| `SENTRY_TEST_ENABLED`    | checking Sentry       | `1` opens `/debug/error` to admins. Temporary      |
 
 Missing optional keys degrade gracefully — the rest of the app keeps working
 and the affected feature explains what is missing.

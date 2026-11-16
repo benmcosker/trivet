@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -76,4 +77,26 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Sentry's build step: source maps, so an error points at a file and a line
+ * rather than at minified code, and the `/monitoring` route the browser
+ * reports through.
+ *
+ * The maps are uploaded only when `SENTRY_AUTH_TOKEN` is set (in Vercel, as a
+ * sensitive variable), and deleted from the build afterwards either way, so
+ * the site never serves its own source. Without the token the build is
+ * exactly what it was.
+ */
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: {
+    disable: process.env.SENTRY_AUTH_TOKEN ? false : "disable-upload",
+    deleteSourcemapsAfterUpload: true,
+  },
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  silent: !process.env.CI,
+  telemetry: false,
+});

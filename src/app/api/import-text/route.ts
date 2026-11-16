@@ -5,6 +5,7 @@ import { extractRecipeFromText } from "@/lib/extract-recipe";
 import { PASTED_TEXT_REFUSAL, readPastedText } from "@/lib/pasted-text";
 import { getCurrentHousehold } from "@/lib/session";
 import { claimUploadSlot } from "@/lib/upload-quota";
+import { reportError } from "@/lib/report-error";
 
 /**
  * Text somebody pasted or shared, read as a recipe.
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   } catch (error) {
     // An unhandled throw would be Next's HTML error page, which the client
     // cannot parse and would report as a timeout.
-    console.error("[trivet] text import failed", error);
+    reportError("[trivet] text import failed", error);
     return NextResponse.json(
       { error: "Something went wrong reading that text. Nothing was saved." },
       { status: 500 },

@@ -19,6 +19,7 @@ import { suggestSides } from "@/lib/side-suggestions";
 import { findSide } from "@/lib/sides";
 import { textShoppingList } from "@/lib/sms/shopping-list";
 import { requireHousehold } from "@/lib/session";
+import { reportError } from "@/lib/report-error";
 
 /** Put a recipe in a slot, or clear it. The logic is in `plan-mutations.ts`. */
 export async function setPlannedMealAction(input: {
@@ -112,7 +113,7 @@ export async function textShoppingListAction(
       weekLabel: `week of ${weekStart.toISOString().slice(0, 10)}`,
     });
   } catch (error) {
-    console.error("[sms] could not text the shopping list", error);
+    reportError("[sms] could not text the shopping list", error);
     return { ok: false, error: "The message could not be sent. Try again." };
   }
 
@@ -225,7 +226,7 @@ export async function acceptSideAction(
       update: { recipeId, servings },
     });
   } catch (error) {
-    console.error("[sides] could not add the side", error);
+    reportError("[sides] could not add the side", error);
     return { ok: false, error: "That side could not be added. Try again." };
   }
 

@@ -5,6 +5,7 @@ import { emailAvailable, getEmailSender } from "./email";
 import { inviteEmail } from "./email/invite";
 import { defaultHouseholdName, MAX_HOUSEHOLD_NAME } from "./household";
 import { APP_NAME } from "./legal";
+import { reportError } from "@/lib/report-error";
 
 /** How long a freshly minted invite stays redeemable. */
 export const INVITE_TTL_DAYS = 14;
@@ -116,10 +117,10 @@ export async function emailInvite(params: {
       fromName: inviter ? `${inviter} via ${APP_NAME}` : undefined,
     });
     if (result.ok) return "sent";
-    console.error("[invite] could not email the invitation:", result.error);
+    reportError("[invite] could not email the invitation:", result.error);
     return "failed";
   } catch (error) {
-    console.error("[invite] could not email the invitation:", error);
+    reportError("[invite] could not email the invitation:", error);
     return "failed";
   }
 }

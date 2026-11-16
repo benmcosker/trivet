@@ -16,6 +16,7 @@ import {
   setDefaultServings,
 } from "@/lib/household";
 import { requireHousehold } from "@/lib/session";
+import { reportError } from "@/lib/report-error";
 
 export type InviteKind = "family" | "outside";
 
@@ -92,7 +93,7 @@ export async function createInviteAction(
     // digest - a number, with the message stripped out because it is a server
     // error. That is the right thing to show a stranger and useless to
     // everyone, including whoever has to work out what went wrong.
-    console.error("[invite] could not create", error);
+    reportError("[invite] could not create", error);
     return {
       ok: false,
       error: `That code could not be created. ${hint(error)}`,
@@ -183,7 +184,7 @@ export async function renameHouseholdAction(
   try {
     saved = await renameHousehold(user.householdId, name);
   } catch (error) {
-    console.error("[household] could not rename", error);
+    reportError("[household] could not rename", error);
     return { ok: false, error: "That name could not be saved. Try again." };
   }
   if (!saved) return { ok: false, error: "Give the household a name." };
@@ -207,7 +208,7 @@ export async function setDefaultServingsAction(
   try {
     await setDefaultServings(user.householdId, servings);
   } catch (error) {
-    console.error("[household] could not save the serving default", error);
+    reportError("[household] could not save the serving default", error);
     return;
   }
 
@@ -224,7 +225,7 @@ export async function revokeInviteAction(id: string): Promise<void> {
     // Nothing useful to say on the page - the code is either gone or it is
     // not, and the list refreshes either way - but the reason belongs in the
     // log rather than nowhere.
-    console.error("[invite] could not revoke", error);
+    reportError("[invite] could not revoke", error);
   }
   revalidatePath("/household");
 }
@@ -252,7 +253,7 @@ export async function saveMyPhoneAction(
     revalidatePath("/plan");
     return result;
   } catch (error) {
-    console.error("[household] could not save phone", error);
+    reportError("[household] could not save phone", error);
     return { ok: false, error: "That number could not be saved. Try again." };
   }
 }

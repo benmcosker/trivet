@@ -5,6 +5,7 @@ import { prisma } from "./db";
 import { emailAvailable, getEmailSender } from "./email";
 import { REPORT_REASONS, type ReportTarget } from "./moderation-copy";
 import { visibleRecipes } from "./recipe-visibility";
+import { reportError } from "@/lib/report-error";
 
 export { REPORT_REASONS, type ReportTarget };
 
@@ -161,7 +162,7 @@ async function tellAdmins(
 ): Promise<void> {
   const to = adminEmails();
   if (to.length === 0 || !emailAvailable()) {
-    console.error("[report] no admin email configured; a report is on /admin");
+    reportError("[report] no admin email configured; a report is on /admin");
     return;
   }
   const label = REPORT_REASONS.find((r) => r.value === reason)?.label ?? reason;
@@ -183,7 +184,7 @@ async function tellAdmins(
       subject: "Trivet: shared content reported",
       text,
     });
-    if (!result.ok) console.error("[report] email failed:", result.error);
+    if (!result.ok) reportError("[report] email failed:", result.error);
   }
 }
 

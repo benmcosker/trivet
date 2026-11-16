@@ -5,6 +5,7 @@ import { getSender, smsAvailable } from "./index";
 import { TWILIO_UNSUBSCRIBED } from "./twilio";
 import { shoppingListMessage, splitMessage } from "./message";
 import type { SendOutcome, SmsRecipient } from "./types";
+import { reportError } from "@/lib/report-error";
 
 export type TextListResult =
   | {
@@ -43,7 +44,7 @@ async function withdrawConsent(userId: string): Promise<void> {
       data: { smsConsentAt: null, smsConsentSource: null },
     });
   } catch (error) {
-    console.error("[sms] could not record a STOP reply", error);
+    reportError("[sms] could not record a STOP reply", error);
   }
 }
 
@@ -206,7 +207,7 @@ export async function textShoppingList(params: {
       },
     });
   } catch (error) {
-    console.error("[sms] could not record that the list was texted", error);
+    reportError("[sms] could not record that the list was texted", error);
   }
 
   const delivered = outcomes.filter((o) => o.ok).map((o) => o.recipient.name);
