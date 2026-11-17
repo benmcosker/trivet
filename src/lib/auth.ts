@@ -18,6 +18,7 @@ import { APP_NAME } from "./legal";
 import { pruneUnapprovedAssistants } from "./mcp/access";
 import { BASE_SCOPES, MCP_SCOPES, mcpResource } from "./mcp/resource";
 import { parsePhone } from "./phone";
+import { reportError } from "@/lib/report-error";
 
 const SIGN_UP_PATH = "/sign-up/email";
 
@@ -88,7 +89,7 @@ export const auth = betterAuth({
      */
     sendResetPassword: async ({ user, url }) => {
       if (!emailAvailable()) {
-        console.error(
+        reportError(
           "[reset] no email provider configured, so a reset link was " +
             "requested and could not be delivered. Set RESEND_API_KEY and " +
             "EMAIL_FROM.",
@@ -104,7 +105,7 @@ export const auth = betterAuth({
       });
 
       if (!result.ok) {
-        console.error("[reset] could not send the link:", result.error);
+        reportError("[reset] could not send the link:", result.error);
       }
     },
   },
@@ -208,7 +209,7 @@ export const auth = betterAuth({
       // `pruneUnapprovedAssistants`). Never allowed to fail the request.
       if (ctx.path === "/oauth2/register") {
         await pruneUnapprovedAssistants().catch((error) =>
-          console.error("[mcp] could not prune registrations", error),
+          reportError("[mcp] could not prune registrations", error),
         );
         return;
       }
@@ -259,7 +260,7 @@ export const auth = betterAuth({
               },
             })
             .catch((error) => {
-              console.error("[signup] could not store phone", error);
+              reportError("[signup] could not store phone", error);
             });
         }
         return;
@@ -274,7 +275,7 @@ export const auth = betterAuth({
         // The only record of what actually happened: better-auth turns this
         // into a status code, and the person signing up cannot be shown a
         // database error.
-        console.error("[invite] redemption failed", failure);
+        reportError("[invite] redemption failed", failure);
         throw new APIError("INTERNAL_SERVER_ERROR", {
           message: "Something went wrong setting that account up. Try again.",
         });

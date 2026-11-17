@@ -8,6 +8,7 @@ const full = {
   ANTHROPIC_API_KEY: "k",
   TWILIO_ACCOUNT_SID: "k",
   RESEND_API_KEY: "k",
+  SENTRY_DSN: "k",
   BLOB_READ_WRITE_TOKEN: "k",
 };
 
@@ -43,6 +44,7 @@ describe("checkEnv", () => {
       "ANTHROPIC_API_KEY",
       "TWILIO_ACCOUNT_SID",
       "RESEND_API_KEY",
+      "SENTRY_DSN",
       "BLOB_READ_WRITE_TOKEN",
     ]);
   });

@@ -19,6 +19,7 @@ import { extractLargestJpeg } from "@/lib/pdf-images";
 import { inspectPdf } from "@/lib/pdf-inspect";
 import { storeFile } from "@/lib/storage";
 import { getCurrentHousehold } from "@/lib/session";
+import { reportError } from "@/lib/report-error";
 
 /**
  * Reading a PDF takes as long as it takes.
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
   try {
     return await handleUpload(request);
   } catch (error) {
-    console.error("[trivet] upload failed", error);
+    reportError("[trivet] upload failed", error);
 
     const refused = blobFailure(error, "file");
     if (refused) return refused;

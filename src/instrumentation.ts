@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import { checkEnv, formatMissingRequired } from "@/lib/env";
 
 /**
@@ -9,6 +11,10 @@ import { checkEnv, formatMissingRequired } from "@/lib/env";
  * purpose.
  */
 export async function register() {
+  // Sentry first, so a server that refuses to start is reported too.
+  if (process.env.NEXT_RUNTIME === "nodejs") await import("./sentry/server");
+  if (process.env.NEXT_RUNTIME === "edge") await import("./sentry/edge");
+
   const { missingRequired, disabledFeatures } = checkEnv();
 
   if (missingRequired.length > 0) {
@@ -21,3 +27,9 @@ export async function register() {
     );
   }
 }
+
+/**
+ * Every error a page, server action or route handler throws, with the route
+ * it came from. Next calls this; without a DSN it does nothing.
+ */
+export const onRequestError = Sentry.captureRequestError;

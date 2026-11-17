@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { requireMcpAuth } from "@better-auth/mcp";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { after } from "next/server";
@@ -8,6 +9,7 @@ import { claimAssistantCall } from "@/lib/mcp/activity";
 import { recordMcpExchange, requestLogEnabled } from "@/lib/mcp/request-log";
 import { MCP_SCOPES, mcpResource } from "@/lib/mcp/resource";
 import { trivetMcpServer } from "@/lib/mcp/server";
+import { reportError } from "@/lib/report-error";
 
 /**
  * Trivet's MCP endpoint, https://trivetbox.com/api/mcp (MCP-PLAN.md).
@@ -35,7 +37,12 @@ const protectedHandler = requireMcpAuth(
   auth,
   async (request, claims) => {
     const access = await assistantAccess(claims);
-    if (access) identified.set(request, access);
+    if (access) {
+      identified.set(request, access);
+      // Whose assistant hit an error, by id only, and which assistant.
+      Sentry.setUser({ id: access.userId });
+      Sentry.setTag("assistant_client", access.clientId);
+    }
     if (!access) {
       // Disconnected on the Household page, or the person left their
       // household. The token still verifies, so say why rather than 401,
@@ -146,7 +153,7 @@ async function handler(request: Request): Promise<Response> {
         clientId: who?.clientId ?? null,
       });
     } catch (error) {
-      console.error("[mcp] could not log a request", error);
+      reportError("[mcp] could not log a request", error);
     }
   });
   return response;

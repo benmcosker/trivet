@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/session";
 import { PAGE_MAX_WIDTH, PAGE_PADDING_X } from "@/theme/page";
 
+import { SentryUser } from "./SentryUser";
 import { SiteFooter } from "./SiteFooter";
 import { TopBar } from "./TopBar";
 
@@ -13,6 +14,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      <SentryUser id={user?.id ?? null} />
       <TopBar userName={user?.name ?? null} isAdmin={isAdmin(user?.email)} />
       {/*
        * A plain Box rather than a Container. Container's `maxWidth="lg"` is

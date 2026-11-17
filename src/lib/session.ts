@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -19,6 +20,9 @@ export type HouseholdUser = CurrentUser & {
 /** The signed-in user, or null. Safe to call from any server component. */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await auth.api.getSession({ headers: await headers() });
+  // Who saw an error, by id only - see `sentry-options.ts`. Scoped to this
+  // request; a no-op without a DSN.
+  if (session?.user) Sentry.setUser({ id: session.user.id });
   return session?.user ?? null;
 }
 

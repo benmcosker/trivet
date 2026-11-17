@@ -4,6 +4,7 @@ import { blobFailure } from "@/lib/blob-failure";
 import { inspectImage } from "@/lib/image-inspect";
 import { clearRecipeImage, setRecipeImage } from "@/lib/recipe-image";
 import { getCurrentHousehold } from "@/lib/session";
+import { reportError } from "@/lib/report-error";
 
 /**
  * A photo is small next to a PDF and needs no model call, but it still crosses
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   try {
     return await handle(request);
   } catch (error) {
-    console.error("[trivet] recipe image upload failed", error);
+    reportError("[trivet] recipe image upload failed", error);
 
     const refused = blobFailure(error, "photo");
     if (refused) return refused;

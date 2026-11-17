@@ -23,6 +23,7 @@ import { getCurrentHousehold } from "@/lib/session";
 import { socialAdvice, socialSite } from "@/lib/social-links";
 import { storeFile } from "@/lib/storage";
 import { claimUploadSlot } from "@/lib/upload-quota";
+import { reportError } from "@/lib/report-error";
 
 /**
  * A fetch of somebody else's site plus a model call that reads it.
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     // Same reasoning as the upload route: an unhandled throw here would be
     // Next's HTML error page, which the client cannot parse and would report
     // as a timeout.
-    console.error("[trivet] url import failed", error);
+    reportError("[trivet] url import failed", error);
     return NextResponse.json(
       { error: "Something went wrong reading that page. Nothing was saved." },
       { status: 500 },
@@ -214,7 +215,7 @@ async function storePageImage(source: string | null): Promise<string | null> {
     );
     return stored.url;
   } catch (error) {
-    console.error("[trivet] could not store the page's photo", error);
+    reportError("[trivet] could not store the page's photo", error);
     return null;
   }
 }

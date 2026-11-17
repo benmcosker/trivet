@@ -49,6 +49,14 @@ const OPTIONAL = [
       "with Resend.",
   },
   {
+    feature: "Error reporting",
+    missing: "SENTRY_DSN",
+    consequence:
+      "Errors only reach the server logs. Set SENTRY_DSN and " +
+      "NEXT_PUBLIC_SENTRY_DSN to the project's DSN to send them to Sentry; " +
+      "SENTRY_AUTH_TOKEN, SENTRY_ORG and SENTRY_PROJECT add source maps.",
+  },
+  {
     feature: "Cloud file storage",
     missing: "BLOB_READ_WRITE_TOKEN",
     consequence:
