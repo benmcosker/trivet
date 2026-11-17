@@ -38,8 +38,10 @@ export type Line = {
 
 /** Connection housekeeping every assistant does; hidden unless asked. */
 const HANDSHAKES = new Set([
-  // 2026-07-28: the client asks what the server speaks before anything else.
+  // 2026-07-28: the client asks what the server speaks before anything else,
+  // and opens a stream to hear when the tools change (Trivet's never do).
   "server/discover",
+  "subscriptions/listen",
   "initialize",
   "tools/list",
   "prompts/list",
