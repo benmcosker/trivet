@@ -4,6 +4,7 @@ import {
   TRACES_SAMPLE_RATE,
   dataCollection,
   scrubEvent,
+  scrubSpanAttributes,
   sentryEnvironment,
 } from "@/lib/sentry-options";
 
@@ -31,7 +32,10 @@ Sentry.init({
   tracesSampleRate: TRACES_SAMPLE_RATE,
   dataCollection,
   beforeSend: scrubEvent,
-  beforeSendTransaction: scrubEvent,
+  beforeSendSpan: (span) => ({
+    ...span,
+    attributes: scrubSpanAttributes(span.attributes),
+  }),
 });
 
 /** Times each navigation, so a slow page shows as a slow page. */

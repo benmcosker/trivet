@@ -4,6 +4,7 @@ import {
   TRACES_SAMPLE_RATE,
   dataCollection,
   scrubEvent,
+  scrubSpanAttributes,
   sentryEnvironment,
 } from "@/lib/sentry-options";
 
@@ -21,7 +22,10 @@ Sentry.init({
   tracesSampleRate: TRACES_SAMPLE_RATE,
   dataCollection,
   beforeSend: scrubEvent,
-  beforeSendTransaction: scrubEvent,
+  beforeSendSpan: (span) => ({
+    ...span,
+    attributes: scrubSpanAttributes(span.attributes),
+  }),
   /*
    * The app's own log lines - "[trivet] ...", "[mcp] ...", "[sms] ..." - go
    * to Sentry's Logs beside the errors they explain. Warnings and errors

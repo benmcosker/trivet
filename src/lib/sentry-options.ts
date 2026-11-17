@@ -71,7 +71,7 @@ type WithRequest = {
 };
 
 /**
- * The last word on what leaves, applied to every error and trace.
+ * The last word on what leaves an error report.
  *
  * `dataCollection` should already have done this, but measured against a
  * production build it did not narrow the headers on server errors: every
@@ -92,4 +92,37 @@ export function scrubEvent<T extends WithRequest>(event: T): T {
   delete request.cookies;
   delete request.data;
   return event;
+}
+
+/**
+ * The same rule for timing data.
+ *
+ * Sentry 11 streams spans rather than sending whole transactions, and a
+ * streamed span skips `beforeSendTransaction` (Sentry says so in the logs on
+ * every cold start). What a span knows about its request is in attributes
+ * named `http.request.header.<name>`, `http.request.cookies` and the like, so
+ * this keeps the same four headers and drops cookies and bodies there too.
+ */
+export function scrubSpanAttributes(
+  attributes: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(attributes)
+      .filter(([key]) => {
+        const name = key.toLowerCase();
+        const header = /^http\.(request|response)\.header\.(.+)$/.exec(name);
+        if (header) {
+          return header[1] === "request" && KEPT_HEADERS.has(header[2]);
+        }
+        // The query string can carry a sign-in code on the assistant
+        // connection pages; the path and route say enough about a slow page.
+        if (name === "url.query" || name === "http.query") return false;
+        return !/cookie|\.body\b|request\.data/.test(name);
+      })
+      .map(([key, value]) =>
+        key === "url.full" && typeof value === "string"
+          ? [key, value.split(/[?#]/)[0]]
+          : [key, value],
+      ),
+  );
 }
