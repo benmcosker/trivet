@@ -38,6 +38,8 @@ export type Line = {
 
 /** Connection housekeeping every assistant does; hidden unless asked. */
 const HANDSHAKES = new Set([
+  // 2026-07-28: the client asks what the server speaks before anything else.
+  "server/discover",
   "initialize",
   "tools/list",
   "prompts/list",

@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { requireMcpAuth } from "@better-auth/mcp";
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { createMcpHandler } from "@modelcontextprotocol/server";
 import { after } from "next/server";
 
 import { auth } from "@/lib/auth";
@@ -69,21 +69,33 @@ const protectedHandler = requireMcpAuth(
     // the token's scopes record.
     const scopes =
       typeof claims.scope === "string" ? claims.scope.split(" ") : [];
-    const server = trivetMcpServer({
-      householdId: access.householdId,
-      userId: access.userId,
-      clientId: access.clientId,
-      canPlan: scopes.includes(MCP_SCOPES.write),
+    const server = () =>
+      trivetMcpServer({
+        householdId: access.householdId,
+        userId: access.userId,
+        clientId: access.clientId,
+        canPlan: scopes.includes(MCP_SCOPES.write),
+      });
+    /*
+     * Both protocol eras from the one server definition. Claude speaks
+     * 2026-07-28, where every request carries its own envelope; ChatGPT and
+     * Gemini still speak the 2025 revisions with an `initialize` handshake,
+     * which the handler answers through its stateless legacy fallback. The
+     * old single transport knew only the 2025 revisions and answered Claude
+     * "Unsupported protocol version" (400) on every request.
+     *
+     * The default response shaping answers in plain JSON unless a tool sends
+     * something mid-call, which none of Trivet's do. (`responseMode: "json"`
+     * would say the same but warns on every handler, which here is every
+     * request.)
+     */
+    const mcp = createMcpHandler(server, {
+      onerror: (error) => reportError("[mcp] request rejected", error),
     });
-    const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-      enableJsonResponse: true,
-    });
-    await server.connect(transport);
     try {
-      return await transport.handleRequest(request);
+      return await mcp.fetch(request);
     } finally {
-      void server.close();
+      void mcp.close();
     }
   },
   {
