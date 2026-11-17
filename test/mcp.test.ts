@@ -6,9 +6,8 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
  * assistant's very next call. Against the database, since every rule here is
  * a query.
  */
-const { Client } = await import("@modelcontextprotocol/sdk/client/index.js");
-const { InMemoryTransport } =
-  await import("@modelcontextprotocol/sdk/inMemory.js");
+const { Client } = await import("@modelcontextprotocol/client");
+const { InMemoryTransport } = await import("@modelcontextprotocol/server");
 const { prisma } = await import("@/lib/db");
 const { addExtraItem } = await import("@/lib/extras");
 const { weekStartOf } = await import("@/lib/grocery");

@@ -65,6 +65,23 @@ describe("describeExchange", () => {
     });
   });
 
+  it("reads an answer sent as an event stream, as 2025-era assistants get", () => {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      result: {
+        content: [{ type: "text", text: JSON.stringify({ total: 54 }) }],
+      },
+    });
+    const [search] = describeExchange(
+      JSON.stringify(call(1, "search_recipes", { query: "chicken" })),
+      200,
+      `event: message\ndata: ${body}\n\n`,
+    );
+    expect(search.outcome).toBe("ok");
+    expect(JSON.parse(search.result!)).toEqual({ total: 54 });
+  });
+
   it("marks a tool's own error, with its message", () => {
     const [row] = describeExchange(
       JSON.stringify(call(2, "get_recipe", { id: "nope" })),

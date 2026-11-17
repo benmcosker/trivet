@@ -42,11 +42,34 @@ function asList<T>(value: unknown): T[] {
   return value && typeof value === "object" ? [value as T] : [];
 }
 
+/**
+ * A request or response body: plain JSON, or an event stream whose `data:`
+ * lines each hold one message. 2025-era assistants are answered as a stream
+ * (the protocol library's stateless fallback), 2026-era ones as plain JSON.
+ */
 function parse(text: string): unknown {
   try {
     return JSON.parse(text);
   } catch {
-    return null;
+    const data = text
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trim())
+      .filter(Boolean);
+    if (data.length === 0) return null;
+    const messages: unknown[] = [];
+    for (const chunk of data) {
+      try {
+        messages.push(JSON.parse(chunk));
+      } catch {
+        // Not a message; a keep-alive or a partial line.
+      }
+    }
+    return messages.length === 0
+      ? null
+      : messages.length === 1
+        ? messages[0]
+        : messages;
   }
 }
 
