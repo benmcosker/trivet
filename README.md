@@ -397,6 +397,57 @@ VALUES ('bootstrap-invite', 'PICKSOMETHINGRANDOM', now() + interval '7 days', no
 Then visit `/sign-up?code=PICKSOMETHINGRANDOM`. (Delete the placeholder row
 afterwards if you like — the invite survives on its own.)
 
+## Logging and error monitoring
+
+Production problems surface in **Sentry** (issues, logs, alerts) and in
+**Vercel's runtime logs** (short-lived). Sentry is off until `SENTRY_DSN` is
+set, so local runs and the tests report nothing.
+
+What reaches Sentry:
+
+- **Crashes:** anything a page, server action or API route throws, with the
+  route (`onRequestError` in `src/instrumentation.ts`); browser crashes, which
+  includes the iPhone app's web view; and what the root layout can't survive
+  (`src/app/global-error.tsx`, which shows "Something went wrong" with a
+  reload link).
+- **Failures the app catches and survives:** a photo that won't upload, a list
+  that won't text, an invitation that won't send, an assistant request that
+  can't be logged. Each goes through `reportError()` (`src/lib/report-error.ts`)
+  and becomes an issue tagged `area` from its log prefix (`sms`, `invite`,
+  `mcp`, …) and `handled: yes`.
+- **Logs:** every server `console.warn` and `console.error` (the `[trivet]`,
+  `[mcp]`, `[sms]` lines) goes to Sentry's Logs, attached to the error it
+  explains.
+- **Timing:** one request in ten is traced, so slow pages show up in Traces.
+- **Who:** the signed-in person's id only. Assistant requests also carry the
+  assistant's client id (`assistant_client`).
+
+What never does (`src/lib/sentry-options.ts`): emails, cookies, request and
+response bodies, recipe text, assistant tool arguments, database query data,
+stack-frame variables, and every header but `user-agent`, `content-type`,
+`accept` and `referer`. Query strings are dropped from timing data, since one
+can carry a sign-in code. No session replay.
+
+Settings, in Vercel (Production and Preview):
+
+| Variable                       | Type   | Value                                  |
+| ------------------------------ | ------ | -------------------------------------- |
+| `SENTRY_DSN`                   | Config | The project's DSN                      |
+| `NEXT_PUBLIC_SENTRY_DSN`       | Config | The same DSN; built into the page      |
+| `SENTRY_AUTH_TOKEN`            | Secret | An organization token, for source maps |
+| `SENTRY_ORG`, `SENTRY_PROJECT` | Config | `mcosker`, `trivet`                    |
+
+Stack traces are readable only if the build uploaded its source maps: the
+Vercel build log says "Successfully uploaded source maps to Sentry". Keep
+`turbopack: { debugIds: false }` in `next.config.ts`; without it every
+server stack trace points one line off (`js_invalid_sourcemap_location`).
+
+When an alert arrives: open the issue, read the Stack Trace (it names the file
+and line under `src/`), the Logs section for the lines before it, and the
+`area` tag for which feature. For assistant traffic, `/admin/assistants` shows
+what each assistant asked for. If the whole site is down nothing reaches
+Sentry, so an uptime check on `/api/health` covers that.
+
 ## Deploying
 
 See [DEPLOYING.md](./DEPLOYING.md) for the full walkthrough — Neon, Vercel Blob,
