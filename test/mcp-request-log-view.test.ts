@@ -94,6 +94,9 @@ describe("lineFor", () => {
   it("tells handshakes from calls", () => {
     expect(isHandshake({ method: "initialize" })).toBe(true);
     expect(isHandshake({ method: "notifications/initialized" })).toBe(true);
+    // The 2026-07-28 protocol's own housekeeping.
+    expect(isHandshake({ method: "server/discover" })).toBe(true);
+    expect(isHandshake({ method: "subscriptions/listen" })).toBe(true);
     expect(isHandshake({ method: "HTTP GET" })).toBe(true);
     expect(isHandshake({ method: "tools/call" })).toBe(false);
   });
