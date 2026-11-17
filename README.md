@@ -377,7 +377,6 @@ You need a Postgres instance. Anything works locally; production is Neon.
 | `SENTRY_AUTH_TOKEN`      | readable stack traces | Uploads source maps at build. Mark it sensitive    |
 | `SENTRY_ORG`             | readable stack traces | The Sentry organisation's slug                     |
 | `SENTRY_PROJECT`         | readable stack traces | `trivet`                                           |
-| `SENTRY_TEST_ENABLED`    | checking Sentry       | `1` opens `/debug/error` to admins. Temporary      |
 
 Missing optional keys degrade gracefully — the rest of the app keeps working
 and the affected feature explains what is missing.
