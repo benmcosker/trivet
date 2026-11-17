@@ -2,6 +2,17 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * Sentry stamps each built file with its debug ID, not Turbopack.
+   *
+   * With Turbopack's own stamping on (the default under Sentry), the upload
+   * step stamps the files a second time on top and leaves the source maps one
+   * line short, so every server stack trace reported to Sentry pointed at
+   * nothing: `js_invalid_sourcemap_location`, line 3 of a map that started on
+   * line 2. Measured on a clean build: off, Sentry stamps once and rewrites
+   * the map to match, and the positions line up.
+   */
+  turbopack: { debugIds: false },
   experimental: {
     /**
      * Keep a page you just left for half a minute, so going straight back to
