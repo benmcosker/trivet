@@ -22,6 +22,18 @@ import {
 import { REPORT_REASONS } from "@/lib/moderation-copy";
 import type { ReportTarget } from "@/lib/moderation-copy";
 
+/** The foot-of-page link style: Report, Hide, Remove from our library. */
+export const quietLink = {
+  typography: "caption",
+  color: "text.secondary",
+  textDecoration: "underline",
+  textUnderlineOffset: "2px",
+  "&:hover, &:focus-visible": { color: "text.primary" },
+  // The word is small; the target it answers to is not.
+  py: "12px",
+  my: "-12px",
+} as const;
+
 /**
  * Report this, or hide the household it came from: Apple's guideline 1.2 for
  * content other people share. Only on what another household shared, and
@@ -70,16 +82,7 @@ export function ReportOrHide({
     }
   }
 
-  const link = {
-    typography: "caption",
-    color: "text.secondary",
-    textDecoration: "underline",
-    textUnderlineOffset: "2px",
-    "&:hover, &:focus-visible": { color: "text.primary" },
-    // The word is small; the target it answers to is not.
-    py: "12px",
-    my: "-12px",
-  } as const;
+  const link = quietLink;
 
   return (
     <>

@@ -74,10 +74,10 @@ export function ShareRecipeToggle({
       >
         <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
           {isShared
-            ? "Shared - every household can cook from this."
+            ? "In the shared library: every household sees it."
             : asking
-              ? "Share with every household?"
-              : "Private to your household."}
+              ? "Add it to the shared library?"
+              : "Not in the shared library."}
         </Typography>
         {isShared ? (
           <Button
@@ -85,33 +85,16 @@ export function ShareRecipeToggle({
             disabled={pending}
             onClick={() => setShared(false)}
           >
-            Make it private
+            Take it out
           </Button>
-        ) : asking ? (
-          <>
-            <Button
-              size="small"
-              disabled={pending}
-              onClick={() => setAsking(false)}
-            >
-              Not now
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              disabled={pending}
-              onClick={() => setShared(true)}
-            >
-              Share it
-            </Button>
-          </>
-        ) : (
+        ) : asking ? null : (
           <Button size="small" onClick={() => setAsking(true)}>
-            Share it
+            Add to shared library
           </Button>
         )}
       </Box>
 
+      {/* The ask before the button that answers it, not after. */}
       {asking && !isShared ? (
         <Typography variant="body2" sx={{ mt: 1.5, maxWidth: "60ch" }}>
           {SHARE_ASK}
@@ -125,6 +108,25 @@ export function ShareRecipeToggle({
         >
           {PHOTO_STAYS_HOME}
         </Typography>
+      ) : null}
+      {asking && !isShared ? (
+        <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
+          <Button
+            size="small"
+            disabled={pending}
+            onClick={() => setAsking(false)}
+          >
+            Not now
+          </Button>
+          <Button
+            size="small"
+            variant="contained"
+            disabled={pending}
+            onClick={() => setShared(true)}
+          >
+            Share with everyone
+          </Button>
+        </Box>
       ) : null}
     </Box>
   );
