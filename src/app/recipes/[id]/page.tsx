@@ -34,6 +34,7 @@ import {
 import { RecipeFacts, recipeFacts } from "@/components/RecipeFacts";
 import { RecipePlaceholder } from "@/components/RecipePlaceholder";
 import { PageTransition } from "@/components/PageTransition";
+import { PrintRecipeButton } from "@/components/PrintRecipeButton";
 import { RecipeReviews } from "@/components/RecipeReviews";
 import { ReportOrHide } from "@/components/ReportOrHide";
 import { getMyReview, listReviews } from "@/lib/reviews";
@@ -129,7 +130,11 @@ export default async function RecipePage({
           <Typography variant="h1" sx={{ overflowWrap: "break-word" }}>
             {recipe.title}
           </Typography>
-          <Stack direction="row" spacing={1}>
+          <Stack
+            direction="row"
+            data-print="hide"
+            sx={{ flexWrap: "wrap", gap: 1 }}
+          >
             {/*
              * Cooking is not editing: anyone who can read a recipe can stand at
              * a hob and follow it, so this one is outside the ownership check.
@@ -163,9 +168,13 @@ export default async function RecipePage({
                 >
                   Edit
                 </LinkButton>
+                <PrintRecipeButton />
                 <DeleteRecipeButton id={recipe.id} title={recipe.title} />
               </>
-            ) : null}
+            ) : (
+              // Anyone who can cook from it can print it, for the same reason.
+              <PrintRecipeButton />
+            )}
           </Stack>
         </Stack>
 
@@ -198,7 +207,8 @@ export default async function RecipePage({
           }
         />
 
-        <Box sx={{ mb: 3 }}>
+        {/* Left off the paper: a photo is most of a page's ink. */}
+        <Box sx={{ mb: 3 }} data-print="hide">
           {recipe.imageUrl ? (
             // The one photo already on screen when the page opens, so it loads
             // eagerly; everything else on the site stays lazy.
@@ -238,7 +248,15 @@ export default async function RecipePage({
         </Box>
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
+          {/*
+           * Side by side on paper too, where a page is narrower than the
+           * desktop breakpoint: stacked, the method of most recipes runs onto
+           * a second sheet.
+           */}
+          <Grid
+            size={{ xs: 12, md: 4 }}
+            sx={{ "@media print": { width: "33% !important" } }}
+          >
             <Card>
               <CardContent>
                 <Typography variant="h3" gutterBottom>
@@ -324,7 +342,17 @@ export default async function RecipePage({
             </Card>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 8 }}>
+          <Grid
+            size={{ xs: 12, md: 8 }}
+            sx={{
+              // Whatever the first column and the gap leave.
+              "@media print": {
+                width: "auto !important",
+                flex: "1 1 0",
+                minWidth: 0,
+              },
+            }}
+          >
             <Card>
               <CardContent>
                 {recipe.equipment.length > 0 ? (
@@ -400,7 +428,7 @@ export default async function RecipePage({
           </Grid>
         </Grid>
 
-        <Card sx={{ mt: 3 }}>
+        <Card sx={{ mt: 3 }} data-print="hide">
           <CardContent>
             <RecipeReviews
               recipeId={recipe.id}
@@ -417,17 +445,21 @@ export default async function RecipePage({
          * Sharing with every household is the base library's alone, so that
          * box belongs to its household - and to a recipe somebody shared that
          * way before the rule, so it can still be taken back. Any household
-         * can share with households it names.
+         * can share with households it names. Neither is for paper.
          */}
-        {mine && (canShare || recipe.isShared) ? (
-          <ShareRecipeToggle
-            recipeId={recipe.id}
-            isShared={recipe.isShared}
-            photoStaysHome={Boolean(recipe.imageUrl) && recipe.imageFromSource}
-          />
-        ) : null}
         {mine ? (
-          <ShareWithHouseholds recipeId={recipe.id} sharedWith={sharedWith} />
+          <Box data-print="hide">
+            {canShare || recipe.isShared ? (
+              <ShareRecipeToggle
+                recipeId={recipe.id}
+                isShared={recipe.isShared}
+                photoStaysHome={
+                  Boolean(recipe.imageUrl) && recipe.imageFromSource
+                }
+              />
+            ) : null}
+            <ShareWithHouseholds recipeId={recipe.id} sharedWith={sharedWith} />
+          </Box>
         ) : null}
 
         <Typography
@@ -467,6 +499,7 @@ export default async function RecipePage({
           // be reported, and its household hidden. One shared with this
           // household by name can also simply be declined.
           <Box
+            data-print="hide"
             sx={{
               mt: 1,
               display: "flex",
