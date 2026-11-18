@@ -61,8 +61,9 @@ the same URL and this command does not need editing every time.
 ## What works
 
 - **Invite-only accounts.** Signup requires a code minted by an existing user.
-  A recipe belongs to the household that added it and is private to them until
-  they share it; a shared one appears in every household's library.
+  A recipe belongs to the household that added it and is private to it. Every
+  household also sees the shared library, and can share a recipe with another
+  household it names (see **Sharing**, below).
 - **Invites by text or email.** A new code comes with **Text it**, which opens
   your own Messages with the invite written in, and **Copy link** for anywhere
   else. Give their email address and Trivet sends the invitation itself, from
@@ -126,8 +127,31 @@ the same URL and this command does not need editing every time.
   using the planner, and how many cards they have uploaded. Counts and dates
   only. It also holds the report queue (below). Reachable by the addresses in
   `ADMIN_EMAILS` and answering 404 to everybody else.
-- **Reporting and hiding shared content.** On another household's shared
-  recipe, and on a review from one, **Report** (a reason and a note, emailed to
+- **Sharing.** Two ways a recipe reaches another household, and only two:
+  - **The shared library:** the base recipes every household starts with and
+    sees, written for Trivet with photos taken for it. They belong to the
+    household of the addresses in `LIBRARY_EMAILS` (falling back to
+    `ADMIN_EMAILS`), and only that household can share a recipe with
+    everyone, after a second tap that says what sharing asks: your own words,
+    not a method copied from a website, cookbook or meal kit.
+  - **With a household you name:** any household can share its recipe by the
+    email of someone in another household. They find it in their library as
+    the owner keeps it, edits included, until the owner taps **Stop sharing**
+    or they tap **Remove from our library**. Lookups are limited to 20 an
+    hour per household, and a household either side has hidden reads as an
+    unknown address.
+
+  Either way, a photo that came with the source (the web page's, or the one
+  inside a PDF) is shown only to the household that imported it; everyone
+  else sees the placeholder until the owner adds a photo of their own, which
+  then travels with the recipe (`Recipe.imageFromSource`).
+
+- **Printing.** The planner prints two sheets, the shopping list and the
+  week's dinners. A recipe page prints at the servings it is being read for,
+  ingredients beside the method so most fit one page, without the photo,
+  buttons, reviews or sharing.
+- **Reporting and hiding shared content.** On a recipe from another household
+  (the library, or one shared with you), and on a review from one, **Report** (a reason and a note, emailed to
   the admins and queued on `/admin`, where a recipe can be taken out of the
   shared library or a review deleted) and **Hide** that household (its shared
   recipes and reviews leave your library, search, averages and recipe pages;
@@ -279,8 +303,9 @@ consent screen (it starts unticked):
 | `add_to_list`     | Adds something no recipe asks for to a week's list                                               |
 
 Every tool answers for the signed-in person's household through the same code
-as the website: their own recipes and the shared library, minus hidden
-households, and never another household's private recipe. Planning uses the
+as the website: their own recipes, the shared library and anything shared
+with their household by name, minus hidden households, and never another
+household's private recipe. Planning uses the
 planner's own logic (`src/lib/plan-mutations.ts`), so servings come from the
 household and only recipes it can see can be planned. An assistant that may
 only look is never shown the planning tools at all.
@@ -383,24 +408,26 @@ You need a Postgres instance. Anything works locally; production is Neon.
 
 ### Environment
 
-| Variable                 | Needed for            | Notes                                              |
-| ------------------------ | --------------------- | -------------------------------------------------- |
-| `DATABASE_URL`           | everything            | Postgres connection string                         |
-| `BETTER_AUTH_SECRET`     | sessions              | `openssl rand -base64 32`                          |
-| `BETTER_AUTH_URL`        | sessions              | The app's own origin                               |
-| `ANTHROPIC_API_KEY`      | reading a card        | Without it, upload returns a clear 422             |
-| `UPLOAD_DAILY_LIMIT`     | capping the bill      | Cards per person per day. Unset means 30           |
-| `INSTACART_API_KEY`      | sending a cart        | Without it, the planner says so and stays usable   |
-| `INSTACART_API_BASE`     | sending a cart        | Dev server by default; switch for production       |
-| `BLOB_READ_WRITE_TOKEN`  | uploads in production | Unset locally: files go to `public/uploads/`       |
-| `TWILIO_ACCOUNT_SID`     | texting the list      | All three are needed; any missing hides the button |
-| `TWILIO_AUTH_TOKEN`      | texting the list      | The account's auth token, not an API key secret    |
-| `TWILIO_FROM_NUMBER`     | texting the list      | E.164, e.g. `+15085551212`                         |
-| `SENTRY_DSN`             | error reports         | The Sentry project's DSN; unset means no reporting |
-| `NEXT_PUBLIC_SENTRY_DSN` | error reports         | The same DSN, for the browser; needs a redeploy    |
-| `SENTRY_AUTH_TOKEN`      | readable stack traces | Uploads source maps at build. Mark it sensitive    |
-| `SENTRY_ORG`             | readable stack traces | The Sentry organisation's slug                     |
-| `SENTRY_PROJECT`         | readable stack traces | `trivet`                                           |
+| Variable                 | Needed for            | Notes                                                                              |
+| ------------------------ | --------------------- | ---------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | everything            | Postgres connection string                                                         |
+| `BETTER_AUTH_SECRET`     | sessions              | `openssl rand -base64 32`                                                          |
+| `BETTER_AUTH_URL`        | sessions              | The app's own origin                                                               |
+| `ANTHROPIC_API_KEY`      | reading a card        | Without it, upload returns a clear 422                                             |
+| `UPLOAD_DAILY_LIMIT`     | capping the bill      | Cards per person per day. Unset means 30                                           |
+| `INSTACART_API_KEY`      | sending a cart        | Without it, the planner says so and stays usable                                   |
+| `INSTACART_API_BASE`     | sending a cart        | Dev server by default; switch for production                                       |
+| `BLOB_READ_WRITE_TOKEN`  | uploads in production | Unset locally: files go to `public/uploads/`                                       |
+| `TWILIO_ACCOUNT_SID`     | texting the list      | All three are needed; any missing hides the button                                 |
+| `TWILIO_AUTH_TOKEN`      | texting the list      | The account's auth token, not an API key secret                                    |
+| `TWILIO_FROM_NUMBER`     | texting the list      | E.164, e.g. `+15085551212`                                                         |
+| `ADMIN_EMAILS`           | `/admin`, reports     | Comma-separated; who sees the overview and reports                                 |
+| `LIBRARY_EMAILS`         | the shared library    | Whose household's shared recipes everyone sees. Unset falls back to `ADMIN_EMAILS` |
+| `SENTRY_DSN`             | error reports         | The Sentry project's DSN; unset means no reporting                                 |
+| `NEXT_PUBLIC_SENTRY_DSN` | error reports         | The same DSN, for the browser; needs a redeploy                                    |
+| `SENTRY_AUTH_TOKEN`      | readable stack traces | Uploads source maps at build. Mark it sensitive                                    |
+| `SENTRY_ORG`             | readable stack traces | The Sentry organisation's slug                                                     |
+| `SENTRY_PROJECT`         | readable stack traces | `trivet`                                                                           |
 
 Missing optional keys degrade gracefully — the rest of the app keeps working
 and the affected feature explains what is missing.
@@ -595,16 +622,21 @@ runaway loop being unbounded. `UPLOAD_DAILY_LIMIT` moves it; a value that is
 not a positive integer falls back to the default rather than becoming `NaN`,
 which would compare false against everything and quietly switch the limit off.
 
-**A recipe is private until it is shared, and sharing means sharing with
-everybody.** Not with a named household: there are a handful of them, all
-invited by somebody already here, and a targeting table would be machinery for
-a permission nobody has asked for. `Recipe.isShared` can become a join table
-later without the read path changing shape.
+**A recipe is private to its household, and reaches another in only two ways:
+the shared library, or a share with a household the owner names.** Until 18
+November, any household could share a recipe with every household, now and
+every one to come. That is republishing whatever the recipe was copied from,
+and no reminder or rewrite makes it as safe as not doing it, so sharing with
+everyone became the base library's alone (`libraryEmails`, checked in
+`setRecipeShared`). Handing one recipe to a household you know is closer to
+lending a friend a card, and that is `RecipeShare`, one row per recipe and
+household. Nobody outside the library household had shared when the rule
+changed, so nothing was taken away; a recipe marked shared from before can
+still be made private.
 
-Everything that existed when the column arrived was backfilled shared. The
-library had been visible to every signed-in person since it was built, and
-defaulting it to private would have taken dishes away from households that had
-been cooking from them for months. Only recipes added afterwards start private.
+The same reasoning keeps a photo that came with the source at home: it is the
+food site's or the meal kit's, not the household's (`shownImageUrl`). Existing
+photos on link and PDF recipes were assumed to be the source's.
 
 The rule lives in `src/lib/recipe-visibility.ts` and nowhere else, because "who
 can see this" is exactly the kind of thing that is right in four places and
@@ -630,7 +662,7 @@ Three things follow from visibility that are easy to miss:
 
 **Planning a shared recipe takes a reference, not a copy.** The plan stores the
 id, so the owner's later edits reach a meal another household has already
-planned. Un-sharing is deliberately not retroactive: a week already planned
+planned. Un-sharing (or stopping a share) is deliberately not retroactive: a week already planned
 keeps the dish and still gets its ingredients on the shopping list. Pulling
 dinner out of somebody's Thursday, days later, because another family changed
 its mind is worse than the recipe staying readable to the few who had committed
