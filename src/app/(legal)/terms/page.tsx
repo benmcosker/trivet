@@ -81,6 +81,35 @@ export default function TermsPage() {
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
+        If {BRAND} changes or closes
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        Features may change over time. A change to these terms is posted here
+        with a new date; one that takes something away from you is also emailed
+        to you before it takes effect.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        The iPhone app can leave Apple&apos;s App Store, whether Apple removes
+        it or we do. An app already installed may keep working for a time but
+        will stop being updated. {BRAND} itself stays available in a web browser
+        at trivetbox.com for as long as the service runs, with the same account
+        and everything in it.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        If {BRAND} closes, every member will be told by email at least 30 days
+        before, and in the app. Until it closes you will be able to download
+        your household&apos;s recipes. After it closes, accounts and everything
+        in them are deleted, as the privacy policy describes.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        If you pay for {BRAND}, a subscription stops renewing when the service
+        closes or the feature you pay for is withdrawn. A purchase made through
+        Apple is refunded by Apple, under Apple&apos;s rules; one paid to us
+        directly is refunded for the unused part of the period you paid for. A
+        lifetime purchase lasts for the life of the service, not the life of the
+        buyer.
+      </Typography>
+      <Typography variant="h2" sx={{ mb: 1 }}>
         No warranty
       </Typography>
       <Typography sx={{ mb: 3 }}>
