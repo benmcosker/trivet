@@ -68,8 +68,11 @@ and get the same answer.
 
 ## Money
 
-Settled with Ben, 12 November. Trivet's only income is the one-time household
-unlock. No ads, and partners are not an income stream: a channel is free for a
+Settled with Ben, 12 November, and revised 18 November: Trivet's income is a
+household subscription, not a one-time unlock (see "Pricing" in the README).
+A one-time price pays for about a year of a household's imports and texts and
+then leaves the cost running, so the bills would depend on new sign-ups
+forever. No ads, and partners are not an income stream: a channel is free for a
 partner, an exchange of good local recipes and what's fresh for a little local
 visibility. At most Ben might receive some store credit from a partner. That
 is still a connection worth disclosing, and the partner label on every chip and
