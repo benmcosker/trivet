@@ -5,7 +5,7 @@ import type { RankableRecipe } from "./dinner-ranking";
 import { defaultServingsFor } from "./household";
 import { mealHistory } from "./meal-history";
 import { DINNER_SLOTS, FIRST_DINNER } from "./meal-slots";
-import { visibleRecipes } from "./recipe-visibility";
+import { shownImageUrl, visibleRecipes } from "./recipe-visibility";
 import { NO_REVIEWS, type ReviewSummary } from "./review-schema";
 import { getReviewSummaries } from "./reviews";
 import { clampServings } from "./scale";
@@ -263,6 +263,10 @@ export async function plannerLibrary(
         title: true,
         servings: true,
         imageUrl: true,
+        // Whose photo it is decides whether this household sees it - see
+        // `shownImageUrl`.
+        householdId: true,
+        imageFromSource: true,
         prepMinutes: true,
         cookMinutes: true,
         // What the picker ranks on. Course so only dinners are offered, rest
@@ -292,7 +296,12 @@ export async function plannerLibrary(
     householdId,
   );
 
-  return recipes.map(({ tags, restMinutes, ...recipe }) => {
+  return recipes.map(({ tags, restMinutes, ...row }) => {
+    const { householdId: owner, imageFromSource, ...recipe } = row;
+    recipe.imageUrl = shownImageUrl(
+      { householdId: owner, imageUrl: row.imageUrl, imageFromSource },
+      householdId,
+    );
     const past = history.get(recipe.id);
     const minutes =
       (recipe.prepMinutes ?? 0) +

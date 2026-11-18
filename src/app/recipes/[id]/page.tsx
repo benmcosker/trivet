@@ -435,6 +435,9 @@ export default async function RecipePage({
             <ShareRecipeToggle
               recipeId={recipe.id}
               isShared={recipe.isShared}
+              photoStaysHome={
+                Boolean(recipe.imageUrl) && recipe.imageFromSource
+              }
             />
           </Box>
         ) : null}
