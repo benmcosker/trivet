@@ -13,6 +13,11 @@ import { AppShell } from "@/components/AppShell";
 import { formatAmount } from "@/lib/quantity";
 import { DeleteRecipeButton } from "@/components/DeleteRecipeButton";
 import { ShareRecipeToggle } from "@/components/ShareRecipeToggle";
+import {
+  RemoveSharedWithUs,
+  ShareWithHouseholds,
+} from "@/components/ShareWithHouseholds";
+import { isSharedWith, listSharedWith } from "@/lib/recipe-shares";
 import { IconChip } from "@/components/IconChip";
 import { RecipeNutrition } from "@/components/RecipeNutrition";
 import { LinkButton } from "@/components/LinkButton";
@@ -33,6 +38,7 @@ import { RecipeReviews } from "@/components/RecipeReviews";
 import { ReportOrHide } from "@/components/ReportOrHide";
 import { getMyReview, listReviews } from "@/lib/reviews";
 import { getRecipe } from "@/lib/recipes";
+import { isLibraryHousehold } from "@/lib/recipe-visibility";
 import { requireHousehold } from "@/lib/session";
 import { historyLine, mealHistory } from "@/lib/meal-history";
 
@@ -97,6 +103,11 @@ export default async function RecipePage({
   }
 
   const mine = recipe.householdId === user.householdId;
+  const [canShare, sharedWith, sharedWithUs] = await Promise.all([
+    mine ? isLibraryHousehold(user.householdId) : false,
+    mine ? listSharedWith(recipe.id, user.householdId) : [],
+    mine ? false : isSharedWith(recipe.id, user.householdId),
+  ]);
 
   return (
     <AppShell>
@@ -402,12 +413,21 @@ export default async function RecipePage({
           </CardContent>
         </Card>
 
-        {mine ? (
+        {/*
+         * Sharing with every household is the base library's alone, so that
+         * box belongs to its household - and to a recipe somebody shared that
+         * way before the rule, so it can still be taken back. Any household
+         * can share with households it names.
+         */}
+        {mine && (canShare || recipe.isShared) ? (
           <ShareRecipeToggle
             recipeId={recipe.id}
             isShared={recipe.isShared}
             photoStaysHome={Boolean(recipe.imageUrl) && recipe.imageFromSource}
           />
+        ) : null}
+        {mine ? (
+          <ShareWithHouseholds recipeId={recipe.id} sharedWith={sharedWith} />
         ) : null}
 
         <Typography
@@ -422,7 +442,7 @@ export default async function RecipePage({
            * the answer to "why can I read this", which is worth knowing next to
            * the name of the family it belongs to.
            */}
-          {!mine && recipe.isShared ? <> · Shared with you</> : null}
+          {!mine ? <> · Shared with you</> : null}
           {/*
            * The source is a note to the household that saved the recipe. Other
            * households read the credit in the description instead, which the
@@ -442,10 +462,20 @@ export default async function RecipePage({
             </>
           ) : null}
         </Typography>
-        {!mine && recipe.isShared ? (
+        {!mine ? (
           // Another household's recipe: Apple's guideline 1.2 asks that it can
-          // be reported, and its household hidden.
-          <Box sx={{ mt: 1 }}>
+          // be reported, and its household hidden. One shared with this
+          // household by name can also simply be declined.
+          <Box
+            sx={{
+              mt: 1,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            {sharedWithUs ? <RemoveSharedWithUs recipeId={recipe.id} /> : null}
             <ReportOrHide
               target={{ recipeId: recipe.id }}
               household={{

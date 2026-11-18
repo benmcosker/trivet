@@ -10,6 +10,9 @@ import { prisma } from "@/lib/db";
  * mid-signup, or the wreckage of a failed one - has nothing to cascade from.
  */
 export async function resetDatabase(): Promise<void> {
+  // No household is the base library until a test says so (`treatAsLibrary`),
+  // and the fallback to ADMIN_EMAILS never decides it behind a test's back.
+  process.env.LIBRARY_EMAILS = "nobody@library.test";
   // Assistants' registrations, which their consents and tokens cascade from.
   await prisma.oauthClient.deleteMany();
   await prisma.mcpRequestLog.deleteMany();
@@ -52,4 +55,17 @@ export async function makeUser(
     },
   });
   return id;
+}
+
+/**
+ * Make these households the base library, whose shared recipes every
+ * household sees (`libraryEmails`). Tests of the shared library's behaviour -
+ * search, reviews, reports, hiding - share from these.
+ */
+export async function treatAsLibrary(...householdIds: string[]): Promise<void> {
+  const members = await prisma.user.findMany({
+    where: { householdId: { in: householdIds } },
+    select: { email: true },
+  });
+  process.env.LIBRARY_EMAILS = members.map((m) => m.email).join(",");
 }

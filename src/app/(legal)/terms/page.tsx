@@ -45,20 +45,20 @@ export default function TermsPage() {
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
-        Shared recipes and reviews
+        The shared library and reviews
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        A household can share its recipes with every other household, and
-        members can review the recipes they can see. Shared recipes and reviews
-        must be about cooking, and must not be offensive, abusive, hateful,
-        sexual, or copied from someone who has not given permission. There is no
-        tolerance for objectionable content or abusive members.
+        Every household sees Trivet&apos;s shared library, a set of base recipes
+        written for Trivet, alongside its own. Members can review the recipes
+        they can see. Reviews must be about cooking, and must not be offensive,
+        abusive, hateful, sexual, or copied from someone who has not given
+        permission. There is no tolerance for objectionable content or abusive
+        members.
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        Share recipes you wrote, or have put in your own words. A photo that
-        came with a recipe read from a website or a PDF is shown only to the
-        household that added it, shared or not; a photo you add yourself is
-        shared with the recipe.
+        The recipes your household adds, with their photos and the files they
+        were read from, are private to your household. They are never shown to
+        another household.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         Anyone can report a shared recipe or a review from its page, or hide the

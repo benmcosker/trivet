@@ -44,8 +44,12 @@ export async function deletionPreview(
 
   const [recipes, sharedRecipes] = await Promise.all([
     prisma.recipe.count({ where: { householdId: user.householdId } }),
+    // Shared with every household (the library) or with one by name.
     prisma.recipe.count({
-      where: { householdId: user.householdId, isShared: true },
+      where: {
+        householdId: user.householdId,
+        OR: [{ isShared: true }, { sharedWith: { some: {} } }],
+      },
     }),
   ]);
   return { lastMember: true, recipes, sharedRecipes };

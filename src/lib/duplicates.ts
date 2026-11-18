@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { prisma } from "./db";
+import { visibleRecipesSql } from "./recipe-visibility";
 
 export type ExistingRecipe = {
   id: string;
@@ -76,10 +77,10 @@ export async function findSimilarlyTitled(
     { id: string; publicId: string; title: string; score: number }[]
   >`
     SELECT "id", "publicId", "title", similarity("title", ${trimmed})::float8 AS score
-    FROM "recipe"
+    FROM "recipe" r
     WHERE similarity("title", ${trimmed}) >= ${TITLE_SIMILARITY_THRESHOLD}
       AND ("id" <> ${options.excludeId ?? ""})
-      AND ("householdId" = ${householdId} OR "isShared")
+      AND ${visibleRecipesSql(householdId)}
     ORDER BY score DESC
     LIMIT ${options.limit ?? 3}
   `;
