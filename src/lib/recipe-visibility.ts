@@ -65,3 +65,40 @@ export function canEdit(
 ): boolean {
   return recipe.householdId === householdId;
 }
+
+/**
+ * The photo this household is shown for a recipe.
+ *
+ * Sharing a recipe shares the recipe, not a photo the household never took. A
+ * picture that came with the source - a food site's photo, the one inside a
+ * meal kit's PDF - is someone else's work, so it stays with the household that
+ * imported it, and everyone else gets the placeholder until that household
+ * adds a photo of their own (`Recipe.imageFromSource`).
+ *
+ * Every read that hands a recipe's `imageUrl` to a page goes through this, for
+ * the same reason `visibleRecipes` exists: the rule has to hold in the fifth
+ * place as well as the first four.
+ */
+export function shownImageUrl(
+  recipe: {
+    householdId: string;
+    imageUrl: string | null;
+    imageFromSource: boolean;
+  },
+  householdId: string,
+): string | null {
+  if (!recipe.imageUrl) return null;
+  if (recipe.householdId === householdId) return recipe.imageUrl;
+  return recipe.imageFromSource ? null : recipe.imageUrl;
+}
+
+/** A recipe with `imageUrl` replaced by what this household may see. */
+export function withShownImage<
+  R extends {
+    householdId: string;
+    imageUrl: string | null;
+    imageFromSource: boolean;
+  },
+>(recipe: R, householdId: string): R {
+  return { ...recipe, imageUrl: shownImageUrl(recipe, householdId) };
+}

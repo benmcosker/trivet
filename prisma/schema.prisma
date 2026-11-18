@@ -384,6 +384,18 @@ model Recipe {
   /// The dish, not the card. Best-effort: lifted out of a PDF when there is a
   /// usable picture in it, and otherwise added by hand later.
   imageUrl         String?
+  /// Whether that photo came with the source - the web page a link was read
+  /// from, or the picture inside an uploaded PDF - rather than being added by
+  /// the household.
+  ///
+  /// Those photos belong to whoever took them: a food site, a cookbook, a
+  /// meal kit. Keeping one so the recipe has a picture is a household's own
+  /// business; showing it to every household when the recipe is shared is
+  /// republishing it. So a source photo is only ever shown to the household
+  /// that owns the recipe (`shownImageUrl`), and a photo they add themselves
+  /// clears this and travels with the recipe. False by default because the
+  /// only way to set a photo after a recipe exists is to add one by hand.
+  imageFromSource  Boolean @default(false)
 
   /// Which family added this, not who is allowed to read it.
   ///

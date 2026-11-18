@@ -6,7 +6,11 @@ import { PAGE_SIZE } from "./recipe-page";
 import { DEFAULT_SORT, type RecipeSort } from "./recipe-sort";
 import { NO_REVIEWS, type ReviewSummary } from "./review-schema";
 import { publicIdFromPath } from "./recipe-url";
-import { visibleRecipes, visibleRecipesSql } from "./recipe-visibility";
+import {
+  visibleRecipes,
+  visibleRecipesSql,
+  withShownImage,
+} from "./recipe-visibility";
 import { getReviewSummaries } from "./reviews";
 
 export type RecipeSearchHit = {
@@ -274,7 +278,9 @@ export async function searchRecipes(
   );
 
   // `IN (...)` does not preserve order, so restore the ranking from the search.
-  const byId = new Map(recipes.map((r) => [r.id, r]));
+  const byId = new Map(
+    recipes.map((r) => [r.id, withShownImage(r, options.householdId)]),
+  );
   return ids
     .map((id) => byId.get(id))
     .filter((r): r is RecipeWithRelations => r !== undefined);
@@ -317,7 +323,7 @@ export async function getRecipe(
   if (!recipe) return null;
 
   const [withSummary] = await withReviewSummaries([recipe], householdId);
-  return withSummary;
+  return withShownImage(withSummary, householdId);
 }
 
 /** Turn free-text tag names into Tag rows, reusing any that already exist. */
