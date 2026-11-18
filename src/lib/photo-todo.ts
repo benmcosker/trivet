@@ -62,3 +62,56 @@ export async function markNeedsPhoto(recipeIds: string[]): Promise<number> {
   });
   return count;
 }
+
+/**
+ * Library photos that were replaced before photos had an origin, still marked
+ * as the source's.
+ *
+ * `Recipe.imageFromSource` arrived after the "Needs photo" list was already
+ * being worked through, and its migration marked every photo on a link or PDF
+ * recipe as the source's - including ones already replaced by hand, since
+ * nothing recorded which those were. The list did: a new photo takes a recipe
+ * off it. So a shared recipe with a photo, still marked as the source's, and
+ * no longer on the list, has a photo the household took.
+ *
+ * Only meaningful while the list exists. Once the last recipe comes off it the
+ * tag is deleted, and "not on the list" then means every one was replaced;
+ * the caller has to say so (`listFinished`), because a household that never
+ * had a list looks exactly the same.
+ */
+export async function replacedLibraryPhotos(
+  householdId: string,
+  { listFinished = false }: { listFinished?: boolean } = {},
+): Promise<
+  | { ok: true; recipes: { id: string; title: string }[] }
+  | { ok: false; reason: "no-list" }
+> {
+  const tag = await prisma.tag.findUnique({
+    where: { slug: NEEDS_PHOTO.slug },
+    select: { id: true },
+  });
+  if (!tag && !listFinished) return { ok: false, reason: "no-list" };
+
+  const recipes = await prisma.recipe.findMany({
+    where: {
+      householdId,
+      isShared: true,
+      imageUrl: { not: null },
+      imageFromSource: true,
+      ...(tag ? { tags: { none: { tagId: tag.id } } } : {}),
+    },
+    select: { id: true, title: true },
+    orderBy: { title: "asc" },
+  });
+  return { ok: true, recipes };
+}
+
+/** Mark these photos as the household's own, so they travel with the recipe. */
+export async function markPhotosOwn(recipeIds: string[]): Promise<number> {
+  if (recipeIds.length === 0) return 0;
+  const { count } = await prisma.recipe.updateMany({
+    where: { id: { in: recipeIds } },
+    data: { imageFromSource: false },
+  });
+  return count;
+}
