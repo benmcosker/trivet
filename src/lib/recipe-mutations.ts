@@ -143,6 +143,10 @@ export async function createRecipe(
       sourceFileType: assets.sourceFileType ?? null,
       sourceFileSha256: assets.sourceFileSha256 ?? null,
       imageUrl: assets.imageUrl ?? null,
+      // Nothing creates a recipe with a photo the household took: a photo at
+      // this point was lifted from the web page or the PDF it was read from.
+      // See `Recipe.imageFromSource`.
+      imageFromSource: Boolean(assets.imageUrl),
       householdId,
       createdById,
       ingredients: {

@@ -403,7 +403,11 @@ export default async function RecipePage({
         </Card>
 
         {mine ? (
-          <ShareRecipeToggle recipeId={recipe.id} isShared={recipe.isShared} />
+          <ShareRecipeToggle
+            recipeId={recipe.id}
+            isShared={recipe.isShared}
+            photoStaysHome={Boolean(recipe.imageUrl) && recipe.imageFromSource}
+          />
         ) : null}
 
         <Typography

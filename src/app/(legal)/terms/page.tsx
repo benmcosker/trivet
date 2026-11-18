@@ -54,6 +54,12 @@ export default function TermsPage() {
         sexual, or copied from someone who has not given permission. There is no
         tolerance for objectionable content or abusive members.
       </Typography>
+      <Typography sx={{ mb: 1 }}>
+        Share recipes you wrote, or have put in your own words. A photo that
+        came with a recipe read from a website or a PDF is shown only to the
+        household that added it, shared or not; a photo you add yourself is
+        shared with the recipe.
+      </Typography>
       <Typography sx={{ mb: 3 }}>
         Anyone can report a shared recipe or a review from its page, or hide the
         household it came from. Reports are read within a day. Content that

@@ -31,7 +31,9 @@ export async function setRecipeImage(
 
   await prisma.recipe.update({
     where: { id: recipeId },
-    data: { imageUrl: stored.url },
+    // Added by hand, so it is the household's own and travels with the recipe
+    // when it is shared.
+    data: { imageUrl: stored.url, imageFromSource: false },
   });
   // A new photo is what the "Needs photo" list was waiting for.
   await clearNeedsPhoto(recipeId);
@@ -54,7 +56,7 @@ export async function clearRecipeImage(
 
   await prisma.recipe.update({
     where: { id: recipeId },
-    data: { imageUrl: null },
+    data: { imageUrl: null, imageFromSource: false },
   });
 
   await discard(existing.imageUrl, null);
