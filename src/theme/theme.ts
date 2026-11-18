@@ -486,6 +486,11 @@ const identity: ThemeOptions = {
           main: { padding: "0 !important", maxWidth: "none !important" },
           "[data-print='hide']": { display: "none !important" },
           "[data-print='only']": { display: "block !important" },
+          // Cards are tinted on screen; on paper the tint is only ink.
+          ".MuiCard-root": {
+            background: "#fff !important",
+            boxShadow: "none !important",
+          },
         },
       }),
     },

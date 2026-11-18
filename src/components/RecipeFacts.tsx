@@ -119,7 +119,7 @@ export function RecipeFacts({
         </Typography>
       ) : null}
 
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2 }} data-print="hide">
         <ReviewStars summary={recipe.reviews} />
       </Box>
 
@@ -130,14 +130,23 @@ export function RecipeFacts({
        * change.
        */}
       {choices.length > 1 ? (
-        <Box sx={{ mb: 2 }}>
-          <ServingScaler
-            path={recipe.path}
-            choices={choices}
-            current={servings}
-            recipeServings={recipe.servings}
-          />
-        </Box>
+        <>
+          <Box sx={{ mb: 2 }} data-print="hide">
+            <ServingScaler
+              path={recipe.path}
+              choices={choices}
+              current={servings}
+              recipeServings={recipe.servings}
+            />
+          </Box>
+          {/*
+           * On paper the control is just its answer: the count it is set to,
+           * which is what the printed quantities are for.
+           */}
+          <Typography data-print="only" sx={{ mb: 1 }}>
+            Serves {servings}
+          </Typography>
+        </>
       ) : null}
 
       <Stack
