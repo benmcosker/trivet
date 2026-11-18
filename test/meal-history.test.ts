@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/db";
 import { combineHistory, historyLine, mealHistory } from "@/lib/meal-history";
 
-import { makeHousehold, resetDatabase } from "./support/db";
+import { makeHousehold, resetDatabase, treatAsLibrary } from "./support/db";
 
 const session = vi.hoisted(() => ({
   current: { id: "", householdId: "", householdName: "", name: "" },
@@ -109,6 +109,7 @@ describe.skipIf(!hasDb)("recording and reading the history", () => {
     await resetDatabase();
     ours = await makeHousehold("Ours");
     theirs = await makeHousehold("Theirs");
+    await treatAsLibrary(ours.householdId, theirs.householdId);
     session.current = {
       id: ours.userId,
       householdId: ours.householdId,

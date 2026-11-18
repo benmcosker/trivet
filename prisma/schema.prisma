@@ -33,16 +33,18 @@ model Household {
   defaultServings Int?
   createdAt       DateTime @default(now())
 
-  members  User[]
-  invites  Invite[]
-  recipes  Recipe[]
-  meals    PlannedMeal[]
-  pantry   PantryItem[]
-  skips    WeeklySkip[]
-  extras   ExtraItem[]
-  handoffs ShoppingHandoff[]
-  texts    ShoppingText[]
-  cooked   CookedMeal[]
+  /// Recipes other households have shared with this one.
+  recipesSharedWithIt RecipeShare[]
+  members             User[]
+  invites             Invite[]
+  recipes             Recipe[]
+  meals               PlannedMeal[]
+  pantry              PantryItem[]
+  skips               WeeklySkip[]
+  extras              ExtraItem[]
+  handoffs            ShoppingHandoff[]
+  texts               ShoppingText[]
+  cooked              CookedMeal[]
 
   /// Households this one has hidden, and those that have hidden it.
   blocksMade     HouseholdBlock[] @relation("BlocksMade")
@@ -230,6 +232,31 @@ model Invite {
 // ---------------------------------------------------------------------------
 // Recipes
 // ---------------------------------------------------------------------------
+
+/// A recipe one household has shared with one other household.
+///
+/// The way a household shares now. Shared with everyone (`Recipe.isShared`)
+/// is the base library's alone (`libraryEmails`): publishing a household's
+/// recipes to every household there is, and every one there will be, is
+/// republishing whatever they were copied from. Handing one to a household
+/// you know is lending a friend a card.
+///
+/// The recipe is not copied: the other household reads the owner's recipe as
+/// it stands, edits included, until the owner stops sharing it or the other
+/// household takes it out of its library. A photo that came with the source
+/// still stays with the owner (`shownImageUrl`).
+model RecipeShare {
+  recipeId    String
+  recipe      Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  /// The household it is shared with.
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@id([recipeId, householdId])
+  @@index([householdId])
+  @@map("recipe_share")
+}
 
 /// How a recipe got into the library. Extracted recipes carry their source PDF.
 /// Oven temperatures are stored in the unit the card printed them in.
@@ -434,6 +461,8 @@ model Recipe {
   cookedMeals  CookedMeal[]
   reviews      RecipeReview[]
   reports      ContentReport[]
+  /// The households this one has been shared with, one by one.
+  sharedWith   RecipeShare[]
 
   /// Maintained by a trigger (see the recipe_search migration), not by Prisma.
   /// Declared here only so migrations do not drop a column they cannot model.

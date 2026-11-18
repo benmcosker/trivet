@@ -2,7 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { prisma } from "@/lib/db";
 
-import { makeHousehold, resetDatabase } from "./support/db";
+import { makeHousehold, resetDatabase, treatAsLibrary } from "./support/db";
 
 const session = vi.hoisted(() => ({
   current: { id: "", householdId: "", householdName: "", name: "" },
@@ -59,6 +59,7 @@ describe.skipIf(!hasDb)("addSuggestedDinnersAction", () => {
     await resetDatabase();
     ours = await makeHousehold("Ours");
     theirs = await makeHousehold("Theirs");
+    await treatAsLibrary(ours.householdId, theirs.householdId);
     session.current = {
       id: ours.userId,
       householdId: ours.householdId,

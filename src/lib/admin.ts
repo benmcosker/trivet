@@ -21,7 +21,16 @@ import { prisma } from "./db";
 export function adminEmails(
   env: Record<string, string | undefined> = process.env,
 ): string[] {
-  const raw = (env.ADMIN_EMAILS ?? "").trim();
+  return parseEmailList(env.ADMIN_EMAILS);
+}
+
+/**
+ * A comma-separated list of addresses from the environment, forgiving the
+ * ways a dashboard mangles one (see `adminEmails`). Shared with
+ * `libraryEmails`, which is configured the same way for the same reasons.
+ */
+export function parseEmailList(value: string | undefined): string[] {
+  const raw = (value ?? "").trim();
 
   /*
    * Unwrap the whole value only when its quotes are the only pair in it.
@@ -83,6 +92,15 @@ function unquote(value: string): string {
     ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
       (trimmed.startsWith("'") && trimmed.endsWith("'")));
   return quoted ? trimmed.slice(1, -1).trim() : trimmed;
+}
+
+/** The identity side of the comparison, for other lists read the same way. */
+export function emailInList(
+  email: string | null | undefined,
+  list: string[],
+): boolean {
+  const address = normaliseIdentity(email ?? "");
+  return address !== "" && list.includes(address);
 }
 
 export function isAdmin(

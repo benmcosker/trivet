@@ -289,9 +289,11 @@ export async function resolveReport(
   if (!report) return;
 
   if (action === "unshare" && report.recipeId) {
+    // Every way it reached another household: the library, and each
+    // household it was shared with by name.
     await prisma.recipe.update({
       where: { id: report.recipeId },
-      data: { isShared: false },
+      data: { isShared: false, sharedWith: { deleteMany: {} } },
     });
   }
   if (action === "deleteReview" && report.reviewId) {

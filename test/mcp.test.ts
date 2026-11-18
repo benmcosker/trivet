@@ -37,7 +37,8 @@ const { addPantryItem } = await import("@/lib/pantry");
 const { createRecipe, setRecipeShared } =
   await import("@/lib/recipe-mutations");
 const { recipeInput } = await import("@/lib/recipe-schema");
-const { makeHousehold, resetDatabase } = await import("./support/db");
+const { makeHousehold, resetDatabase, treatAsLibrary } =
+  await import("./support/db");
 
 type Kitchen = { householdId: string; userId: string };
 
@@ -76,6 +77,7 @@ beforeEach(async () => {
   await resetDatabase();
   ours = await makeHousehold("Ours");
   theirs = await makeHousehold("Theirs");
+  await treatAsLibrary(ours.householdId, theirs.householdId);
 });
 
 afterAll(async () => {

@@ -30,7 +30,8 @@ const { recipeInput } = await import("@/lib/recipe-schema");
 const { getRecipe, searchRecipes } = await import("@/lib/recipes");
 const { getReviewSummary, listReviews, saveReview } =
   await import("@/lib/reviews");
-const { makeHousehold, makeUser, resetDatabase } = await import("./support/db");
+const { makeHousehold, makeUser, resetDatabase, treatAsLibrary } =
+  await import("./support/db");
 
 type Kitchen = { householdId: string; userId: string };
 
@@ -57,6 +58,7 @@ beforeEach(async () => {
   process.env.ADMIN_EMAILS = "admin@example.com";
   ours = await makeHousehold("Ours");
   theirs = await makeHousehold("Theirs");
+  await treatAsLibrary(ours.householdId, theirs.householdId);
 });
 
 afterAll(async () => {

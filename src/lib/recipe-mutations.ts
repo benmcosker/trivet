@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { prisma } from "./db";
-import { visibleRecipes } from "./recipe-visibility";
+import { isLibraryHousehold, visibleRecipes } from "./recipe-visibility";
 import { MACRO_KEYS, type RecipeInput } from "./recipe-schema";
 import { upsertTags, type RecipeWithRelations } from "./recipes";
 
@@ -286,6 +286,10 @@ export async function setRecipeShared(
   householdId: string,
   isShared: boolean,
 ): Promise<boolean> {
+  // Only the base library is shared (`libraryEmails`). Any household may make
+  // a recipe private, so a recipe shared before that rule can always be taken
+  // back; only the library's household may share one.
+  if (isShared && !(await isLibraryHousehold(householdId))) return false;
   const { count } = await prisma.recipe.updateMany({
     where: { id, householdId },
     data: { isShared },

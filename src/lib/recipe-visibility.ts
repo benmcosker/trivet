@@ -1,29 +1,83 @@
 import { Prisma } from "@/generated/prisma/client";
 
+import { adminEmails, parseEmailList } from "./admin";
+import { prisma } from "./db";
+
+/**
+ * Whose shared recipes every household sees: the base library's.
+ *
+ * Trivet's shared library is the set of base recipes written for it - their
+ * words rewritten, their photos taken for Trivet - and nothing else. A
+ * household's own recipes are its own; sharing them with every household
+ * there is, and every one there will be, is republishing whatever they were
+ * copied from, and no reminder or rewrite makes that as safe as not doing it.
+ *
+ * The library is the household of anyone listed in `LIBRARY_EMAILS`, read
+ * like `ADMIN_EMAILS` and falling back to it when unset, because the person
+ * who runs Trivet is the person whose household holds the library. Unset
+ * both, and no recipe is shared with anybody.
+ */
+export function libraryEmails(
+  env: Record<string, string | undefined> = process.env,
+): string[] {
+  const own = parseEmailList(env.LIBRARY_EMAILS);
+  return own.length > 0 ? own : adminEmails(env);
+}
+
+/** Whether this household holds the base library, and so may share. */
+export async function isLibraryHousehold(
+  householdId: string,
+): Promise<boolean> {
+  const emails = libraryEmails();
+  if (emails.length === 0) return false;
+  const count = await prisma.user.count({
+    where: { householdId, email: { in: emails, mode: "insensitive" } },
+  });
+  return count > 0;
+}
+
 /**
  * Which recipes a household may read.
  *
- * Its own, and anything another household has shared. Written once and used by
- * every read, because "who can see this" is the kind of rule that is right in
- * four places and forgotten in the fifth - and the fifth is the one that shows
- * somebody another family's dinner.
+ * Its own, the base library's shared recipes (`libraryEmails`), and any
+ * another household has shared with it by name (`RecipeShare`). Written
+ * once and used by every read, because "who can see this" is the kind of rule
+ * that is right in four places and forgotten in the fifth - and the fifth is
+ * the one that shows somebody another family's dinner.
  *
- * Sharing is not per household pair: a shared recipe is shared with everyone.
- * See the schema comment on `Recipe.isShared` for why, and for what would have
- * to change if that stops being true.
+ * `isShared` still matters inside the library household: a recipe there is
+ * part of the library only once it is shared, so a new one can be worked on
+ * before every household sees it.
  *
  * Everyone except a household this one has hidden (`HouseholdBlock`): that
  * household's shared recipes leave this library. Its own recipes are never
  * hidden from it, whatever anybody else has done.
  */
 export function visibleRecipes(householdId: string): Prisma.RecipeWhereInput {
+  const library = libraryEmails();
+  const notHidden = { blocksReceived: { none: { blockerId: householdId } } };
   return {
     OR: [
       { householdId },
       {
-        isShared: true,
-        household: { blocksReceived: { none: { blockerId: householdId } } },
+        sharedWith: { some: { householdId } },
+        household: notHidden,
       },
+      ...(library.length > 0
+        ? [
+            {
+              isShared: true,
+              household: {
+                members: {
+                  some: {
+                    email: { in: library, mode: "insensitive" as const },
+                  },
+                },
+                ...notHidden,
+              },
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -36,7 +90,16 @@ export function visibleRecipes(householdId: string): Prisma.RecipeWhereInput {
  * together; `r` is the alias the search gives the recipe table.
  */
 export function visibleRecipesSql(householdId: string): Prisma.Sql {
-  return Prisma.sql`(r."householdId" = ${householdId} OR (r."isShared" AND NOT EXISTS (
+  const library = libraryEmails();
+  return Prisma.sql`(r."householdId" = ${householdId} OR ((
+    EXISTS (
+      SELECT 1 FROM "recipe_share" s
+      WHERE s."recipeId" = r."id" AND s."householdId" = ${householdId}
+    ) OR (r."isShared" AND EXISTS (
+      SELECT 1 FROM "user" u
+      WHERE u."householdId" = r."householdId" AND lower(u."email") = ANY(${library}::text[])
+    ))
+  ) AND NOT EXISTS (
     SELECT 1 FROM "household_block" b
     WHERE b."blockerId" = ${householdId} AND b."blockedId" = r."householdId"
   )))`;

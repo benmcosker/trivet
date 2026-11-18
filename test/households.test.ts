@@ -23,7 +23,12 @@ import { setRecipeImage } from "@/lib/recipe-image";
 import { getRecipe, searchRecipes } from "@/lib/recipes";
 import { getReviewSummary, saveReview } from "@/lib/reviews";
 
-import { makeHousehold, makeUser, resetDatabase as reset } from "./support/db";
+import {
+  makeHousehold,
+  makeUser,
+  resetDatabase as reset,
+  treatAsLibrary,
+} from "./support/db";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
@@ -89,6 +94,7 @@ describe.skipIf(!hasDb)("two households", () => {
     await reset();
     ours = await makeHousehold("Ours");
     theirs = await makeHousehold("Theirs");
+    await treatAsLibrary(ours.householdId, theirs.householdId);
   });
 
   afterAll(async () => {

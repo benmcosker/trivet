@@ -12,7 +12,11 @@ import { recipeInput } from "@/lib/recipe-schema";
 import { shownImageUrl } from "@/lib/recipe-visibility";
 import { getRecipe, searchRecipes } from "@/lib/recipes";
 
-import { makeHousehold, resetDatabase as reset } from "./support/db";
+import {
+  makeHousehold,
+  resetDatabase as reset,
+  treatAsLibrary,
+} from "./support/db";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 
@@ -48,6 +52,7 @@ describe.skipIf(!hasDb)("a shared recipe's photo", () => {
     await reset();
     ours = await makeHousehold("Ours");
     theirs = await makeHousehold("Theirs");
+    await treatAsLibrary(ours.householdId, theirs.householdId);
     // As the link import saves it: the site's own photo, with the recipe.
     recipeId = await createRecipe(
       recipeInput.parse({
