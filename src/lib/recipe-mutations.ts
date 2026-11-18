@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 
 import { prisma } from "./db";
+import type { Words } from "./library-refine";
+import { ownWordsProblems } from "./own-words";
 import { visibleRecipes } from "./recipe-visibility";
 import { MACRO_KEYS, type RecipeInput } from "./recipe-schema";
 import { upsertTags, type RecipeWithRelations } from "./recipes";
@@ -322,4 +324,51 @@ export async function listTagsWithCounts(
       count: tag._count.recipes,
     }))
     .filter((tag) => tag.count > 0);
+}
+
+export type ShareInOwnWordsResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Save a household's "own words" rewrite and share the recipe, in one write.
+ *
+ * Conditional on `updatedAt`, as the library's apply is: the draft was made
+ * from the recipe as it stood, and a recipe edited since - in another tab,
+ * by someone else in the household - is not overwritten with a rewrite of
+ * words it no longer has. The checks run again here because the draft came
+ * back through the browser.
+ */
+export async function shareInOwnWords(
+  id: string,
+  householdId: string,
+  words: Words,
+  expectedUpdatedAt: Date,
+): Promise<ShareInOwnWordsResult> {
+  const recipe = await prisma.recipe.findFirst({
+    where: { id, householdId },
+    include: { ingredients: { orderBy: { position: "asc" } } },
+  });
+  if (!recipe) return { ok: false, error: "No such recipe." };
+
+  const problems = ownWordsProblems(recipe, words);
+  if (problems.length > 0) {
+    return { ok: false, error: `That version is not usable: ${problems[0]}.` };
+  }
+
+  const { count } = await prisma.recipe.updateMany({
+    where: { id, householdId, updatedAt: expectedUpdatedAt },
+    data: {
+      title: words.title,
+      description: words.description,
+      notes: words.notes,
+      instructions: words.instructions,
+      isShared: true,
+    },
+  });
+  if (count === 0) {
+    return {
+      ok: false,
+      error: "The recipe changed since that version was written. Try again.",
+    };
+  }
+  return { ok: true };
 }

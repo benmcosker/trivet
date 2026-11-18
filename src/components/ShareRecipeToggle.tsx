@@ -6,7 +6,12 @@ import Typography from "@mui/material/Typography";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { setRecipeSharedAction } from "@/app/recipes/share-actions";
+import {
+  draftOwnWordsAction,
+  setRecipeSharedAction,
+  shareInOwnWordsAction,
+} from "@/app/recipes/share-actions";
+import type { Words } from "@/lib/library-refine";
 
 /**
  * What sharing asks of the household, said where they share.
@@ -32,6 +37,12 @@ export const PHOTO_STAYS_HOME =
  *
  * Sharing takes a second tap, after the ask above; making a recipe private
  * again takes one, because taking something back needs no warning.
+ *
+ * The ask comes with a way to meet it: "Put it in my own words" has the
+ * model rewrite the title, description, method and notes (`own-words.ts`),
+ * and the household reads the result here before anything changes. Sharing
+ * that version saves it over theirs and shares in one step; "Keep mine"
+ * throws it away.
  */
 export function ShareRecipeToggle({
   recipeId,
@@ -46,14 +57,57 @@ export function ShareRecipeToggle({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [asking, setAsking] = useState(false);
+  const [draft, setDraft] = useState<{
+    words: Words;
+    updatedAt: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function reset() {
+    setAsking(false);
+    setDraft(null);
+    setError(null);
+  }
 
   function setShared(next: boolean) {
     startTransition(async () => {
       await setRecipeSharedAction(recipeId, next);
-      setAsking(false);
+      reset();
       router.refresh();
     });
   }
+
+  function rewrite() {
+    setError(null);
+    startTransition(async () => {
+      const result = await draftOwnWordsAction(recipeId);
+      if (result.ok) {
+        setDraft({ words: result.words, updatedAt: result.updatedAt });
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
+  function shareDraft() {
+    if (!draft) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await shareInOwnWordsAction(
+        recipeId,
+        draft.words,
+        draft.updatedAt,
+      );
+      if (result.ok) {
+        reset();
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
+  const offering = asking && !isShared;
 
   return (
     <Box
@@ -75,9 +129,11 @@ export function ShareRecipeToggle({
         <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
           {isShared
             ? "Shared - every household can cook from this."
-            : asking
-              ? "Share with every household?"
-              : "Private to your household."}
+            : draft
+              ? "Share it in these words?"
+              : asking
+                ? "Share with every household?"
+                : "Private to your household."}
         </Typography>
         {isShared ? (
           <Button
@@ -87,14 +143,30 @@ export function ShareRecipeToggle({
           >
             Make it private
           </Button>
-        ) : asking ? (
+        ) : draft ? (
           <>
+            <Button size="small" disabled={pending} onClick={reset}>
+              Keep mine
+            </Button>
+            <Button size="small" disabled={pending} onClick={rewrite}>
+              Try again
+            </Button>
             <Button
               size="small"
+              variant="contained"
               disabled={pending}
-              onClick={() => setAsking(false)}
+              onClick={shareDraft}
             >
+              Share this version
+            </Button>
+          </>
+        ) : asking ? (
+          <>
+            <Button size="small" disabled={pending} onClick={reset}>
               Not now
+            </Button>
+            <Button size="small" disabled={pending} onClick={rewrite}>
+              {pending ? "Rewriting…" : "Put it in my own words"}
             </Button>
             <Button
               size="small"
@@ -112,9 +184,20 @@ export function ShareRecipeToggle({
         )}
       </Box>
 
-      {asking && !isShared ? (
+      {offering && !draft ? (
         <Typography variant="body2" sx={{ mt: 1.5, maxWidth: "60ch" }}>
           {SHARE_ASK}
+        </Typography>
+      ) : null}
+      {offering && draft ? <OwnWordsPreview words={draft.words} /> : null}
+      {error ? (
+        <Typography
+          variant="body2"
+          color="error"
+          role="alert"
+          sx={{ mt: 1, maxWidth: "60ch" }}
+        >
+          {error}
         </Typography>
       ) : null}
       {photoStaysHome && (isShared || asking) ? (
@@ -124,6 +207,48 @@ export function ShareRecipeToggle({
           sx={{ mt: 1, maxWidth: "60ch" }}
         >
           {PHOTO_STAYS_HOME}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
+
+/**
+ * The rewrite, laid out as the recipe page would show it, so it is read as a
+ * recipe rather than as a diff. Ingredients are not shown: they do not change.
+ */
+function OwnWordsPreview({ words }: { words: Words }) {
+  return (
+    <Box
+      sx={{
+        mt: 2,
+        p: 2,
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 1,
+        maxWidth: "70ch",
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+        Sharing this version replaces the title, description, method and notes
+        on your recipe. The ingredients stay as they are.
+      </Typography>
+      <Typography variant="h3" gutterBottom>
+        {words.title}
+      </Typography>
+      {words.description ? (
+        <Typography sx={{ mb: 2 }}>{words.description}</Typography>
+      ) : null}
+      <Box component="ol" sx={{ pl: 3, m: 0 }}>
+        {words.instructions.map((step, i) => (
+          <Typography component="li" key={i} sx={{ mb: 1 }}>
+            {step}
+          </Typography>
+        ))}
+      </Box>
+      {words.notes ? (
+        <Typography variant="body2" sx={{ mt: 1.5 }}>
+          {words.notes}
         </Typography>
       ) : null}
     </Box>

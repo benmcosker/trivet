@@ -144,35 +144,64 @@ export function checkRewrites(
       problems.push(`${r.id}: not in the export`);
       continue;
     }
-    if (!r.title.trim()) problems.push(`${name}: empty title`);
-    const text = [r.title, r.description, r.notes, ...r.instructions].join(" ");
-    for (const unnamed of UNCREDITED_SOURCES) {
-      if (text.includes(unnamed))
-        problems.push(`${name}: still names ${unnamed}`);
-    }
-    // Words left exactly as they were (a household's own recipe getting only
-    // nutrition) owe no credit: there is nothing of anyone else's in them.
-    const uncredited =
-      sameWords(original, r) ||
-      (original.sourceName !== null &&
-        UNCREDITED_SOURCES.has(original.sourceName));
-    if (
-      !uncredited &&
-      (!r.description || !/Adapted from \S/.test(r.description))
-    ) {
-      problems.push(`${name}: description has no "Adapted from"`);
-    }
-    if (original.instructions.length > 0 && r.instructions.length === 0) {
-      problems.push(`${name}: instructions dropped`);
-    }
-    if (r.instructions.some((step) => !step.trim())) {
-      problems.push(`${name}: an empty step`);
-    }
-    if (original.notes && !r.notes) {
-      problems.push(`${name}: notes dropped`);
-    }
+    problems.push(...wordProblems(name, original, r));
     if (r.nutrition)
       problems.push(...checkNutrition(name, original, r.nutrition));
+  }
+  return problems;
+}
+
+/**
+ * What is wrong with one rewrite's words, measured against the original.
+ *
+ * The rules every rewrite of a shared recipe answers to, whether it comes
+ * from the library scripts or from a household's "put it in my own words"
+ * (`own-words.ts`): a title, no step left empty, nothing dropped that the
+ * original had, no mention of a source the library does not name, and the
+ * credit "Adapted from <source>" in the description unless the words are
+ * unchanged or the source goes uncredited.
+ *
+ * `requireCredit: "when-sourced"` is for a household's own recipe, which may
+ * have no source at all - typed in from memory, nobody to credit. The library
+ * export always asks for a credit, because every recipe in it came from
+ * somewhere.
+ */
+export function wordProblems(
+  name: string,
+  original: Words & { sourceName: string | null },
+  r: Words,
+  {
+    requireCredit = "always",
+  }: { requireCredit?: "always" | "when-sourced" } = {},
+): string[] {
+  const problems: string[] = [];
+  if (!r.title.trim()) problems.push(`${name}: empty title`);
+  const text = [r.title, r.description, r.notes, ...r.instructions].join(" ");
+  for (const unnamed of UNCREDITED_SOURCES) {
+    if (text.includes(unnamed))
+      problems.push(`${name}: still names ${unnamed}`);
+  }
+  // Words left exactly as they were (a household's own recipe getting only
+  // nutrition) owe no credit: there is nothing of anyone else's in them.
+  const uncredited =
+    sameWords(original, r) ||
+    (original.sourceName !== null &&
+      UNCREDITED_SOURCES.has(original.sourceName)) ||
+    (requireCredit === "when-sourced" && !original.sourceName?.trim());
+  if (
+    !uncredited &&
+    (!r.description || !/Adapted from \S/.test(r.description))
+  ) {
+    problems.push(`${name}: description has no "Adapted from"`);
+  }
+  if (original.instructions.length > 0 && r.instructions.length === 0) {
+    problems.push(`${name}: instructions dropped`);
+  }
+  if (r.instructions.some((step) => !step.trim())) {
+    problems.push(`${name}: an empty step`);
+  }
+  if (original.notes && !r.notes) {
+    problems.push(`${name}: notes dropped`);
   }
   return problems;
 }
