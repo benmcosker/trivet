@@ -114,7 +114,7 @@ export default async function RecipePage({
     <AppShell>
       <PageTransition>
         <Stack
-          direction={{ xs: "column", sm: "row" }}
+          direction={{ xs: "column", md: "row" }}
           sx={{
             alignItems: "flex-start",
             justifyContent: "space-between",
@@ -133,7 +133,9 @@ export default async function RecipePage({
           <Stack
             direction="row"
             data-print="hide"
-            sx={{ flexWrap: "wrap", gap: 1 }}
+            // Its own width, not what the title leaves: shrunk, Print and
+            // Delete wrapped under Cook at 1280.
+            sx={{ flexWrap: "wrap", gap: 1, flexShrink: 0 }}
           >
             {/*
              * Cooking is not editing: anyone who can read a recipe can stand at
@@ -169,7 +171,6 @@ export default async function RecipePage({
                   Edit
                 </LinkButton>
                 <PrintRecipeButton />
-                <DeleteRecipeButton id={recipe.id} title={recipe.title} />
               </>
             ) : (
               // Anyone who can cook from it can print it, for the same reason.
@@ -458,7 +459,17 @@ export default async function RecipePage({
                 }
               />
             ) : null}
-            <ShareWithHouseholds recipeId={recipe.id} sharedWith={sharedWith} />
+            {/*
+             * Already in front of every household, a named share adds nothing
+             * and its "Private to your household." would contradict the line
+             * above. Still shown if one exists, so it can be stopped.
+             */}
+            {recipe.isShared && sharedWith.length === 0 ? null : (
+              <ShareWithHouseholds
+                recipeId={recipe.id}
+                sharedWith={sharedWith}
+              />
+            )}
           </Box>
         ) : null}
 
@@ -494,6 +505,13 @@ export default async function RecipePage({
             </>
           ) : null}
         </Typography>
+        {mine ? (
+          // At the foot, not beside Cook: the one action on the page that
+          // cannot be undone is not one to reach for on the way to the hob.
+          <Box data-print="hide" sx={{ mt: 1 }}>
+            <DeleteRecipeButton id={recipe.id} title={recipe.title} />
+          </Box>
+        ) : null}
         {!mine ? (
           // Another household's recipe: Apple's guideline 1.2 asks that it can
           // be reported, and its household hidden. One shared with this
@@ -505,7 +523,9 @@ export default async function RecipePage({
               display: "flex",
               flexWrap: "wrap",
               alignItems: "center",
-              gap: 1,
+              // ReportOrHide's own gap, so three links read as one row.
+              columnGap: 1.5,
+              rowGap: 1,
             }}
           >
             {sharedWithUs ? <RemoveSharedWithUs recipeId={recipe.id} /> : null}
