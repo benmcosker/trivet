@@ -512,6 +512,17 @@ deploy.
 `GET /api/health` reports whether a deploy reached its database and whether the
 schema is present.
 
+### Email and copyright notices
+
+Trivet sends through Resend and receives through ImprovMX, which forwards
+`copyright@trivetbox.com` (and any other alias set up in its dashboard) to the
+owner's inbox; nothing is stored. `copyright@` is the address of Trivet's DMCA
+designated agent, registered with the US Copyright Office on 19 November 2026
+and due for renewal by 19 November 2029. The agent's published details live in
+`src/lib/copyright-agent.ts` and appear in the terms' Copyright section. The
+DNS records, the Gmail filter that keeps notices out of spam, and how to amend
+or renew are in [`DEPLOYING.md`](DEPLOYING.md#the-dmca-agent).
+
 ## Scripts
 
 | Script                   | Does                                                                      |

@@ -1,7 +1,11 @@
 import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
 import type { Metadata } from "next";
 
+import { COPYRIGHT_AGENT } from "@/lib/copyright-agent";
+
 import {
+  APP_NAME,
   BRAND,
   CONTACT_EMAIL,
   LEGAL_UPDATED,
@@ -67,6 +71,67 @@ export default function TermsPage() {
         closed.
       </Typography>
 
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        Copyright
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        If you believe something on {APP_NAME} infringes your copyright, send a
+        notice to {APP_NAME}&apos;s designated agent:
+      </Typography>
+      <Typography component="address" sx={{ mb: 2, fontStyle: "normal" }}>
+        {COPYRIGHT_AGENT.name}
+        <br />
+        {COPYRIGHT_AGENT.street}
+        <br />
+        {COPYRIGHT_AGENT.cityLine}
+        <br />
+        {COPYRIGHT_AGENT.phone}
+        <br />
+        <a href={`mailto:${COPYRIGHT_AGENT.email}`}>{COPYRIGHT_AGENT.email}</a>
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        A notice must include (17 U.S.C. &sect; 512(c)(3)):
+      </Typography>
+      <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
+        <Typography component="li">
+          your physical or electronic signature, or that of someone authorised
+          to act for the copyright owner;
+        </Typography>
+        <Typography component="li">
+          the copyrighted work you believe is infringed;
+        </Typography>
+        <Typography component="li">
+          the material on {APP_NAME} you believe infringes it, with enough to
+          find it, such as the recipe&apos;s link;
+        </Typography>
+        <Typography component="li">
+          your name, address, phone number and email address;
+        </Typography>
+        <Typography component="li">
+          a statement that you believe in good faith the use is not authorised
+          by the copyright owner, its agent or the law;
+        </Typography>
+        <Typography component="li">
+          a statement that the notice is accurate and, under penalty of perjury,
+          that you are the owner or authorised to act for the owner.
+        </Typography>
+      </Box>
+      <Typography sx={{ mb: 1 }}>
+        If something you added was removed and you believe that was a mistake,
+        you can send a counter-notice to the same agent. It must include your
+        signature; the material removed and where it appeared; a statement,
+        under penalty of perjury, that you believe in good faith it was removed
+        by mistake or misidentification; and your name, address and phone
+        number, with a statement that you consent to the jurisdiction of the
+        federal district court for your address (or, outside the United States,
+        any district where {APP_NAME} may be found) and will accept service from
+        the person who sent the notice. Unless that person tells us they have
+        filed a court action, the material may be restored 10 to 14 business
+        days after the counter-notice arrives.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        The accounts of members who repeatedly infringe copyright are closed.
+      </Typography>
       <Typography variant="h2" sx={{ mb: 1 }}>
         Text messages
       </Typography>

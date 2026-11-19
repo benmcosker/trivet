@@ -176,9 +176,43 @@ useful. And until the records resolve, Resend accepts mail from
 failure as unregistered A2P traffic: nothing bounces, nothing errors, nothing
 arrives.
 
-This sets up sending only. There are no MX records, so `info@trivetbox.com` is
-not a mailbox and replies to it bounce; the legal pages point people at a real
-address instead.
+That is sending. **Receiving** goes through ImprovMX's free plan (set up 19
+November 2026): it holds no mailboxes, it forwards to the owner's personal
+inbox. Its records sit on the domain itself in Vercel's DNS, added by
+ImprovMX's Vercel preset:
+
+| Name     | Type | Value                                  |
+| -------- | ---- | -------------------------------------- |
+| (blank)  | MX   | `mx1.improvmx.com`, priority 10        |
+| (blank)  | MX   | `mx2.improvmx.com`, priority 20        |
+| (blank)  | TXT  | `v=spf1 include:spf.improvmx.com ~all` |
+| `_dmarc` | TXT  | `v=DMARC1; p=none;`                    |
+
+They do not touch Resend's, which live on `send` and `resend._domainkey`. A
+domain may carry only one SPF record per name, so a second sender on the bare
+domain means merging its `include:` into that one TXT, not adding another.
+`p=none` asks receiving servers to report, never to reject.
+
+The aliases are in the ImprovMX dashboard, which is the list of record:
+`copyright@trivetbox.com` is the DMCA agent's address (below), and
+`info@trivetbox.com` can be added there so replies to Trivet's own emails reach
+someone. Gmail filed the first forwarded test as junk, so the receiving inbox
+has a filter marking mail to `copyright@` as never spam: a takedown notice
+nobody sees is the one email this setup exists for. Testing the forward from
+the same Gmail it forwards to does not work (Gmail drops its own message
+coming back); test from any other account.
+
+### The DMCA agent
+
+Trivet's designated agent for copyright notices is registered with the US
+Copyright Office's DMCA Designated Agent Directory (filed 19 November 2026,
+$6): service provider Benjamin James McOsker, alternate names Trivet,
+trivetbox.com, www.trivetbox.com and Ben McOsker. The published details are
+in `src/lib/copyright-agent.ts`, which the terms page reads; the law asks that
+the two match, so amend the filing first ($6) and that file the same week.
+**The designation lapses unless renewed every three years: renew by 19
+November 2029.** If Trivet becomes a company, the service provider changes to
+the company's name, which is a new designation.
 
 `BETTER_AUTH_URL` earns its dagger twice over now: reset links are built from
 it, so a wrong value produces links pointing at an origin nobody is serving,
