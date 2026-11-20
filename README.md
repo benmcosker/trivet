@@ -10,8 +10,6 @@ Live at [trivetbox.com](https://trivetbox.com), and on iPhone in a family beta
 (TestFlight, build 5). Releases are tagged: `v2.0.0` is the current one, with
 its notes on GitHub, and each TestFlight build gets an `app-<version>-<build>`
 tag (`app-1.0-5`) so a tester's report can be traced to the code they ran.
-The [case study](docs/case-study.pdf) covers why it works the way it does: the
-problem, the decisions, what was cut, and what comes next.
 
 ## Demo video
 
@@ -211,41 +209,7 @@ goes native.
   list only when someone chooses to, back in range. Designed in
   [`design_handoff_trivet_offline/`](design_handoff_trivet_offline/) and planned
   in [`OFFLINE-BROWSING-PLAN.md`](OFFLINE-BROWSING-PLAN.md); not built yet.
-- **How we eat, by person.** Each person at the table (account or not) has a
-  diet, each recipe records the strictest diet it fits, and the library follows
-  the person signed in. [`DIET-PLAN.md`](DIET-PLAN.md); not built yet.
-- **Cook with an ingredient.** Start from one ingredient and get dishes from
-  your library, then from a short curated list of recipe sites.
-  [`COOK-WITH-PLAN.md`](COOK-WITH-PLAN.md); not built yet.
-- **Channels.** Curated collections owned by Trivet or a local food partner,
-  which households can follow. Partners are free; Trivet has no ads.
-  [`CHANNELS-PLAN.md`](CHANNELS-PLAN.md); exploratory.
-- **The public App Store,** as a free download with a paid household plan.
-  See [Pricing](#pricing) below; the pre-submission fixes come first.
-
-## Pricing
-
-Settled with Ben, 18 November. Charge for what costs money to run; keep free
-what keeps people coming back.
-
-- **Free:** the base library, planning, the shopping list, and connecting an
-  AI assistant (assistants use their own models, so they cost Trivet nothing
-  per question).
-- **Paid, per household, $2.99 a month or $24.99 a year:** recipe imports with
-  a monthly allowance (imports are the cost that grows: one model call each),
-  texted shopping lists, and sharing with other households.
-- **Optional lifetime price,** about three to four years of the annual one
-  (around $79), for people who will not subscribe. It brings back an
-  open-ended cost, so it stays priced high and keeps the import allowance.
-
-Why a subscription: a one-time price pays for about a year of a household's
-imports and texts, then the cost keeps running while the income stops, so the
-bills would depend on new sign-ups forever. The estimates behind the numbers
-(18 November, to be checked against real bills): about $45 a month fixed
-(Vercel Pro, the database, Twilio's registration, Apple's developer fee, the
-domain) and about $1 a month per active household (10-20 cents an import,
-about 5 cents a texted list). After Apple's 15% small-business cut, $2.99 a
-month breaks even at roughly 30 paying households.
+- **The public App Store.** The pre-submission fixes come first.
 
 ## AI assistants (MCP)
 

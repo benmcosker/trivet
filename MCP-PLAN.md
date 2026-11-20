@@ -19,7 +19,7 @@ Why it fits Trivet:
   suits a pay-once app.
 - **It is Cook with, nearly for free.** An assistant with web search, given
   Trivet's library, already answers "what can I make with this" across the
-  library and the web (`COOK-WITH-PLAN.md`).
+  library and the web.
 - **Everything still goes through Trivet's rules:** the household's own data
   only, the review step for new recipes, the same limits.
 
