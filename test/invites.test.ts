@@ -83,6 +83,21 @@ describe.skipIf(!hasDb)("invite-gated signup", () => {
     expect(await userCount("nobody@example.com")).toBe(0);
   });
 
+  it("refuses a name other households would see as a slur", async () => {
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+    expect(
+      await signUpStatus({
+        email: "rude@example.com",
+        inviteCode: code,
+        name: "Total Fucker",
+      }),
+    ).toBe(400);
+    expect(await userCount("rude@example.com")).toBe(0);
+  });
+
   it("accepts a signup with no phone - giving one is optional", async () => {
     const { code } = await createInvite({
       createdById: inviterId,

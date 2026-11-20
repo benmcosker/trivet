@@ -17,6 +17,7 @@ import { checkInvite, inviteRejectionMessage, redeemInvite } from "./invites";
 import { APP_NAME } from "./legal";
 import { pruneUnapprovedAssistants } from "./mcp/access";
 import { BASE_SCOPES, MCP_SCOPES, mcpResource } from "./mcp/resource";
+import { isObjectionable, OBJECTIONABLE_REFUSAL } from "./objectionable";
 import { parsePhone } from "./phone";
 import { reportError } from "@/lib/report-error";
 
@@ -41,6 +42,18 @@ function readSmsConsent(body: unknown): boolean {
   // that must never be reached by accident is "they agreed".
   return (body as { smsConsent?: unknown }).smsConsent === true;
 }
+
+function readName(body: unknown): string {
+  if (typeof body !== "object" || body === null) return "";
+  const name = (body as { name?: unknown }).name;
+  return typeof name === "string" ? name : "";
+}
+
+/**
+ * Where a person's name is set. Sign-up, and better-auth's own update
+ * endpoint, which the app doesn't use but anyone signed in can call.
+ */
+const NAME_PATHS = new Set([SIGN_UP_PATH, "/update-user"]);
 
 function readEmail(body: unknown): string {
   if (typeof body !== "object" || body === null) return "";
@@ -179,6 +192,13 @@ export const auth = betterAuth({
     // rather than by `disableSignUp`, which would block it outright and leave
     // no way in at all.
     before: createAuthMiddleware(async (ctx) => {
+      // A name is shown beside the person's reviews to other households
+      // (`objectionable.ts`).
+      if (NAME_PATHS.has(ctx.path) && isObjectionable(readName(ctx.body))) {
+        throw new APIError("BAD_REQUEST", {
+          message: OBJECTIONABLE_REFUSAL.name,
+        });
+      }
       if (ctx.path !== SIGN_UP_PATH) return;
 
       const code = readInviteCode(ctx.body);

@@ -10,6 +10,7 @@ import {
   type InviteEmailStatus,
 } from "@/lib/invites";
 import { prisma } from "@/lib/db";
+import { isObjectionable, OBJECTIONABLE_REFUSAL } from "@/lib/objectionable";
 import {
   renameHousehold,
   saveOwnPhone,
@@ -78,6 +79,10 @@ export async function createInviteAction(
   const trimmed = email?.trim() ?? "";
   if (trimmed && !trimmed.includes("@")) {
     return { ok: false, error: "That does not look like an email address." };
+  }
+  // The name the new household starts with, shown to other households.
+  if (kind === "outside" && isObjectionable(householdName)) {
+    return { ok: false, error: OBJECTIONABLE_REFUSAL.name };
   }
 
   let invite;
@@ -179,6 +184,9 @@ export async function renameHouseholdAction(
   name: string,
 ): Promise<RenameResult> {
   const user = await requireHousehold();
+  if (isObjectionable(name)) {
+    return { ok: false, error: OBJECTIONABLE_REFUSAL.name };
+  }
 
   let saved: string | null;
   try {
