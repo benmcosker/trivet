@@ -635,6 +635,17 @@ runaway loop being unbounded. `UPLOAD_DAILY_LIMIT` moves it; a value that is
 not a positive integer falls back to the default rather than becoming `NaN`,
 which would compare false against everything and quietly switch the limit off.
 
+**Nothing is sent to Anthropic until the person has agreed.** App Store
+guideline 5.1.2(i) asks for explicit permission before personal data goes to a
+third-party AI, so the Add a recipe page asks once, naming Anthropic, before
+the first import (`AiConsentGate`), and the Household page can take it back.
+The page asking is not the protection: `/api/upload`, `/api/import-url` and
+`/api/import-text` each refuse with a 403 (`ai_consent_required`) before they
+fetch, store or count anything (`src/lib/ai-consent.ts`). It is per person,
+not per household, and everybody who was here before it existed is asked on
+their next import. A link or a share from the iPhone that arrives first waits
+behind the question and is read the moment they agree.
+
 **A recipe is private to its household, and reaches another in only two ways:
 the shared library, or a share with a household the owner names.** Until 18
 November, any household could share a recipe with every household, now and
