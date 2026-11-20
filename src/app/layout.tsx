@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteUrl } from "@/lib/site";
 import { Providers } from "@/theme/Providers";
 
 /**
@@ -48,9 +49,20 @@ const karla = localFont({
 });
 
 export const metadata: Metadata = {
+  // Absolute addresses for link previews and the sitemap, from one place.
+  metadataBase: new URL(siteUrl()),
   title: "Trivet",
-  description:
-    "Recipe box, weekly meal planner and grocery list for one household.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    siteName: SITE_NAME,
+    type: "website",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [
+      { url: "/front/plan.jpg", alt: "A week of dinners planned in Trivet" },
+    ],
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
