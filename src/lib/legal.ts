@@ -41,11 +41,14 @@ export const APP_NAME = "Trivet";
  * `test/sms-consent.test.ts` and `test/sms-message.test.ts`. Those tests
  * failing is the tripwire, and it is there on purpose.
  *
- * Everything reading this constant is something a carrier looks at: the
- * message bodies, and the three legal pages vetting compares them against.
- * The site chrome reads `APP_NAME` instead - so if you are here because a
- * heading somewhere still says the old name, that heading is on a legal page
- * and it is supposed to.
+ * Since 20 November 2026 it is read in only two places: the message body
+ * (`sms/message.ts`) and the opt-in box that promises those messages, which
+ * has to name whoever the texts will say they are from. The legal pages say
+ * `APP_NAME`; the text-message page mentions this name once, to explain the
+ * box it shows. Taking it off the pages was a judgement that the campaign is
+ * unlikely to be re-reviewed; the message body is different, because carrier
+ * filtering compares live traffic with the campaign's sample messages, and a
+ * mismatch is dropped silently rather than refused.
  */
 export const BRAND = "McMullen Meal Magic";
 
@@ -120,4 +123,4 @@ export const SMS_PROVIDER =
   "no other third party receives your mobile number.";
 
 /** Shown at the foot of each policy so a reviewer can see it is current. */
-export const LEGAL_UPDATED = "18 November 2026";
+export const LEGAL_UPDATED = "20 November 2026";

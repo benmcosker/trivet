@@ -6,11 +6,17 @@ import Typography from "@mui/material/Typography";
 import type { Metadata } from "next";
 
 import { SmsConsentCheckbox, SmsDisclosure } from "@/components/SmsDisclosure";
-import { BRAND, CONTACT_EMAIL, LEGAL_UPDATED, SMS_PURPOSE } from "@/lib/legal";
+import {
+  APP_NAME,
+  BRAND,
+  CONTACT_EMAIL,
+  LEGAL_UPDATED,
+  SMS_PURPOSE,
+} from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: `Text messages — ${BRAND}`,
-  description: `How members of ${BRAND} opt in to receive text messages.`,
+  title: `Text messages — ${APP_NAME}`,
+  description: `How members of ${APP_NAME} opt in to receive text messages.`,
 };
 
 /**
@@ -33,8 +39,9 @@ export default function SmsPolicyPage() {
         Text messages
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        {BRAND} is a private, invite-only app one family uses to plan meals and
-        shop for them. The only text it sends is {SMS_PURPOSE}.
+        {APP_NAME} is an invite-only app households use to plan meals and shop
+        for them. The only text it sends is {SMS_PURPOSE}. The messages are
+        headed {BRAND}, the name they were first registered under.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>

@@ -75,7 +75,8 @@ be a string`. The way through is the Unix socket and peer auth, with a role
   campaign and appears in every SMS body. Changing it before the campaign is
   re-registered gets messages silently dropped, not merely mislabelled.
   `test/sms-consent.test.ts` and `test/sms-message.test.ts` pin it; those
-  failing is the tripwire.
+  failing is the tripwire. Since 20 November 2026 it survives only in the
+  message body and the opt-in box; the legal pages say Trivet.
 - **The legal wording is load-bearing.** It lives in `src/lib/legal.ts` so the
   consent checkbox, the public pages and the A2P campaign submission cannot
   drift apart, and carrier vetting pattern-matches phrasing rather than reading
