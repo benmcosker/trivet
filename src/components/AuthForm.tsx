@@ -5,6 +5,8 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -39,6 +41,7 @@ export function AuthForm({
   const [inviteCode, setInviteCode] = useState(initialInviteCode);
   const [phone, setPhone] = useState("");
   const [smsConsent, setSmsConsent] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -58,6 +61,7 @@ export function AuthForm({
       inviteCode: string;
       phone: string;
       smsConsent: boolean;
+      termsAccepted: boolean;
     }) => ReturnType<typeof signUp.email>;
 
     const result = isSignUp
@@ -68,6 +72,7 @@ export function AuthForm({
           inviteCode,
           phone,
           smsConsent,
+          termsAccepted,
         })
       : await signIn.email({ email, password });
 
@@ -186,11 +191,19 @@ export function AuthForm({
               helperText={isSignUp ? "At least 10 characters." : undefined}
             />
 
+            {isSignUp ? (
+              <TermsCheckbox
+                checked={termsAccepted}
+                onChange={setTermsAccepted}
+                disabled={busy}
+              />
+            ) : null}
+
             <Button
               type="submit"
               variant="contained"
               size="large"
-              disabled={busy}
+              disabled={busy || (isSignUp && !termsAccepted)}
             >
               {busy ? "Working…" : isSignUp ? "Create account" : "Sign in"}
             </Button>
@@ -227,5 +240,47 @@ export function AuthForm({
         </CardContent>
       </Card>
     </Box>
+  );
+}
+
+/**
+ * Agreeing to the terms and privacy policy, required to make an account
+ * (guideline 1.2; the sign-up route refuses without it, `auth.ts`). The links
+ * open a new tab - in the iPhone app, Safari - so the form keeps what was
+ * typed.
+ */
+function TermsCheckbox({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled: boolean;
+}) {
+  return (
+    <FormControlLabel
+      control={
+        <Checkbox
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          disabled={disabled}
+          sx={{ alignSelf: "flex-start", pt: 0.25 }}
+        />
+      }
+      label={
+        <Typography variant="body2" color="text.secondary">
+          I agree to the{" "}
+          <Link href="/terms" target="_blank" rel="noopener">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" target="_blank" rel="noopener">
+            Privacy Policy
+          </Link>
+          , including that abusive or offensive content isn&apos;t allowed.
+        </Typography>
+      }
+    />
   );
 }

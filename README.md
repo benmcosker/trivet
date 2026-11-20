@@ -663,6 +663,11 @@ not filtered: one reaches another household only because somebody chose to
 share it, and reports and hiding cover that. The list is meant to stay short;
 a filter that refuses "damn good" teaches people to work around it.
 
+The same guideline wants people to agree to terms saying objectionable content
+and abusive users are not tolerated. Sign-up has a required box for the terms
+and privacy policy; the sign-up route refuses without it and records the date
+(`termsAcceptedAt`). Accounts from before 20 November 2026 have no date.
+
 **A recipe is private to its household, and reaches another in only two ways:
 the shared library, or a share with a household the owner names.** Until 18
 November, any household could share a recipe with every household, now and

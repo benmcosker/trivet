@@ -39,7 +39,7 @@ async function signUp(email: string, inviteCode: string): Promise<number> {
         password: PASSWORD,
         // Spread so the excess-property check does not reject a field
         // better-auth passes through to the signup hook but does not type.
-        ...{ inviteCode },
+        ...{ inviteCode, termsAccepted: true },
       },
       asResponse: true,
     });
