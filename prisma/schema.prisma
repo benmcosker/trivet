@@ -142,6 +142,12 @@ model User {
   /// by every import route on the server as well as by the page. A person's,
   /// not a household's: each member decides for what they send.
   aiConsentAt      DateTime?
+  /// When this person ticked agreement to the terms and privacy policy at
+  /// sign-up. Null for accounts made before the box existed (20 November
+  /// 2026). App Store guideline 1.2 wants people to agree to terms that say
+  /// objectionable content and abusive users are not tolerated; the sign-up
+  /// route refuses without the tick, so a new account always has a date.
+  termsAcceptedAt  DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   sessions         Session[]

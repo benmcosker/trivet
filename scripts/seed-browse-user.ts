@@ -97,6 +97,7 @@ async function main(): Promise<void> {
       password,
       name: "Browse Check",
       inviteCode: code,
+      termsAccepted: true,
       /*
        * Required to join since the phone became mandatory, and refused in
        * the sign-up before-hook without one - which this script reported as
