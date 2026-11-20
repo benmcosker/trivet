@@ -138,6 +138,11 @@ struct TrivetWebView: UIViewRepresentable {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default() // stay signed in between launches
         config.limitsNavigationsToAppBoundDomains = true // service workers need it
+        // Tells the site this is the app, so its front page - which explains
+        // what Trivet is - is skipped for people who already have the app
+        // (`isTrivetApp` in src/lib/site.ts). "Mobile/15E148" is WebKit's own
+        // default here, kept so the site still sees a phone.
+        config.applicationNameForUserAgent = "Mobile/15E148 TrivetApp"
         // How the upload page takes screenshots' words, photos and PDFs from
         // the share sheet. Answers Trivet's own pages only.
         config.userContentController.addScriptMessageHandler(

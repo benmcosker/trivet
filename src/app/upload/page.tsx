@@ -29,8 +29,8 @@ export default async function UploadPage({
       <Typography color="text.secondary" sx={{ mb: 3 }}>
         A link to a recipe online, a PDF, a photograph of a card, a screenshot,
         or text you have copied. Whichever you give it, it is read
-        automatically, and you get a chance to correct anything before it joins
-        the shared library.
+        automatically, and you get a chance to correct anything before it is
+        saved to your household&apos;s recipes.
       </Typography>
       <UploadWorkflow sharedUrl={shared} sharedFromApp={fromApp === "1"} />
     </AppShell>
