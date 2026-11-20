@@ -19,12 +19,24 @@ build. A new build is only needed when the Swift code here changes.
 ## Send a build to TestFlight
 
 1. In App Store Connect, create the app once, with the App ID above.
-2. In Xcode, set the destination to "Any iOS Device", then Product → Archive.
-3. In the Organizer window that opens, Distribute App → App Store Connect →
-   Upload.
-4. In App Store Connect → TestFlight, add the family as testers once the build
-   has processed. Each build expires after 90 days; upload a fresh one before
-   then.
+2. On the Mac, `git pull` on `main` first. An archive is built from whatever
+   is checked out, and a build made before pulling quietly lacks the latest
+   Swift changes - build 7 was nearly that.
+3. Raise the build number (below).
+4. In Xcode, set the destination to "Any iOS Device", then Product → Archive.
+5. In the Organizer window that opens, Distribute App → App Store Connect →
+   Upload. Generate Privacy Report there too, to check both manifests are in.
+6. On the iPhone, open the TestFlight app → Trivet Box and install the new
+   build. Closing and reopening Trivet does not: it keeps running whatever was
+   installed, and App Store Connect's Installs column shows which builds ever
+   reached a phone.
+7. Check it: sign out, and the app should land on Sign in rather than the
+   front page (that is the app identifying itself, `TrivetApp`, see
+   "Staying on trivetbox.com").
+8. To send it to the family, add the build to the Family group under External
+   Testing. An external group's first look at a build goes through Apple's
+   beta review, usually within a day. Each build expires after 90 days; upload
+   a fresh one before then.
 
 Raise the build number (target → General → Build) before each upload. It is
 `CURRENT_PROJECT_VERSION` in `project.xcproj`; build 2 added the
@@ -38,6 +50,12 @@ offline shopping list needs one. The hosts are listed twice and must match:
 `WKAppBoundDomains` in `ios/TrivetBox/Info.plist` and `trivetHosts` in
 `ContentView.swift`. A page on any other site opens in Safari, and links like
 `sms:` and `mailto:` (Text it, invite emails) open the app that handles them.
+
+The web view adds `TrivetApp` to its user agent
+(`applicationNameForUserAgent` in `ContentView.swift`), and the site reads it
+(`isTrivetApp` in `src/lib/site.ts`): signed out, the app opens on Sign in,
+where a browser gets the public front page. A build older than build 7 lacks
+it and shows the front page instead.
 
 `Info.plist` sits beside the `TrivetBox` folder, not in it. That folder syncs
 into the target, and an Info.plist inside it would also be copied as a
