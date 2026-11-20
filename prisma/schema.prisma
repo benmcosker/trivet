@@ -73,6 +73,14 @@ model User {
   /// withdrawal rather than a number the app has merely misplaced.
   smsConsentAt     DateTime?
   smsConsentSource SmsConsentSource?
+  /// When this person agreed that what they import is sent to Anthropic to be
+  /// read, or null if they never have or took it back.
+  ///
+  /// App Store guideline 5.1.2(i): personal data goes to a third-party AI only
+  /// with explicit permission. Asked once, before the first import, and checked
+  /// by every import route on the server as well as by the page. A person's,
+  /// not a household's: each member decides for what they send.
+  aiConsentAt      DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   sessions         Session[]

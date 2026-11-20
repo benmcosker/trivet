@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   extractRecipeFromText: vi.fn(),
   claimUploadSlot: vi.fn(),
+  consented: true,
   user: { id: "cook", householdId: "home" } as {
     id: string;
     householdId: string;
@@ -24,6 +25,15 @@ vi.mock("@/lib/duplicates", () => ({ findSimilarlyTitled: async () => [] }));
 vi.mock("@/lib/upload-quota", () => ({
   claimUploadSlot: mocks.claimUploadSlot,
 }));
+
+vi.mock("@/lib/ai-consent", async (original) => {
+  const real = await original<typeof import("@/lib/ai-consent")>();
+  return {
+    ...real,
+    refuseWithoutAiConsent: async () =>
+      mocks.consented ? null : real.aiConsentRefusal(),
+  };
+});
 
 const { POST } = await import("@/app/api/import-text/route");
 
@@ -43,6 +53,7 @@ const post = (body: unknown) =>
 describe("POST /api/import-text", () => {
   beforeEach(() => {
     mocks.user = { id: "cook", householdId: "home" };
+    mocks.consented = true;
     mocks.claimUploadSlot.mockReset().mockResolvedValue({ ok: true });
     mocks.extractRecipeFromText.mockReset().mockResolvedValue({
       ok: true,
@@ -71,6 +82,17 @@ describe("POST /api/import-text", () => {
     expect(mocks.extractRecipeFromText).toHaveBeenCalledWith(
       expect.objectContaining({ fromScreenshots: true }),
     );
+  });
+
+  it("asks permission before anything reaches the model or the allowance", async () => {
+    mocks.consented = false;
+    const response = await post({ text: caption });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({
+      code: "ai_consent_required",
+    });
+    expect(mocks.claimUploadSlot).not.toHaveBeenCalled();
+    expect(mocks.extractRecipeFromText).not.toHaveBeenCalled();
   });
 
   it("refuses a too-short paste before spending any allowance", async () => {

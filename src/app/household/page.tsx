@@ -1,11 +1,16 @@
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import { DeleteAccount, HiddenHouseholds } from "@/components/AccountSettings";
+import {
+  AiConsent,
+  DeleteAccount,
+  HiddenHouseholds,
+} from "@/components/AccountSettings";
 import { AppShell } from "@/components/AppShell";
 import { ConnectedAssistants } from "@/components/ConnectedAssistants";
 import { HouseholdManager } from "@/components/HouseholdManager";
 import { deletionPreview } from "@/lib/account-deletion";
+import { aiConsentDate } from "@/lib/ai-consent";
 import { getHousehold, MAX_HOUSEHOLD_NAME } from "@/lib/household";
 import { INVITE_TTL_DAYS, inviteLink, listPendingInvites } from "@/lib/invites";
 import { listConnectedAssistants } from "@/lib/mcp/access";
@@ -17,13 +22,15 @@ import { smsAvailable } from "@/lib/sms";
 export default async function HouseholdPage() {
   const user = await requireHousehold();
 
-  const [household, invites, hidden, preview, assistants] = await Promise.all([
-    getHousehold(user.householdId),
-    listPendingInvites(user.id),
-    listHiddenHouseholds(user.householdId),
-    deletionPreview(user.id),
-    listConnectedAssistants(user.id),
-  ]);
+  const [household, invites, hidden, preview, assistants, aiConsentAt] =
+    await Promise.all([
+      getHousehold(user.householdId),
+      listPendingInvites(user.id),
+      listHiddenHouseholds(user.householdId),
+      deletionPreview(user.id),
+      listConnectedAssistants(user.id),
+      aiConsentDate(user.id),
+    ]);
 
   return (
     <AppShell>
@@ -78,6 +85,7 @@ export default async function HouseholdPage() {
             lastChange: assistant.lastChange,
           }))}
         />
+        <AiConsent agreed={aiConsentAt ? agreedWhen(aiConsentAt) : null} />
         <HiddenHouseholds households={hidden} />
         <DeleteAccount
           email={user.email}
@@ -112,4 +120,10 @@ function dayName(date: Date, now = new Date()): string {
   return date.getUTCFullYear() === now.getUTCFullYear()
     ? words
     : `${words} ${date.getUTCFullYear()}`;
+}
+
+/** "today", or "on 12 November": the words after "You agreed". */
+function agreedWhen(date: Date): string {
+  const day = dayName(date);
+  return day === "today" ? day : `on ${day}`;
 }

@@ -1,7 +1,9 @@
 import Typography from "@mui/material/Typography";
 
+import { AiConsentGate } from "@/components/AiConsentGate";
 import { AppShell } from "@/components/AppShell";
 import { UploadWorkflow } from "@/components/UploadWorkflow";
+import { hasAiConsent } from "@/lib/ai-consent";
 import { requireUser } from "@/lib/session";
 import { linkFromShare } from "@/lib/social-links";
 
@@ -9,7 +11,8 @@ export default async function UploadPage({
   searchParams,
 }: PageProps<"/upload">) {
   // Upload is for signed-in users only.
-  await requireUser();
+  const user = await requireUser();
+  const agreed = await hasAiConsent(user.id);
 
   // A link shared in from the iPhone Shortcut, read on arrival.
   const { url, shared: fromApp } = await searchParams;
@@ -32,7 +35,12 @@ export default async function UploadPage({
         automatically, and you get a chance to correct anything before it is
         saved to your household&apos;s recipes.
       </Typography>
-      <UploadWorkflow sharedUrl={shared} sharedFromApp={fromApp === "1"} />
+      <AiConsentGate
+        agreed={agreed}
+        waiting={Boolean(shared) || fromApp === "1"}
+      >
+        <UploadWorkflow sharedUrl={shared} sharedFromApp={fromApp === "1"} />
+      </AiConsentGate>
     </AppShell>
   );
 }

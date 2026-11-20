@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   extractRecipeFromImages: vi.fn(),
   findRecipeBySourceHash: vi.fn(),
   claimUploadSlot: vi.fn(),
+  consented: true,
 }));
 
 vi.mock("@/lib/session", () => ({
@@ -35,6 +36,15 @@ vi.mock("@/lib/storage", () => ({
     url: `https://blob.example/${name}`,
   }),
 }));
+
+vi.mock("@/lib/ai-consent", async (original) => {
+  const real = await original<typeof import("@/lib/ai-consent")>();
+  return {
+    ...real,
+    refuseWithoutAiConsent: async () =>
+      mocks.consented ? null : real.aiConsentRefusal(),
+  };
+});
 
 const { POST } = await import("@/app/api/upload/route");
 
@@ -60,6 +70,7 @@ const RECIPE = {
 };
 
 beforeEach(() => {
+  mocks.consented = true;
   mocks.extractRecipeFromImages.mockReset();
   mocks.extractRecipeFromImages.mockResolvedValue({ ok: true, recipe: RECIPE });
   mocks.findRecipeBySourceHash.mockReset();
@@ -69,6 +80,18 @@ beforeEach(() => {
 });
 
 describe("several photos as one recipe", () => {
+  it("asks permission before reading, storing or counting anything", async () => {
+    mocks.consented = false;
+    const response = await upload([photo("one.jpg"), photo("two.jpg")]);
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({
+      code: "ai_consent_required",
+    });
+    expect(mocks.findRecipeBySourceHash).not.toHaveBeenCalled();
+    expect(mocks.claimUploadSlot).not.toHaveBeenCalled();
+    expect(mocks.extractRecipeFromImages).not.toHaveBeenCalled();
+  });
+
   it("reads them in one call, in the order chosen", async () => {
     const second = new Uint8Array([...JPEG, 0]);
     const response = await upload([photo("one.jpg"), photo("two.jpg", second)]);
