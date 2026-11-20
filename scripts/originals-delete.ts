@@ -59,6 +59,35 @@ async function main() {
     return;
   }
 
+  // The store this key opens, checked before anything is deleted. A key for
+  // a different store (Vercel lists more than one) would make every file in
+  // it look unused, and step 2 would empty it. So the store has to hold
+  // files Trivet's recipes actually point at, or nothing runs.
+  const recipeFiles = await prisma.recipe.findMany({
+    select: { imageUrl: true, sourceFileUrl: true },
+  });
+  const allReferenced = new Set(
+    recipeFiles
+      .flatMap((r) => [r.imageUrl, r.sourceFileUrl])
+      .filter((url): url is string => Boolean(url?.startsWith("http"))),
+  );
+  const storeFiles = token ? await allBlobs() : [];
+  if (token) {
+    const used = storeFiles.filter((b) => allReferenced.has(b.url)).length;
+    console.log(
+      `This store holds ${storeFiles.length} files; Trivet's recipes use ${used} of them.`,
+    );
+    if (allReferenced.size > 0 && used === 0) {
+      console.error(
+        "None of Trivet's recipes point at a file in this store, so this key is " +
+          "for a different store. Nothing was changed. Use the key of the store " +
+          "Trivet's photo addresses start with.",
+      );
+      process.exitCode = 2;
+      return;
+    }
+  }
+
   // 1. Original cards.
   const byHousehold = new Map<string, number>();
   for (const r of originals) {
@@ -110,8 +139,15 @@ async function main() {
         .filter((url): url is string => Boolean(url)),
     );
     // In a dry run the originals above are still referenced; with --write
-    // they are already gone. Either way they are not counted twice.
-    const unused = orphanedFiles(await allBlobs(), referenced, new Date());
+    // they are already gone.
+    // The listing from before step 1: files it deleted are no longer in the
+    // store, but they are not in `referenced` either, so re-list rather than
+    // count them twice.
+    const unused = orphanedFiles(
+      write ? await allBlobs() : storeFiles,
+      referenced,
+      new Date(),
+    );
     console.log(
       `\nFiles no recipe uses, over a day old: ${describeFiles(unused)}`,
     );
