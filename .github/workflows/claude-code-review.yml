@@ -3,12 +3,19 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    # Not for a pull request that only touches what CI's `changes` job also
+    # skips: Markdown, docs, design handoffs and the iPhone project. A review
+    # of prose costs a model call and finds nothing a reader would not.
+    # Swift is the exception - ios/ code is still worth a look.
+    paths-ignore:
+      - "*.md"
+      - "**/README.md"
+      - "docs/**"
+      - "design_handoff_*/**"
+      - "ios/**/*.md"
+      - "ios/**/*.xcproj"
+      - "ios/**/*.xcprivacy"
+      - ".claude/**"
 
 jobs:
   claude-review:
