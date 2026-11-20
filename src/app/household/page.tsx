@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import {
   AiConsent,
   DeleteAccount,
+  DownloadRecipes,
   HiddenHouseholds,
 } from "@/components/AccountSettings";
 import { AppShell } from "@/components/AppShell";
@@ -11,6 +12,7 @@ import { ConnectedAssistants } from "@/components/ConnectedAssistants";
 import { HouseholdManager } from "@/components/HouseholdManager";
 import { deletionPreview } from "@/lib/account-deletion";
 import { aiConsentDate } from "@/lib/ai-consent";
+import { householdRecipeCount } from "@/lib/recipe-export";
 import { getHousehold, MAX_HOUSEHOLD_NAME } from "@/lib/household";
 import { INVITE_TTL_DAYS, inviteLink, listPendingInvites } from "@/lib/invites";
 import { listConnectedAssistants } from "@/lib/mcp/access";
@@ -22,15 +24,23 @@ import { smsAvailable } from "@/lib/sms";
 export default async function HouseholdPage() {
   const user = await requireHousehold();
 
-  const [household, invites, hidden, preview, assistants, aiConsentAt] =
-    await Promise.all([
-      getHousehold(user.householdId),
-      listPendingInvites(user.id),
-      listHiddenHouseholds(user.householdId),
-      deletionPreview(user.id),
-      listConnectedAssistants(user.id),
-      aiConsentDate(user.id),
-    ]);
+  const [
+    household,
+    invites,
+    hidden,
+    preview,
+    assistants,
+    aiConsentAt,
+    recipeCount,
+  ] = await Promise.all([
+    getHousehold(user.householdId),
+    listPendingInvites(user.id),
+    listHiddenHouseholds(user.householdId),
+    deletionPreview(user.id),
+    listConnectedAssistants(user.id),
+    aiConsentDate(user.id),
+    householdRecipeCount(user.householdId),
+  ]);
 
   return (
     <AppShell>
@@ -85,6 +95,7 @@ export default async function HouseholdPage() {
             lastChange: assistant.lastChange,
           }))}
         />
+        <DownloadRecipes count={recipeCount} />
         <AiConsent agreed={aiConsentAt ? agreedWhen(aiConsentAt) : null} />
         <HiddenHouseholds households={hidden} />
         <DeleteAccount

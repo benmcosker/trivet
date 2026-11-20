@@ -163,8 +163,10 @@ struct TrivetWebView: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {}
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
         let state: WebState
+        /// Where each download in progress is being written.
+        private var downloads: [ObjectIdentifier: URL] = [:]
 
         init(state: WebState) { self.state = state }
 
@@ -187,6 +189,9 @@ struct TrivetWebView: UIViewRepresentable {
                 if !trivetHosts.contains(host) && mainFrame {
                     UIApplication.shared.open(url)
                     decisionHandler(.cancel)
+                } else if action.shouldPerformDownload {
+                    // A link marked `download` (Download your recipes).
+                    decisionHandler(.download)
                 } else {
                     decisionHandler(.allow)
                 }
@@ -210,6 +215,81 @@ struct TrivetWebView: UIViewRepresentable {
                 UIApplication.shared.open(url)
             }
             return nil
+        }
+
+        /// A response the site sends as a file to save, rather than a page to
+        /// show: the recipe download. Without this the web view would show
+        /// the file in place, with no way back but a swipe.
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationResponse: WKNavigationResponse,
+            decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
+        ) {
+            let disposition = (navigationResponse.response as? HTTPURLResponse)?
+                .value(forHTTPHeaderField: "Content-Disposition")?
+                .lowercased() ?? ""
+            decisionHandler(disposition.hasPrefix("attachment") ? .download : .allow)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            navigationAction: WKNavigationAction,
+            didBecome download: WKDownload
+        ) {
+            download.delegate = self
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            navigationResponse: WKNavigationResponse,
+            didBecome download: WKDownload
+        ) {
+            download.delegate = self
+        }
+
+        /// Written to a fresh temporary folder under the name the site gave
+        /// it, then handed to the share sheet, where Save to Files, AirDrop
+        /// and Mail are.
+        func download(
+            _ download: WKDownload,
+            decideDestinationUsing response: URLResponse,
+            suggestedFilename: String,
+            completionHandler: @escaping (URL?) -> Void
+        ) {
+            let folder = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            } catch {
+                completionHandler(nil)
+                return
+            }
+            let file = folder.appendingPathComponent(suggestedFilename)
+            downloads[ObjectIdentifier(download)] = file
+            completionHandler(file)
+        }
+
+        func downloadDidFinish(_ download: WKDownload) {
+            guard let file = downloads.removeValue(forKey: ObjectIdentifier(download)) else { return }
+            share(file)
+        }
+
+        func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+            downloads.removeValue(forKey: ObjectIdentifier(download))
+        }
+
+        private func share(_ file: URL) {
+            guard let webView = state.webView,
+                  var top = webView.window?.rootViewController else { return }
+            while let presented = top.presentedViewController { top = presented }
+            let sheet = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+            // On iPad the sheet is a popover and needs somewhere to point.
+            if let popover = sheet.popoverPresentationController {
+                popover.sourceView = webView
+                popover.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            top.present(sheet, animated: true)
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
