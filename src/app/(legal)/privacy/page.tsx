@@ -149,10 +149,10 @@ export default function PrivacyPage() {
         To run {APP_NAME} for you and your household: to sign you in, show your
         recipes, plans and lists, read recipes you add, send the texts you ask
         for, and keep the service working and safe. Email goes to you only to
-        reset a forgotten password, or to tell you about a change to these terms
-        or to the service that affects you. Nothing is used for advertising, and
-        nobody&apos;s information is sold, rented, or used to build a profile of
-        them.
+        reset a forgotten password, to deliver an invitation a member sends you,
+        or to tell you about a change to these terms or to the service that
+        affects you. Nothing is used for advertising, and nobody&apos;s
+        information is sold, rented, or used to build a profile of them.
       </Para>
 
       <Heading>Who can see what</Heading>
@@ -202,7 +202,8 @@ export default function PrivacyPage() {
           <strong>Twilio</strong> delivers the shopping-list texts.
         </Item>
         <Item>
-          <strong>Resend</strong> delivers password-reset emails.
+          <strong>Resend</strong> delivers password-reset emails and
+          invitations.
         </Item>
         <Item>
           <strong>Sentry</strong> receives the error reports described above.

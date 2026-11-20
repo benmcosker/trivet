@@ -652,6 +652,17 @@ not per household, and everybody who was here before it existed is asked on
 their next import. A link or a share from the iPhone that arrives first waits
 behind the question and is read the moment they agree.
 
+**Words other households can read are filtered before they are saved.** App
+Store guideline 1.2 wants filtering as well as reporting and blocking. A
+review's text, a household's name and a person's name (shown beside their
+reviews) are checked on the server against `src/lib/objectionable.ts`: a
+short list of slurs, sexual terms and the strongest swearing, matched by whole
+word so that Scunthorpe, shiitake, rapeseed and spices get through, and
+`test/objectionable.test.ts` keeps a list of dishes that must. Recipes are
+not filtered: one reaches another household only because somebody chose to
+share it, and reports and hiding cover that. The list is meant to stay short;
+a filter that refuses "damn good" teaches people to work around it.
+
 **A recipe is private to its household, and reaches another in only two ways:
 the shared library, or a share with a household the owner names.** Until 18
 November, any household could share a recipe with every household, now and

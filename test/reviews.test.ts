@@ -41,6 +41,29 @@ describe.skipIf(!hasDb)("reviews", () => {
     await prisma.$disconnect();
   });
 
+  describe("the word filter", () => {
+    it("refuses a review other households would read as abuse, and saves nothing", async () => {
+      await expect(
+        saveReview(recipeId, alice, householdId, {
+          stars: 1,
+          body: "Shit recipe",
+        }),
+      ).rejects.toThrow("language Trivet doesn't publish");
+      expect(await getReviewSummary(recipeId, householdId)).toEqual({
+        average: null,
+        count: 0,
+      });
+    });
+
+    it("leaves a review about spices and shiitake alone", async () => {
+      await saveReview(recipeId, alice, householdId, {
+        stars: 5,
+        body: "More spices next time, and shiitake instead of button mushrooms.",
+      });
+      expect((await getReviewSummary(recipeId, householdId)).count).toBe(1);
+    });
+  });
+
   describe("the average", () => {
     it("is null until somebody reviews the recipe", async () => {
       expect(await getReviewSummary(recipeId, householdId)).toEqual({

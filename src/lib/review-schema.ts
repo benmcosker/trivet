@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isObjectionable, OBJECTIONABLE_REFUSAL } from "./objectionable";
+
 /**
  * The parts of reviews that carry no database access.
  *
@@ -38,7 +40,9 @@ export const bodyInput = z
   .transform((value) => {
     const trimmed = value?.trim();
     return trimmed ? trimmed : null;
-  });
+  })
+  // Guideline 1.2: other households read reviews (`objectionable.ts`).
+  .refine((value) => !isObjectionable(value), OBJECTIONABLE_REFUSAL.review);
 
 export const reviewInput = z.object({
   stars: starsInput,
