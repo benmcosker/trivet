@@ -17,7 +17,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Trivet",
     short_name: "Trivet",
     description:
-      "Recipe box, weekly meal planner and grocery list for one household.",
+      "Recipe box, weekly meal planner and grocery list for your household.",
     start_url: "/",
     scope: "/",
     display: "standalone",

@@ -1,12 +1,12 @@
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { COPYRIGHT_AGENT } from "@/lib/copyright-agent";
 
 import {
   APP_NAME,
-  BRAND,
   CONTACT_EMAIL,
   LEGAL_UPDATED,
   SMS_FREQUENCY,
@@ -16,16 +16,22 @@ import {
 } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: `Terms of Service — ${BRAND}`,
-  description: `Terms for using ${BRAND}, including its text messages.`,
+  title: `Terms of Service — ${APP_NAME}`,
+  description: `Terms for using ${APP_NAME}, including its text messages.`,
 };
 
 /**
- * Terms, kept to what is true of a private family app.
+ * The terms of service, written for a public app.
  *
  * The messaging section is the part a carrier reads, and it repeats the
  * frequency, the rates line and the stop instructions from `lib/legal.ts` -
- * the same strings the checkbox and the privacy policy use.
+ * the same strings the checkbox and the privacy policy use. Don't reword
+ * those here. The texts themselves still carry `BRAND`, the app's old name;
+ * this page doesn't (see `legal.ts`).
+ *
+ * The rest says what a person may do, what they keep, what we promise and
+ * what we cannot: that the recipe reading is a machine's and can be wrong,
+ * and that nothing here is food-safety or allergy advice.
  */
 export default function TermsPage() {
   return (
@@ -34,18 +40,73 @@ export default function TermsPage() {
         Terms of Service
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        {BRAND} is a private, invite-only application for planning a
-        household&apos;s meals and shopping. Accounts are created by invitation
-        only and it is not open to the public.
+        {APP_NAME} is a recipe library, weekly meal planner and shopping list
+        for households, on the web at trivetbox.com and as an iPhone app. It is
+        run by {COPYRIGHT_AGENT.name} (&ldquo;we&rdquo;). By using {APP_NAME}{" "}
+        you agree to these terms and to the{" "}
+        <Link href="/privacy">privacy policy</Link>.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
-        Using the app
+        Your account
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        Accounts are created by invitation: somebody already using {APP_NAME}{" "}
+        invites you, either into their household or to start your own. You must
+        be 13 or older.
       </Typography>
       <Typography sx={{ mb: 3 }}>
-        Members keep their sign-in details to themselves and enter only their
-        own phone number - never another person&apos;s. Recipes and plans are
-        shared with the other members of the same household.
+        Keep your sign-in details to yourself, and enter only your own phone
+        number - never another person&apos;s. Recipes, plans and lists are
+        shared with the other members of your household, and anyone in it can
+        change them.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        What you add
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        What you add stays yours. You let us store it, show it to the people you
+        share it with, and process it to run {APP_NAME} for you - including
+        sending a recipe you import to Anthropic to be read, once you have
+        agreed to that. This permission ends when you delete it or your account,
+        apart from copies other households already hold of recipes you shared
+        with them.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        Add only what you have the right to use. Keeping a copy of a recipe from
+        a cookbook, a card or a website for your own household&apos;s cooking is
+        what {APP_NAME} is for; sharing it with other households is your
+        decision and your responsibility, so share only what you wrote or have
+        permission to share.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        Check what is read, and what you cook
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        Recipes imported from a photo, a PDF, a web page or text are read by AI,
+        and it makes mistakes: an amount, a temperature, a time or an ingredient
+        can come out wrong. Nutrition figures {APP_NAME} works out itself are
+        estimates. Check a recipe before you save it, and again before you cook
+        it.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        Nothing in {APP_NAME} is medical, dietary, allergy or food-safety
+        advice. If you or someone you cook for has an allergy or a dietary need,
+        check every ingredient yourself.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        Fair use
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        Don&apos;t use {APP_NAME} to break the law or anyone&apos;s rights, to
+        harass anyone, or to send spam. Don&apos;t try to reach another
+        household&apos;s information, get around a limit (such as the daily
+        number of recipes that can be read), overload the service, or copy it
+        wholesale with automated tools. An AI assistant you connect acts for
+        you, so these rules apply to what it does too.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
@@ -146,7 +207,7 @@ export default function TermsPage() {
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
-        If {BRAND} changes or closes
+        If {APP_NAME} changes or closes
       </Typography>
       <Typography sx={{ mb: 1 }}>
         Features may change over time. A change to these terms is posted here
@@ -156,30 +217,66 @@ export default function TermsPage() {
       <Typography sx={{ mb: 1 }}>
         The iPhone app can leave Apple&apos;s App Store, whether Apple removes
         it or we do. An app already installed may keep working for a time but
-        will stop being updated. {BRAND} itself stays available in a web browser
-        at trivetbox.com for as long as the service runs, with the same account
-        and everything in it.
+        will stop being updated. {APP_NAME} itself stays available in a web
+        browser at trivetbox.com for as long as the service runs, with the same
+        account and everything in it.
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        If {BRAND} closes, every member will be told by email at least 30 days
-        before, and in the app. Until it closes you will be able to download
-        your household&apos;s recipes. After it closes, accounts and everything
-        in them are deleted, as the privacy policy describes.
+        If {APP_NAME} closes, every member will be told by email at least 30
+        days before, and in the app. Until it closes you will be able to
+        download your household&apos;s recipes. After it closes, accounts and
+        everything in them are deleted, as the privacy policy describes.
       </Typography>
       <Typography sx={{ mb: 3 }}>
-        If you pay for {BRAND}, a subscription stops renewing when the service
-        closes or the feature you pay for is withdrawn. A purchase made through
-        Apple is refunded by Apple, under Apple&apos;s rules; one paid to us
-        directly is refunded for the unused part of the period you paid for. A
-        lifetime purchase lasts for the life of the service, not the life of the
-        buyer.
+        If you pay for {APP_NAME}, a subscription stops renewing when the
+        service closes or the feature you pay for is withdrawn. A purchase made
+        through Apple is refunded by Apple, under Apple&apos;s rules; one paid
+        to us directly is refunded for the unused part of the period you paid
+        for. A lifetime purchase lasts for the life of the service, not the life
+        of the buyer.
       </Typography>
       <Typography variant="h2" sx={{ mb: 1 }}>
-        No warranty
+        Ending your account
       </Typography>
       <Typography sx={{ mb: 3 }}>
-        The app is provided as it is, without warranty. A shopping list it
-        produces is a convenience and not a guarantee: check it before you shop.
+        You can delete your account at any time from the Household page. We may
+        suspend or close an account that breaks these terms, and will tell you
+        why unless the law or someone&apos;s safety prevents it.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        No warranty, and limits on liability
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        {APP_NAME} is provided as it is and as available, without warranties of
+        any kind, as far as the law allows. A shopping list it produces is a
+        convenience and not a guarantee: check it before you shop.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        As far as the law allows, we are not liable for indirect or
+        consequential losses, or for lost data, and our total liability to you
+        for anything to do with {APP_NAME} is limited to the greater of what you
+        paid us in the 12 months before the claim and US$50. Some places do not
+        allow these limits, and where they do not, they do not apply to you.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        The iPhone app
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        These terms are between you and us, not Apple. Apple is not responsible
+        for the app or its content, has no duty to support it, and is not
+        responsible for any claim about it. Apple&apos;s own Licensed
+        Application End User License Agreement also applies to the app, and
+        Apple may enforce these terms as they relate to it.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
+        The law that applies
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        These terms are governed by the laws of Rhode Island, USA, without
+        affecting any protection the law where you live gives you.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>

@@ -579,6 +579,12 @@ messages, which is the same failure as being unregistered. The order is:
 register the new name, wait for approval, then change that one constant and the
 two tests that pin it. Those tests failing is the tripwire, and it is deliberate.
 
+The policy pages are another matter. Since 20 November 2026 they say Trivet:
+the campaign is not expected to be re-reviewed, and a reviewer reading a page
+is a person, where the filter reading messages is not. The old name is left in
+the message body, the opt-in box that promises those messages, and one line on
+`/sms` explaining the box.
+
 The registration is a sole-proprietor Brand, which carries low daily throughput
 caps. A household and a weekly list is nowhere near them.
 
