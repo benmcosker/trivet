@@ -78,6 +78,12 @@ export default function PrivacyPage() {
         used only to send it and to check that the person signs up with the
         address it was sent to.
       </Typography>
+      <Typography sx={{ mb: 1 }}>
+        A card, page or file a recipe is read from is kept only while you check
+        what was read from it. Once the recipe is saved, the file is deleted;
+        only a fingerprint of it stays, so the same file is recognised if it is
+        uploaded again.
+      </Typography>
       <Typography sx={{ mb: 3 }}>
         No location, no contacts, no browsing history, and no advertising
         identifiers are collected, and members are not tracked across other

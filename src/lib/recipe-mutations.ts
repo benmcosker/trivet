@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 
 import { prisma } from "./db";
+import { deleteFile } from "./storage";
 import { isLibraryHousehold, visibleRecipes } from "./recipe-visibility";
 import { MACRO_KEYS, type RecipeInput } from "./recipe-schema";
 import { upsertTags, type RecipeWithRelations } from "./recipes";
@@ -261,9 +262,24 @@ export async function deleteRecipe(
   id: string,
   householdId: string,
 ): Promise<boolean> {
+  const files = await prisma.recipe.findFirst({
+    where: { id, householdId },
+    select: { imageUrl: true, sourceFileUrl: true },
+  });
   const { count } = await prisma.recipe.deleteMany({
     where: { id, householdId },
   });
+  // Its stored files go with it. They used to stay behind, unreferenced but
+  // still at their public addresses: a deleted recipe's photo and card were
+  // only out of sight. After the row, never before, so a failed delete leaves
+  // a stray file rather than a recipe pointing at nothing.
+  if (count > 0 && files) {
+    await Promise.all(
+      [files.imageUrl, files.sourceFileUrl]
+        .filter((url): url is string => Boolean(url))
+        .map((url) => deleteFile(url)),
+    );
+  }
   return count > 0;
 }
 

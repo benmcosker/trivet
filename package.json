@@ -19,6 +19,7 @@
     "library:apply": "tsx scripts/library-apply.ts",
     "photos:todo": "tsx scripts/photos-todo.ts",
     "photos:own": "tsx scripts/photos-own.ts",
+    "originals:delete": "tsx scripts/originals-delete.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy && prisma generate",

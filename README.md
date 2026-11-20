@@ -525,19 +525,21 @@ or renew are in [`DEPLOYING.md`](DEPLOYING.md#the-dmca-agent).
 
 ## Scripts
 
-| Script                   | Does                                                                      |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `npm run dev`            | Dev server                                                                |
-| `npm run build`          | Production build                                                          |
-| `npm test`               | Vitest once (**truncates the dev database**)                              |
-| `npm run lint`           | ESLint                                                                    |
-| `npm run typecheck`      | Route types + `tsc --noEmit`                                              |
-| `npm run format`         | Prettier                                                                  |
-| `npm run db:migrate`     | Create and apply a migration                                              |
-| `npm run db:deploy`      | Apply migrations (production)                                             |
-| `npm run db:studio`      | Prisma Studio                                                             |
-| `npm run library:export` | Export the shared library for a rewrite (`.library/`, never committed)    |
-| `npm run library:apply`  | Apply a reviewed rewrite of the shared library (dry run unless `--write`) |
+| Script                     | Does                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `npm run dev`              | Dev server                                                                                             |
+| `npm run build`            | Production build                                                                                       |
+| `npm test`                 | Vitest once (**truncates the dev database**)                                                           |
+| `npm run lint`             | ESLint                                                                                                 |
+| `npm run typecheck`        | Route types + `tsc --noEmit`                                                                           |
+| `npm run format`           | Prettier                                                                                               |
+| `npm run db:migrate`       | Create and apply a migration                                                                           |
+| `npm run db:deploy`        | Apply migrations (production)                                                                          |
+| `npm run db:studio`        | Prisma Studio                                                                                          |
+| `npm run library:export`   | Export the shared library for a rewrite (`.library/`, never committed)                                 |
+| `npm run library:apply`    | Apply a reviewed rewrite of the shared library (dry run unless `--write`)                              |
+| `npm run photos:own`       | Show replaced library photos to every household (dry run unless `--write`)                             |
+| `npm run originals:delete` | Delete stored original cards and files no recipe uses (dry run unless `--write`; needs the blob token) |
 
 The integration tests share one database and clean up after themselves, which
 means running them against a database you care about will empty it.
@@ -808,8 +810,15 @@ a PNG encoder. Recipe photos are nearly always JPEG; one that is not simply
 arrives without a photo, and can be added by hand.
 
 This applies only to PDFs. An uploaded photograph is the card itself rather
-than a container holding a picture, so nothing is extracted from it - the file
-is kept as the source card and the recipe starts with no dish photo.
+than a container holding a picture, so nothing is extracted from it - the
+recipe starts with no dish photo.
+
+**The card itself is not kept.** It is stored only while the review screen
+shows it; saving the recipe deletes it, and discarding the draft does too. Only
+its fingerprint (`sourceFileSha256`) stays, so the same file uploaded again is
+recognised. Cards saved before 20 November were cleared by
+`npm run originals:delete`, which also sweeps up files no recipe uses (deleting
+a recipe used to leave its photo and card behind; it now deletes them).
 
 **Unit merging is conservative.** Synonyms fold together (`tablespoons` →
 `tbsp`), but nothing converts between units — 1 cup and 200 ml stay as two
