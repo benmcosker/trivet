@@ -52,8 +52,15 @@ export const APP_NAME = "Trivet";
  */
 export const BRAND = "McMullen Meal Magic";
 
-/** Where HELP and privacy questions go. Must be an address somebody reads. */
-export const CONTACT_EMAIL = "benmcosker@gmail.com";
+/**
+ * Where HELP and privacy questions go. Must be an address somebody reads.
+ *
+ * An ImprovMX alias that forwards to the owner's own inbox (DEPLOYING.md,
+ * "Email and copyright notices"), so a personal address is not printed on
+ * every public page. If the alias is ever removed, mail here bounces: check
+ * it still forwards before changing anything in ImprovMX.
+ */
+export const CONTACT_EMAIL = "support@trivetbox.com";
 
 /**
  * What people are told to expect, and what the app must then stay under.

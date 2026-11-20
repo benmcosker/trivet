@@ -195,9 +195,12 @@ domain means merging its `include:` into that one TXT, not adding another.
 
 The aliases are in the ImprovMX dashboard, which is the list of record:
 `copyright@trivetbox.com` is the DMCA agent's address (below), and
+`support@trivetbox.com` is `CONTACT_EMAIL`: the address on every policy page
+and in the text-message HELP wording, so it must keep forwarding.
 `info@trivetbox.com` can be added there so replies to Trivet's own emails reach
-someone. Gmail filed the first forwarded test as junk, so the receiving inbox
-has a filter marking mail to `copyright@` as never spam: a takedown notice
+someone. There is no catch-all, so any other address bounces. Gmail filed the
+first forwarded test as junk, so the receiving inbox has filters marking mail
+to `copyright@` and `support@` as never spam: a takedown notice
 nobody sees is the one email this setup exists for. Testing the forward from
 the same Gmail it forwards to does not work (Gmail drops its own message
 coming back); test from any other account.
