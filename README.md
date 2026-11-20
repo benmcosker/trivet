@@ -663,6 +663,15 @@ not filtered: one reaches another household only because somebody chose to
 share it, and reports and hiding cover that. The list is meant to stay short;
 a filter that refuses "damn good" teaches people to work around it.
 
+**A household can download its own recipes**, which the terms promise until
+the day Trivet closes. The Household page offers a page to read or print
+(`.html`) and schema.org recipe data other apps import (`.json`), built by
+`src/lib/recipe-export.ts` and served by `/api/export` as an attachment. No
+photos: they would be links into Trivet's storage, which is the thing that
+would be gone. Not the shared library or recipes other households shared,
+which are theirs. The iPhone app turns the attachment into the share sheet
+(`ContentView.swift`) from build 8; older builds show the file in place.
+
 **A recipe is private to its household, and reaches another in only two ways:
 the shared library, or a share with a household the owner names.** Until 18
 November, any household could share a recipe with every household, now and

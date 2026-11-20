@@ -251,6 +251,10 @@ export default function PrivacyPage() {
           an assistant, or delete your account, all from the Household page.
         </Item>
         <Item>
+          Download your household&apos;s recipes, as a page to read or print or
+          as recipe data another app can import, from the Household page.
+        </Item>
+        <Item>
           Ask for a copy of your information, or ask us to correct or delete it,
           by emailing <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
           We answer within 30 days.

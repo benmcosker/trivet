@@ -80,6 +80,38 @@ export function HiddenHouseholds({
 }
 
 /**
+ * "Download our recipes": what the terms promise everyone can take with them
+ * (`recipe-export.ts`). Plain links to an attachment, so a browser saves the
+ * file and the iPhone app offers the share sheet.
+ */
+export function DownloadRecipes({ count }: { count: number }) {
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h2" sx={{ mb: 0.5 }}>
+          Download your recipes
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          {count === 0
+            ? "Your household hasn't added any recipes yet. Ones from the shared library or from other households aren't included."
+            : `All ${count} of your household's ${count === 1 ? "recipe" : "recipes"}, to keep. Photos and recipes from the shared library or other households aren't included.`}
+        </Typography>
+        {count > 0 ? (
+          <Stack direction="row" sx={{ flexWrap: "wrap", gap: 2 }}>
+            <Button variant="outlined" href="/api/export?format=page" download>
+              A page to read or print
+            </Button>
+            <Button href="/api/export?format=data" download>
+              Recipe data for another app
+            </Button>
+          </Stack>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
  * The agreement that imports are read by Anthropic (`ai-consent.ts`), with a
  * way to take it back. Only drawn once somebody has agreed: until then the
  * Add a recipe page is where it is explained, at the moment it matters.
