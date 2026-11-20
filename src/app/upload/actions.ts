@@ -37,14 +37,17 @@ export async function saveExtractedRecipeAction(
     };
   }
 
+  // The card itself is not kept. It was stored so the review screen could
+  // show it; once the recipe is saved, nothing needs it, and a stored copy of
+  // a cookbook page or a meal kit's PDF is someone else's work sitting at a
+  // public address. Its fingerprint stays, so the same card uploaded again is
+  // still recognised. (Decided with Ben, 18 November.)
   const id = await createRecipe(parsed.data, user.householdId, user.id, {
     source: assets.source ?? "PDF",
-    sourceFileUrl: assets.sourceFileUrl ?? null,
-    sourceFileName: assets.sourceFileName ?? null,
-    sourceFileType: assets.sourceFileType ?? null,
     sourceFileSha256: assets.sourceFileSha256 ?? null,
     imageUrl: assets.imageUrl ?? null,
   });
+  if (assets.sourceFileUrl) await deleteFile(assets.sourceFileUrl);
 
   revalidatePath("/recipes");
   redirect(`/recipes/${id}`);

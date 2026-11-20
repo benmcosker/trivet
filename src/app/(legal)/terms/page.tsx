@@ -60,9 +60,9 @@ export default function TermsPage() {
         members.
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        The recipes your household adds, with their photos and the files they
-        were read from, are private to your household. They are never shown to
-        another household.
+        The recipes your household adds, with their photos, are private to your
+        household unless you share one. The card or file a recipe is read from
+        is deleted once the recipe is saved.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         Anyone can report a shared recipe or a review from its page, or hide the

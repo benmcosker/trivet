@@ -183,29 +183,6 @@ export default async function RecipePage({
           recipe={recipeFacts(recipe, recipePath(recipe))}
           servings={servings}
           madeLine={madeLine}
-          extraChip={
-            /*
-             * The original card - a meal-kit PDF, a photographed cookbook
-             * page - is the most directly copied thing Trivet stores. It stays
-             * a reference for the household that uploaded it, and is not
-             * handed to every household a recipe is shared with.
-             */
-            mine && recipe.sourceFileUrl ? (
-              <IconChip
-                icon={
-                  recipe.sourceFileType === "application/pdf" ? "pdf" : "photo"
-                }
-                component="a"
-                href={recipe.sourceFileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                clickable
-                label={recipe.sourceFileName ?? "Original card"}
-                size="small"
-                variant="outlined"
-              />
-            ) : null
-          }
         />
 
         {/* Left off the paper: a photo is most of a page's ink. */}
