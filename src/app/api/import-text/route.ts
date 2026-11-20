@@ -4,6 +4,7 @@ import { findSimilarlyTitled } from "@/lib/duplicates";
 import { extractRecipeFromText } from "@/lib/extract-recipe";
 import { PASTED_TEXT_REFUSAL, readPastedText } from "@/lib/pasted-text";
 import { getCurrentHousehold } from "@/lib/session";
+import { refuseWithoutAiConsent } from "@/lib/ai-consent";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { reportError } from "@/lib/report-error";
 
@@ -39,6 +40,9 @@ async function handle(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Sign in to upload." }, { status: 401 });
   }
+  // Before anything is fetched, stored or counted (`ai-consent.ts`).
+  const noConsent = await refuseWithoutAiConsent(user.id);
+  if (noConsent) return noConsent;
 
   const body = await request.json().catch(() => null);
   const pasted = readPastedText(

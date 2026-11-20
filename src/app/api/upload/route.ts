@@ -14,6 +14,7 @@ import {
   MAX_CARD_IMAGE_BYTES,
 } from "@/lib/extract-recipe";
 import { inspectImage, type SupportedImageType } from "@/lib/image-inspect";
+import { refuseWithoutAiConsent } from "@/lib/ai-consent";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { extractLargestJpeg } from "@/lib/pdf-images";
 import { inspectPdf } from "@/lib/pdf-inspect";
@@ -80,6 +81,9 @@ async function handleUpload(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Sign in to upload." }, { status: 401 });
   }
+  // Before anything is fetched, stored or counted (`ai-consent.ts`).
+  const noConsent = await refuseWithoutAiConsent(user.id);
+  if (noConsent) return noConsent;
 
   // A request with no multipart body at all makes formData() throw, which
   // would otherwise surface as a 500 rather than a bad request.

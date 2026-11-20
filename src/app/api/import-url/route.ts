@@ -22,6 +22,7 @@ import {
 import { getCurrentHousehold } from "@/lib/session";
 import { socialAdvice, socialSite } from "@/lib/social-links";
 import { storeFile } from "@/lib/storage";
+import { refuseWithoutAiConsent } from "@/lib/ai-consent";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { reportError } from "@/lib/report-error";
 
@@ -74,6 +75,9 @@ async function handleImport(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Sign in to upload." }, { status: 401 });
   }
+  // Before anything is fetched, stored or counted (`ai-consent.ts`).
+  const noConsent = await refuseWithoutAiConsent(user.id);
+  if (noConsent) return noConsent;
 
   const body = await request.json().catch(() => null);
   const raw = typeof body?.url === "string" ? body.url : "";

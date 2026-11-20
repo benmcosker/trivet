@@ -90,15 +90,39 @@ export default function PrivacyPage() {
         sites.
       </Typography>
 
+      {/* The consent on the Add a recipe page links here (`ai-consent.ts`). */}
+      <Typography id="ai" variant="h2" sx={{ mb: 1 }}>
+        Reading recipes with AI
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        Recipes you add from a photo, a PDF, a web page or pasted text are read
+        by Claude, an AI model made by Anthropic. What you add is sent to
+        Anthropic, which reads it and sends back the recipe for you to check
+        before anything is saved. Your name and email address are not sent with
+        it, and nothing else in your account is: not your plans, your shopping
+        list or your household.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        Anthropic acts on our behalf under its commercial terms. It does not use
+        what it reads to train its models, and keeps it only for the limited
+        time those terms allow, for example to check for misuse.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        Nothing is sent until you agree, the first time you add a recipe this
+        way. You can take that agreement back on the Household page, and recipes
+        can always be typed in by hand without it.
+      </Typography>
+
       <Typography variant="h2" sx={{ mb: 1 }}>
         Who else sees anything
       </Typography>
       <Typography sx={{ mb: 3 }}>
         Recipes and plans are visible to the members of the same household.
         Beyond that, information is held only by the service providers that run
-        the application - its hosting, its database, and the messaging provider
-        named above - each acting on our behalf. Nothing is sold, rented, or
-        given to anyone for marketing or promotional purposes.
+        the application - its hosting, its database, the messaging provider
+        named above, and Anthropic for reading recipes you add - each acting on
+        our behalf. Nothing is sold, rented, or given to anyone for marketing or
+        promotional purposes.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>

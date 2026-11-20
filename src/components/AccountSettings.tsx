@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { deleteAccountAction } from "@/app/household/account-actions";
+import { withdrawAiConsentAction } from "@/app/upload/ai-consent-actions";
 import { showHouseholdAction } from "@/app/recipes/moderation-actions";
 import type { DeletionPreview } from "@/lib/account-deletion";
 
@@ -73,6 +74,51 @@ export function HiddenHouseholds({
             </Box>
           ))}
         </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * The agreement that imports are read by Anthropic (`ai-consent.ts`), with a
+ * way to take it back. Only drawn once somebody has agreed: until then the
+ * Add a recipe page is where it is explained, at the moment it matters.
+ */
+export function AiConsent({
+  agreed,
+}: {
+  /** "today" or "on 12 November", or null if they have not agreed. */
+  agreed: string | null;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  if (!agreed) return null;
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h2" sx={{ mb: 0.5 }}>
+          Reading recipes with AI
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          You agreed {agreed} that recipes you add from a photo, a PDF, a web
+          page or text are sent to Anthropic to be read. If you stop, Trivet
+          asks again before it reads another. Typing a recipe in doesn&apos;t
+          need this.
+        </Typography>
+        <Button
+          size="small"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              await withdrawAiConsentAction();
+              router.refresh();
+            })
+          }
+        >
+          Stop sending recipes to Anthropic
+        </Button>
       </CardContent>
     </Card>
   );
