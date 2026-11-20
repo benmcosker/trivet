@@ -197,8 +197,8 @@ The aliases are in the ImprovMX dashboard, which is the list of record:
 `copyright@trivetbox.com` is the DMCA agent's address (below), and
 `support@trivetbox.com` is `CONTACT_EMAIL`: the address on every policy page
 and in the text-message HELP wording, so it must keep forwarding.
-`info@trivetbox.com` can be added there so replies to Trivet's own emails reach
-someone. There is no catch-all, so any other address bounces. Gmail filed the
+`info@trivetbox.com` is the sender of Trivet's own emails (`EMAIL_FROM`), so
+a reply to a password reset reaches someone. There is no catch-all, so any other address bounces. Gmail filed the
 first forwarded test as junk, so the receiving inbox has filters marking mail
 to `copyright@` and `support@` as never spam: a takedown notice
 nobody sees is the one email this setup exists for. Testing the forward from
