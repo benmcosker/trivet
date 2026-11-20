@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  The app's privacy manifest. Apple asks every app for one, and requires it
+  where the code uses a "required reason" API.
+
+  The app itself is a web view on trivetbox.com plus the hand-off from the
+  share extension through the App Group folder (containerURL, which is not a
+  required-reason API). It does not track anyone and calls no required-reason
+  API, so both lists are empty. What the service collects is declared in App
+  Store Connect's privacy labels, not here.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

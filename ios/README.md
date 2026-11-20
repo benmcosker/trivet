@@ -116,3 +116,22 @@ with no transparency, or App Store Connect rejects the upload.
   bridge from the page to iOS printing.
 - Links in emails and texts (invites, password resets, shopping lists) open
   the website, not the app.
+
+## Privacy manifests
+
+Each target carries a `PrivacyInfo.xcprivacy` (the folders are synchronized
+with the project, so a file placed in `TrivetBox/` or `TrivetShare/` belongs to
+that target). Apple requires one wherever the code calls a "required reason"
+API, and rejects uploads that call one undeclared.
+
+- `TrivetBox/PrivacyInfo.xcprivacy`: no tracking, no required-reason APIs.
+  The App Group folder (`containerURL`) is not one.
+- `TrivetShare/PrivacyInfo.xcprivacy`: `UserDefaults`, reason `CA92.1`, for the
+  share count `ShareViewController` keeps in the extension's own defaults.
+  Reading or writing an App Group suite instead would need `1C8F.1`.
+
+Adding a call to a file's timestamps, disk space, system boot time or the
+active keyboards means declaring it here too. After an archive, the Organizer's
+**Generate Privacy Report** shows what Apple will read. What the service
+collects (name, email, recipes, photos, crash data) is declared in App Store
+Connect's privacy labels, not in these files.
