@@ -66,6 +66,14 @@ be a string`. The way through is the Unix socket and peer auth, with a role
   at all. Verify migration SQL with `psql` in a `BEGIN`/`ROLLBACK` instead, and
   let CI apply it for real - `ci.yml` provisions its own Postgres over TCP.
 
+- **A server action that changes what a page shows must call
+  `revalidatePath` for that page.** `staleTimes.dynamic` in `next.config.ts`
+  keeps a page in the browser for 30 seconds, and only `revalidatePath`
+  clears it. Leave it out and the page looks right until you navigate away
+  and back - by the nav bar or Back - and get the copy from before the
+  change; a hard reload "fixes" it, which is the tell. The AI consent
+  actions shipped without it (20 November 2026) and asked again after every
+  agreement. `npm run dev` does not show this; a production build does.
 - **Restart the dev server after a schema change.** `src/lib/db.ts` caches the
   Prisma client on `globalThis` and that cache survives HMR. The symptom is
   `Cannot read properties of undefined (reading 'findMany')` on a model plainly
