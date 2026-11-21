@@ -5,6 +5,7 @@ import { extractRecipeFromText } from "@/lib/extract-recipe";
 import { PASTED_TEXT_REFUSAL, readPastedText } from "@/lib/pasted-text";
 import { getCurrentHousehold } from "@/lib/session";
 import { refuseWithoutAiConsent } from "@/lib/ai-consent";
+import { refuseIfOverAllowance } from "@/lib/import-gate";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { reportError } from "@/lib/report-error";
 
@@ -56,6 +57,9 @@ async function handle(request: Request) {
   }
 
   // Metered after the checks above, so an empty paste costs no allowance.
+  const overAllowance = await refuseIfOverAllowance(user.householdId);
+  if (overAllowance) return overAllowance;
+
   const slot = await claimUploadSlot(user.id);
   if (!slot.ok) {
     return NextResponse.json(

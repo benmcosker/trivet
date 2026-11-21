@@ -15,6 +15,7 @@ import {
 } from "@/lib/extract-recipe";
 import { inspectImage, type SupportedImageType } from "@/lib/image-inspect";
 import { refuseWithoutAiConsent } from "@/lib/ai-consent";
+import { refuseIfOverAllowance } from "@/lib/import-gate";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { extractLargestJpeg } from "@/lib/pdf-images";
 import { inspectPdf } from "@/lib/pdf-inspect";
@@ -150,6 +151,9 @@ async function handleUpload(request: Request) {
   // Metered here and nowhere earlier: everything above this line is free, and
   // a duplicate or a damaged file should not spend somebody's allowance on a
   // call that never happens.
+  const overAllowance = await refuseIfOverAllowance(user.householdId);
+  if (overAllowance) return overAllowance;
+
   const slot = await claimUploadSlot(user.id);
   if (!slot.ok) {
     return NextResponse.json(
@@ -287,6 +291,9 @@ async function handlePhotos(
       { status: 409 },
     );
   }
+
+  const overAllowance = await refuseIfOverAllowance(user.householdId);
+  if (overAllowance) return overAllowance;
 
   const slot = await claimUploadSlot(user.id);
   if (!slot.ok) {

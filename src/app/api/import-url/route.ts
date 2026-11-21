@@ -23,6 +23,7 @@ import { getCurrentHousehold } from "@/lib/session";
 import { socialAdvice, socialSite } from "@/lib/social-links";
 import { storeFile } from "@/lib/storage";
 import { refuseWithoutAiConsent } from "@/lib/ai-consent";
+import { refuseIfOverAllowance } from "@/lib/import-gate";
 import { claimUploadSlot } from "@/lib/upload-quota";
 import { reportError } from "@/lib/report-error";
 
@@ -139,6 +140,9 @@ async function importPage(
   // Metered here: everything above is a fetch of a public page, and a site
   // that refuses should not spend somebody's allowance. Everything below is
   // the billable half.
+  const overAllowance = await refuseIfOverAllowance(user.householdId);
+  if (overAllowance) return overAllowance;
+
   const overLimit = await claimSlotOrRefuse(user.id);
   if (overLimit) return overLimit;
 
