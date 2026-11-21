@@ -213,7 +213,7 @@ export default function TermsPage() {
         The recipe library, the meal planner, the shopping list and connecting
         an AI assistant are free. A paid plan, charged per household, adds
         recipe imports beyond the free allowance, shopping lists by text
-        message, and sharing with other households. It costs US$3.99 a month or
+        message, and sharing with other households. It costs US$4.99 a month or
         US$34.99 a year.
       </Typography>
       <Typography sx={{ mb: 1 }}>
