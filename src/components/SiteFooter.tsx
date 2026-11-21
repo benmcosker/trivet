@@ -56,6 +56,9 @@ export function SiteFooter() {
         <Link href="/privacy" variant="body2">
           Privacy Policy
         </Link>
+        <Link href="/refunds" variant="body2">
+          Refund Policy
+        </Link>
         <Link href="/terms" variant="body2">
           Terms of Service
         </Link>

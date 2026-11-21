@@ -82,8 +82,9 @@ export default function PricingPage() {
         You can cancel at any time; the plan runs to the end of the period you
         paid for. A web purchase can be refunded within {REFUND_DAYS} days of a
         payment. A purchase made through Apple is refunded by Apple, under
-        Apple&apos;s rules. The <Link href="/terms">terms of service</Link> and
-        the <Link href="/privacy">privacy policy</Link> have the detail.
+        Apple&apos;s rules. The <Link href="/refunds">refund policy</Link>, the{" "}
+        <Link href="/terms">terms of service</Link> and the{" "}
+        <Link href="/privacy">privacy policy</Link> have the detail.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         The paid plan is not on sale yet. Until it is, every feature is
