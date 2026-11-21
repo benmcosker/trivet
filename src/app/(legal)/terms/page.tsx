@@ -232,8 +232,7 @@ export default function TermsPage() {
         service closes or the feature you pay for is withdrawn. A purchase made
         through Apple is refunded by Apple, under Apple&apos;s rules; one paid
         to us directly is refunded for the unused part of the period you paid
-        for. A lifetime purchase lasts for the life of the service, not the life
-        of the buyer.
+        for.
       </Typography>
       <Typography variant="h2" sx={{ mb: 1 }}>
         Ending your account
