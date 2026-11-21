@@ -33,6 +33,14 @@ model Household {
   defaultServings Int?
   createdAt       DateTime @default(now())
 
+  /// When this household's free month of the paid features ends. Set when the
+  /// household is created (`TRIAL_DAYS` in `entitlements.ts`). Null means it
+  /// never had one: every household that existed before there was a paid
+  /// plan, until somebody decides what they are owed.
+  trialEndsAt DateTime?
+
+  subscription Subscription?
+
   /// Recipes other households have shared with this one.
   recipesSharedWithIt RecipeShare[]
   members             User[]
@@ -51,6 +59,58 @@ model Household {
   blocksReceived HouseholdBlock[] @relation("BlocksReceived")
 
   @@map("household")
+}
+
+/// Who took the money. A household has at most one subscription, so which
+/// processor it came from is a column, not a table: the rest of the app asks
+/// `entitlements.ts` and never learns the answer.
+enum SubscriptionSource {
+  /// Bought on the web, whichever processor took the payment.
+  WEB
+  APPLE
+}
+
+enum SubscriptionInterval {
+  MONTH
+  YEAR
+}
+
+enum SubscriptionStatus {
+  /// Paid, and will renew.
+  ACTIVE
+  /// Cancelled, or payment failed, but the period already paid for has not run
+  /// out. Paid features keep working until `currentPeriodEnd`.
+  CANCELED
+  /// Over, refunded or charged back. No access whatever `currentPeriodEnd` says.
+  ENDED
+}
+
+/// A household's paid plan, written only by the processor webhooks. Nothing in
+/// the app reads it directly: `entitlements.ts` is the one place that turns it
+/// into "may this household use the paid features".
+model Subscription {
+  id          String @id @default(cuid())
+  householdId String @unique
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+
+  source     SubscriptionSource
+  /// The processor's own id for this subscription (the web processor's
+  /// subscription id, or Apple's original transaction id). Webhooks find the row by it.
+  externalId String
+  /// The processor's id for the buyer, kept so the customer portal can be
+  /// opened later. Null for sources that have no such thing.
+  customerId String?
+
+  interval         SubscriptionInterval
+  status           SubscriptionStatus
+  /// End of the period already paid for. Access runs to here.
+  currentPeriodEnd DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@map("subscription")
 }
 
 model User {

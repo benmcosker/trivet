@@ -50,6 +50,9 @@ export function SiteFooter() {
         <Typography variant="body2" color="text.secondary">
           {APP_NAME}
         </Typography>
+        <Link href="/pricing" variant="body2">
+          Pricing
+        </Link>
         <Link href="/privacy" variant="body2">
           Privacy Policy
         </Link>
