@@ -4,6 +4,7 @@ import { prisma } from "./db";
 import { emailAvailable, getEmailSender } from "./email";
 import { inviteEmail } from "./email/invite";
 import { defaultHouseholdName, MAX_HOUSEHOLD_NAME } from "./household";
+import { trialEndFrom } from "./entitlements";
 import { APP_NAME } from "./legal";
 import { reportError } from "@/lib/report-error";
 
@@ -253,6 +254,7 @@ export async function redeemInvite(
       const household = await tx.household.create({
         data: {
           name: invite?.householdName ?? defaultHouseholdName(user?.name ?? ""),
+          trialEndsAt: trialEndFrom(new Date()),
         },
       });
       householdId = household.id;

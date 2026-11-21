@@ -54,6 +54,7 @@ export function isTrivetApp(userAgent: string | null | undefined): boolean {
 export const PUBLIC_PATHS = [
   "/",
   "/privacy",
+  "/pricing",
   "/terms",
   "/sms",
   "/assistants",
