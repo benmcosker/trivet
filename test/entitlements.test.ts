@@ -120,7 +120,7 @@ describe.skipIf(!hasDb)("with a database", () => {
 
   const sub = (householdId: string, over: object = {}) => ({
     householdId,
-    source: "PADDLE" as const,
+    source: "WEB" as const,
     externalId: "sub_1",
     interval: "MONTH" as const,
     status: "ACTIVE" as const,

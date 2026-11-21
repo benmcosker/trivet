@@ -99,8 +99,8 @@ export default function PrivacyPage() {
         <Item>
           <strong>Your plan:</strong> whether your household is on its free
           month, subscribed or on the free plan, and when that period ends.
-          Payments are taken by Apple or by Paddle, which keep your payment
-          details; we never see or store a card number.
+          Payments are taken by Apple or by our payment provider, which keep
+          your payment details; we never see or store a card number.
         </Item>
         <Item>
           <strong>Signing in:</strong> a cookie that keeps you signed in, and,
@@ -212,8 +212,8 @@ export default function PrivacyPage() {
           tells us whether a household&apos;s subscription is active.
         </Item>
         <Item>
-          <strong>Paddle</strong> sells and takes payment for web subscriptions
-          as the seller, and tells us whether a household&apos;s subscription is
+          <strong>Our payment provider</strong> takes payment for web
+          subscriptions and tells us whether a household&apos;s subscription is
           active. It receives the details needed to take payment, such as your
           name, email address and billing country.
         </Item>

@@ -233,16 +233,15 @@ export default function TermsPage() {
         A subscription renews each month or year until it is cancelled. You
         cancel in the place you subscribed: for an iPhone purchase, in your
         Apple account settings, and for a web purchase through the link in your
-        receipt or from Paddle. Cancelling stops the next renewal; the plan runs
-        to the end of the period already paid for.
+        receipt from our payment provider. Cancelling stops the next renewal;
+        the plan runs to the end of the period already paid for.
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        A web purchase is sold by our payment partner, Paddle, which acts as the
-        seller of the subscription; its buyer terms apply to the sale, and it
-        handles tax and payment. You can have a web payment refunded within{" "}
-        {REFUND_DAYS} days of it being taken, by asking Paddle or by writing to{" "}
-        {CONTACT_EMAIL}. A purchase made through Apple is refunded by Apple,
-        under Apple&apos;s rules.
+        A web purchase is handled by our payment provider, which takes the
+        payment and handles tax. You can have a web payment refunded within{" "}
+        {REFUND_DAYS} days of it being taken, by writing to {CONTACT_EMAIL}. A
+        purchase made through Apple is refunded by Apple, under Apple&apos;s
+        rules.
       </Typography>
       <Typography sx={{ mb: 1 }}>
         If a household drops to the free plan, whether it cancelled or its free

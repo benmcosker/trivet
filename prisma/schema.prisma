@@ -65,8 +65,8 @@ model Household {
 /// processor it came from is a column, not a table: the rest of the app asks
 /// `entitlements.ts` and never learns the answer.
 enum SubscriptionSource {
-  PADDLE
-  STRIPE
+  /// Bought on the web, whichever processor took the payment.
+  WEB
   APPLE
 }
 
@@ -94,8 +94,8 @@ model Subscription {
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
 
   source     SubscriptionSource
-  /// The processor's own id for this subscription (Paddle's `sub_...`, Stripe's
-  /// `sub_...`, Apple's original transaction id). Webhooks find the row by it.
+  /// The processor's own id for this subscription (the web processor's
+  /// subscription id, or Apple's original transaction id). Webhooks find the row by it.
   externalId String
   /// The processor's id for the buyer, kept so the customer portal can be
   /// opened later. Null for sources that have no such thing.

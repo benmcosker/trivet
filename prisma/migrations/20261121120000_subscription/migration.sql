@@ -1,6 +1,6 @@
 -- A household's paid plan, and the end of its free month.
 -- Nothing is gated on either yet. Existing households get no trial (null).
-CREATE TYPE "SubscriptionSource" AS ENUM ('PADDLE', 'STRIPE', 'APPLE');
+CREATE TYPE "SubscriptionSource" AS ENUM ('WEB', 'APPLE');
 
 CREATE TYPE "SubscriptionInterval" AS ENUM ('MONTH', 'YEAR');
 

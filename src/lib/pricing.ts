@@ -20,7 +20,7 @@ export const TRIAL_DAYS = 30;
 /**
  * How long after a payment a web purchase can be refunded.
  *
- * Paddle, which sells the web plan, sets a floor for this; check it against
- * their current terms before changing it.
+ * The payment provider for the web plan may set a floor for this; check it
+ * against their current terms before changing it.
  */
 export const REFUND_DAYS = 14;
