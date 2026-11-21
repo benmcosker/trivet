@@ -55,6 +55,7 @@ export const PUBLIC_PATHS = [
   "/",
   "/privacy",
   "/pricing",
+  "/refunds",
   "/terms",
   "/sms",
   "/assistants",
