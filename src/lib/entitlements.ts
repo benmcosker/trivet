@@ -1,4 +1,7 @@
 import { prisma } from "./db";
+import { TRIAL_DAYS } from "./pricing";
+
+export { TRIAL_DAYS };
 
 /**
  * Whether a household may use the paid features, in one place.
@@ -13,9 +16,6 @@ import { prisma } from "./db";
  * text, and sharing with other households. The free tier - library, planner,
  * shopping list, connecting an assistant - never asks.
  */
-
-/** A new household's free month. Set once, when the household is created. */
-export const TRIAL_DAYS = 30;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

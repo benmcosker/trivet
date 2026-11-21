@@ -14,6 +14,12 @@ import {
   SMS_PURPOSE,
   SMS_RATES,
 } from "@/lib/legal";
+import {
+  PRICE_MONTHLY_USD,
+  PRICE_YEARLY_USD,
+  REFUND_DAYS,
+  TRIAL_DAYS,
+} from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: `Terms of Service — ${APP_NAME}`,
@@ -213,20 +219,30 @@ export default function TermsPage() {
         The recipe library, the meal planner, the shopping list and connecting
         an AI assistant are free. A paid plan, charged per household, adds
         recipe imports beyond the free allowance, shopping lists by text
-        message, and sharing with other households. It costs US$4.99 a month or
-        US$34.99 a year.
+        message, and sharing with other households. It costs US$
+        {PRICE_MONTHLY_USD} a month or US${PRICE_YEARLY_USD} a year.
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        A household that is new to {APP_NAME} gets the paid features free for a
-        month, with a limit on how many recipes it can import in that time. When
-        the month ends the household moves to the free plan unless somebody in
-        it subscribes. Each household has one free month.
+        A household that is new to {APP_NAME} gets the paid features free for{" "}
+        {TRIAL_DAYS} days, with a limit on how many recipes it can import in
+        that time. When the free period ends the household moves to the free
+        plan unless somebody in it subscribes. Each household has one free
+        month.
       </Typography>
       <Typography sx={{ mb: 1 }}>
         A subscription renews each month or year until it is cancelled. You
         cancel in the place you subscribed: for an iPhone purchase, in your
-        Apple account settings. Cancelling stops the next renewal; the plan runs
+        Apple account settings, and for a web purchase through the link in your
+        receipt or from Paddle. Cancelling stops the next renewal; the plan runs
         to the end of the period already paid for.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        A web purchase is sold by our payment partner, Paddle, which acts as the
+        seller of the subscription; its buyer terms apply to the sale, and it
+        handles tax and payment. You can have a web payment refunded within{" "}
+        {REFUND_DAYS} days of it being taken, by asking Paddle or by writing to{" "}
+        {CONTACT_EMAIL}. A purchase made through Apple is refunded by Apple,
+        under Apple&apos;s rules.
       </Typography>
       <Typography sx={{ mb: 1 }}>
         If a household drops to the free plan, whether it cancelled or its free
@@ -265,10 +281,9 @@ export default function TermsPage() {
       </Typography>
       <Typography sx={{ mb: 3 }}>
         If you pay for {APP_NAME}, a subscription stops renewing when the
-        service closes or the feature you pay for is withdrawn. A purchase made
-        through Apple is refunded by Apple, under Apple&apos;s rules; one paid
-        to us directly is refunded for the unused part of the period you paid
-        for.
+        service closes or the feature you pay for is withdrawn. Money is
+        refunded as described above; if {APP_NAME} closes, the part of a period
+        you paid for and did not use is refunded too.
       </Typography>
       <Typography variant="h2" sx={{ mb: 1 }}>
         Ending your account
