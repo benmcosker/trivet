@@ -97,6 +97,12 @@ export default function PrivacyPage() {
           pantry contents, shopping lists, notes, and reviews.
         </Item>
         <Item>
+          <strong>Your plan:</strong> whether your household is on its free
+          month, subscribed or on the free plan, and when that period ends.
+          Payments are taken by Apple, which keeps your payment details; we
+          never see or store a card number.
+        </Item>
+        <Item>
           <strong>Signing in:</strong> a cookie that keeps you signed in, and,
           with each signed-in session, the IP address and the kind of browser or
           device it came from, so a session can be recognised and misuse
@@ -200,6 +206,10 @@ export default function PrivacyPage() {
         </Item>
         <Item>
           <strong>Twilio</strong> delivers the shopping-list texts.
+        </Item>
+        <Item>
+          <strong>Apple</strong> takes payment for iPhone subscriptions and
+          tells us whether a household&apos;s subscription is active.
         </Item>
         <Item>
           <strong>Resend</strong> delivers password-reset emails and

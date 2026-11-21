@@ -207,6 +207,42 @@ export default function TermsPage() {
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
+        Paying for {APP_NAME}
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        The recipe library, the meal planner, the shopping list and connecting
+        an AI assistant are free. A paid plan, charged per household, adds
+        recipe imports beyond the free allowance, shopping lists by text
+        message, and sharing with other households. It costs US$3.99 a month or
+        US$34.99 a year.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        A household that is new to {APP_NAME} gets the paid features free for a
+        month, with a limit on how many recipes it can import in that time. When
+        the month ends the household moves to the free plan unless somebody in
+        it subscribes. Each household has one free month.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        A subscription renews each month or year until it is cancelled. You
+        cancel in the place you subscribed: for an iPhone purchase, in your
+        Apple account settings. Cancelling stops the next renewal; the plan runs
+        to the end of the period already paid for.
+      </Typography>
+      <Typography sx={{ mb: 1 }}>
+        If a household drops to the free plan, whether it cancelled or its free
+        month ended, nothing it has saved is removed: its recipes, plans, lists
+        and photos stay and keep working. What stops is the paid features
+        themselves, meaning new imports past the free allowance, text messages,
+        and sharing with other households. Sharing already set up pauses and
+        starts again if the household subscribes.
+      </Typography>
+      <Typography sx={{ mb: 3 }}>
+        We may change a price. A change applies from your next renewal, and we
+        tell you before it does. It never changes what you have already paid
+        for.
+      </Typography>
+
+      <Typography variant="h2" sx={{ mb: 1 }}>
         If {APP_NAME} changes or closes
       </Typography>
       <Typography sx={{ mb: 1 }}>
@@ -232,8 +268,7 @@ export default function TermsPage() {
         service closes or the feature you pay for is withdrawn. A purchase made
         through Apple is refunded by Apple, under Apple&apos;s rules; one paid
         to us directly is refunded for the unused part of the period you paid
-        for. A lifetime purchase lasts for the life of the service, not the life
-        of the buyer.
+        for.
       </Typography>
       <Typography variant="h2" sx={{ mb: 1 }}>
         Ending your account
