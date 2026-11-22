@@ -40,6 +40,7 @@ model Household {
   trialEndsAt DateTime?
 
   subscription Subscription?
+  importCounts ImportCount[]
 
   /// Recipes other households have shared with this one.
   recipesSharedWithIt RecipeShare[]
@@ -880,6 +881,24 @@ model UploadQuota {
 
   @@id([userId, day])
   @@map("upload_quota")
+}
+
+/// How many recipes a household has had read this calendar month, for the
+/// monthly allowance in `import-allowance.ts`.
+///
+/// Distinct from `UploadQuota`, which is a per-person daily ceiling against a
+/// runaway loop. This one is a product limit, counted per household because
+/// the plan is: the household is what pays, so the household is what spends.
+/// A refused attempt does not count; this measures what was granted.
+model ImportCount {
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  /// First day of the month being counted, UTC.
+  month       DateTime  @db.Date
+  count       Int       @default(0)
+
+  @@id([householdId, month])
+  @@map("import_count")
 }
 
 // ---------------------------------------------------------------------------

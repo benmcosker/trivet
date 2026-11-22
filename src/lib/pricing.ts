@@ -24,3 +24,17 @@ export const TRIAL_DAYS = 30;
  * against their current terms before changing it.
  */
 export const REFUND_DAYS = 14;
+
+/**
+ * Recipes a household may have read each calendar month, by what it has.
+ *
+ * Each one is a model call, 10-20 cents, so these are what keep a free
+ * household from costing real money. Placeholders until real bills say what
+ * ordinary use is; the allowance is the lever, so change them here.
+ *
+ * The trial's number is read against the calendar month, not the thirty days,
+ * so a trial that straddles a month end can read up to twice that.
+ */
+export const FREE_IMPORTS_PER_MONTH = 5;
+export const TRIAL_IMPORTS_PER_MONTH = 20;
+export const PAID_IMPORTS_PER_MONTH = 20;
