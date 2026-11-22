@@ -225,7 +225,16 @@ export default async function RecipePage({
           ) : null}
         </Box>
 
-        <Grid container spacing={3}>
+        <Grid
+          container
+          spacing={3}
+          // WebKit (so every iPhone, and Safari) does not split a flex item
+          // across pages: the method, taller than what page one has left,
+          // moved whole to page two and left a hole. A float does split, so on
+          // paper the ingredients float left and the method flows beside and
+          // then under them. `flow-root` keeps the floats inside the row.
+          sx={{ "@media print": { display: "flow-root !important" } }}
+        >
           {/*
            * Side by side on paper too, where a page is narrower than the
            * desktop breakpoint: stacked, the method of most recipes runs onto
@@ -233,7 +242,9 @@ export default async function RecipePage({
            */}
           <Grid
             size={{ xs: 12, md: 4 }}
-            sx={{ "@media print": { width: "33% !important" } }}
+            sx={{
+              "@media print": { float: "left", width: "33% !important" },
+            }}
           >
             <Card>
               <CardContent>
@@ -325,8 +336,9 @@ export default async function RecipePage({
             sx={{
               // Whatever the first column and the gap leave.
               "@media print": {
+                display: "block !important",
                 width: "auto !important",
-                flex: "1 1 0",
+                marginLeft: "36%",
                 minWidth: 0,
               },
             }}

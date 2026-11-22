@@ -487,9 +487,12 @@ const identity: ThemeOptions = {
           "[data-print='hide']": { display: "none !important" },
           "[data-print='only']": { display: "block !important" },
           // Cards are tinted on screen; on paper the tint is only ink.
+          // `overflow: hidden` on a card also stops WebKit splitting it
+          // across pages, so a long one jumps whole to the next sheet.
           ".MuiCard-root": {
             background: "#fff !important",
             boxShadow: "none !important",
+            overflow: "visible !important",
           },
         },
       }),
