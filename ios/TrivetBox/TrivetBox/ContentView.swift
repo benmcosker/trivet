@@ -157,6 +157,13 @@ struct TrivetWebView: UIViewRepresentable {
             contentWorld: .page,
             name: PrintBridge.name
         )
+        // Cooking timers: the page asks here to schedule a notification, so a
+        // timer rings with the phone locked (src/lib/timer-bridge.ts).
+        config.userContentController.add(
+            TimerBridge(allowedHosts: trivetHosts),
+            contentWorld: .page,
+            name: TimerBridge.name
+        )
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear
