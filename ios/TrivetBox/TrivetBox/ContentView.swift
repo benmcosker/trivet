@@ -150,6 +150,13 @@ struct TrivetWebView: UIViewRepresentable {
             contentWorld: .page,
             name: ShareBridge.name
         )
+        // The Print buttons: window.print() does nothing in a web view, so the
+        // page asks here to open the iPhone's print sheet (src/lib/print-page.ts).
+        config.userContentController.add(
+            PrintBridge(allowedHosts: trivetHosts) { [weak state] in state?.webView },
+            contentWorld: .page,
+            name: PrintBridge.name
+        )
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear

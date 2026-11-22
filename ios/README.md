@@ -130,10 +130,19 @@ with no transparency, or App Store Connect rejects the upload.
 
 ## Known gaps
 
-- The planner's Print button does nothing in the app yet; it needs a small
-  bridge from the page to iOS printing.
 - Links in emails and texts (invites, password resets, shopping lists) open
   the website, not the app.
+
+## Printing
+
+`window.print()` does nothing in a web view, so the Print buttons (the planner's
+and the recipe's) call `printPage` (`src/lib/print-page.ts`). In the app that
+posts to `PrintBridge`, which opens the iPhone's print sheet with the web view's
+print formatter; elsewhere it is the browser's own print. The handler name
+(`trivetPrint`) must match `PRINT_BRIDGE` there. The page's `@media print` rules
+decide what is on paper. Needs a new build (the Swift changed); not yet tested
+on a device. To test: the planner's Print and a recipe's Print should each open
+the print sheet showing the print layout, not the screen layout.
 
 ## Privacy manifests
 
