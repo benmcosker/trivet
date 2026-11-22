@@ -57,9 +57,10 @@ export default function TermsPage() {
         Your account
       </Typography>
       <Typography sx={{ mb: 1 }}>
-        Accounts are created by invitation: somebody already using {APP_NAME}{" "}
-        invites you, either into their household or to start your own. You must
-        be 13 or older.
+        While {APP_NAME} is in early access, accounts are created by invitation:
+        somebody already using {APP_NAME} invites you, either into their
+        household or to start your own. Sign-up opens to everyone when the paid
+        plan launches. You must be 13 or older.
       </Typography>
       <Typography sx={{ mb: 3 }}>
         Keep your sign-in details to yourself, and enter only your own phone

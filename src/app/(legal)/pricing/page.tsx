@@ -88,7 +88,8 @@ export default function PricingPage() {
       </Typography>
       <Typography sx={{ mb: 3 }}>
         The paid plan is not on sale yet. Until it is, every feature is
-        available to every household.
+        available to every household. {APP_NAME} is invite-only during early
+        access, and sign-up opens to everyone when the paid plan launches.
       </Typography>
     </>
   );
