@@ -1,7 +1,9 @@
 import Typography from "@mui/material/Typography";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 
+import { inTrivetApp } from "@/lib/in-app";
 import { APP_NAME } from "@/lib/legal";
 import {
   PRICE_MONTHLY_USD,
@@ -26,7 +28,10 @@ export const metadata: Metadata = {
  * The paid plan is not on sale yet, and the page says so rather than leaving a
  * price with nothing to buy.
  */
-export default function PricingPage() {
+export default async function PricingPage() {
+  // Nothing is sold inside the iPhone app, so there is no price to show there.
+  if (await inTrivetApp()) notFound();
+
   return (
     <>
       <Typography variant="h1" sx={{ mb: 1 }}>

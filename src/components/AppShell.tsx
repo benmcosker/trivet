@@ -6,11 +6,14 @@ import { getCurrentUser } from "@/lib/session";
 import { PAGE_MAX_WIDTH, PAGE_PADDING_X } from "@/theme/page";
 
 import { SentryUser } from "./SentryUser";
+import { inTrivetApp } from "@/lib/in-app";
+
 import { SiteFooter } from "./SiteFooter";
 import { TopBar } from "./TopBar";
 
 export async function AppShell({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
+  const inApp = await inTrivetApp();
 
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -41,7 +44,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
        * have to be reachable from the site itself, not only from the URLs a
        * campaign registration happens to name.
        */}
-      <SiteFooter />
+      <SiteFooter showPricing={!inApp} />
     </Box>
   );
 }

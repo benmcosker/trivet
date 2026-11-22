@@ -2,6 +2,7 @@ import Typography from "@mui/material/Typography";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { inTrivetApp } from "@/lib/in-app";
 import { APP_NAME, CONTACT_EMAIL, LEGAL_UPDATED } from "@/lib/legal";
 import {
   PRICE_MONTHLY_USD,
@@ -21,15 +22,20 @@ export const metadata: Metadata = {
  * easy to find, not buried in the terms. The terms and the pricing page say
  * the same thing; the window comes from `lib/pricing.ts` so the three agree.
  */
-export default function RefundsPage() {
+export default async function RefundsPage() {
+  const inApp = await inTrivetApp();
+
   return (
     <>
       <Typography variant="h1" sx={{ mb: 1 }}>
         Refund Policy
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        This applies to the paid household plan: US${PRICE_MONTHLY_USD} a month
-        or US${PRICE_YEARLY_USD} a year. {APP_NAME} itself is free to use.
+        This applies to the paid household plan
+        {inApp
+          ? ""
+          : ` at US$${PRICE_MONTHLY_USD} a month or US$${PRICE_YEARLY_USD} a year`}
+        . {APP_NAME} itself is free to use.
       </Typography>
 
       <Typography variant="h2" sx={{ mb: 1 }}>
@@ -65,8 +71,15 @@ export default function RefundsPage() {
       <Typography sx={{ mb: 3 }}>
         When a household moves to the free plan, nothing it saved is removed.
         Only the paid features stop. The{" "}
-        <Link href="/terms">terms of service</Link> and the{" "}
-        <Link href="/pricing">pricing page</Link> have the detail.
+        <Link href="/terms">terms of service</Link>
+        {inApp ? (
+          " have the detail."
+        ) : (
+          <>
+            {" "}
+            and the <Link href="/pricing">pricing page</Link> have the detail.
+          </>
+        )}
       </Typography>
 
       <Typography color="text.secondary" variant="body2">

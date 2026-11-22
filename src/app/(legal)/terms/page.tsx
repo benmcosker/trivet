@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { COPYRIGHT_AGENT } from "@/lib/copyright-agent";
+import { inTrivetApp } from "@/lib/in-app";
 
 import {
   APP_NAME,
@@ -39,7 +40,10 @@ export const metadata: Metadata = {
  * what we cannot: that the recipe reading is a machine's and can be wrong,
  * and that nothing here is food-safety or allergy advice.
  */
-export default function TermsPage() {
+export default async function TermsPage() {
+  // Inside the iPhone app the site shows no price (see lib/in-app.ts).
+  const inApp = await inTrivetApp();
+
   return (
     <>
       <Typography variant="h1" sx={{ mb: 1 }}>
@@ -220,8 +224,10 @@ export default function TermsPage() {
         The recipe library, the meal planner, the shopping list and connecting
         an AI assistant are free. A paid plan, charged per household, adds
         recipe imports beyond the free allowance, shopping lists by text
-        message, and sharing with other households. It costs US$
-        {PRICE_MONTHLY_USD} a month or US${PRICE_YEARLY_USD} a year.
+        message, and sharing with other households.
+        {inApp
+          ? ""
+          : ` It costs US$${PRICE_MONTHLY_USD} a month or US$${PRICE_YEARLY_USD} a year.`}
       </Typography>
       <Typography sx={{ mb: 1 }}>
         A household that is new to {APP_NAME} gets the paid features free for{" "}

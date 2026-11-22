@@ -23,7 +23,7 @@ import { PAGE_MAX_WIDTH, PAGE_PADDING_X } from "@/theme/page";
  * a server component, and a function crossing that boundary into MUI's client
  * code typechecks, builds, and then fails at render.
  */
-export function SiteFooter() {
+export function SiteFooter({ showPricing = true }: { showPricing?: boolean }) {
   return (
     <Box
       component="footer"
@@ -50,9 +50,11 @@ export function SiteFooter() {
         <Typography variant="body2" color="text.secondary">
           {APP_NAME}
         </Typography>
-        <Link href="/pricing" variant="body2">
-          Pricing
-        </Link>
+        {showPricing && (
+          <Link href="/pricing" variant="body2">
+            Pricing
+          </Link>
+        )}
         <Link href="/privacy" variant="body2">
           Privacy Policy
         </Link>
