@@ -3,6 +3,8 @@
 import PrintIcon from "@mui/icons-material/Print";
 import Button from "@mui/material/Button";
 
+import { printPage } from "@/lib/print-page";
+
 /**
  * Print the recipe as it is on screen: at the servings it is being read for.
  *
@@ -15,7 +17,7 @@ import Button from "@mui/material/Button";
 export function PrintRecipeButton() {
   return (
     // Quiet, like Delete beside it: Cook and Edit are the page's actions.
-    <Button startIcon={<PrintIcon />} onClick={() => window.print()}>
+    <Button startIcon={<PrintIcon />} onClick={() => printPage()}>
       Print
     </Button>
   );

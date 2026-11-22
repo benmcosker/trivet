@@ -26,6 +26,7 @@ import type { MealSlot, ShoppingProvider } from "@/generated/prisma/enums";
 import type { EveningContext, RankableRecipe } from "@/lib/dinner-ranking";
 import { groupBySection } from "@/lib/grocery-sections";
 import { DINNER_SLOTS, FIRST_DINNER, SIDE_SLOTS } from "@/lib/meal-slots";
+import { printPage } from "@/lib/print-page";
 import { providerNotes } from "@/lib/provider-notes";
 import { recipeMetaParts, splitTitle } from "@/lib/recipe-meta";
 import { recipePath } from "@/lib/recipe-url";
@@ -1138,7 +1139,7 @@ export function WeekPlanner({
             </Stack>
 
             <Button
-              onClick={() => window.print()}
+              onClick={() => printPage()}
               sx={{
                 ...TEXT_ACTION_SX,
                 fontSize: "12px",
