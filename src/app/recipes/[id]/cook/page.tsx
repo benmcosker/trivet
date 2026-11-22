@@ -84,6 +84,7 @@ export default async function CookRecipePage({
 
       <CookingView
         recipeId={recipe.id}
+        recipeTitle={recipe.title}
         recipeHref={servingsHref(recipePath(recipe), servings, recipe.servings)}
         steps={recipe.instructions}
         ingredients={recipe.ingredients.map((ingredient) => ({

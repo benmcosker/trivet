@@ -24,6 +24,9 @@ import { useRouter } from "next/navigation";
 
 import { markCookedAction } from "@/app/recipes/[id]/cook/actions";
 import { clampStep } from "@/lib/cooking";
+import { MAX_TIMERS, findDurations } from "@/lib/cooking-timers";
+
+import { StepTimerButtons, TimerDock, useCookingTimers } from "./CookingTimers";
 
 /**
  * Subscribe to something that never changes underneath us.
@@ -144,6 +147,7 @@ function useWakeLock(): { held: boolean; unavailable: boolean } {
  */
 export function CookingView({
   recipeId,
+  recipeTitle = "Trivet",
   recipeHref,
   steps,
   ingredients,
@@ -151,6 +155,8 @@ export function CookingView({
   servingsNote = null,
 }: {
   recipeId: string;
+  /** What a timer's notification is titled. */
+  recipeTitle?: string;
   /**
    * Where "done" goes: the recipe's own page, at the count being cooked.
    *
@@ -174,6 +180,7 @@ export function CookingView({
 }) {
   const [showIngredients, setShowIngredients] = useState(false);
   const { held, unavailable } = useWakeLock();
+  const timers = useCookingTimers(recipeId, recipeTitle);
   const router = useRouter();
 
   /*
@@ -293,6 +300,16 @@ export function CookingView({
         aria-hidden
       />
 
+      <TimerDock
+        timers={timers.timers}
+        now={timers.now}
+        inApp={timers.inApp}
+        announcement={timers.announcement}
+        onGoTo={goTo}
+        onAdd={timers.addTime}
+        onStop={timers.stop}
+      />
+
       {unavailable && !held ? (
         <Typography variant="caption" color="text.secondary">
           This browser will not keep the screen awake, so it may sleep while you
@@ -316,7 +333,21 @@ export function CookingView({
         >
           {steps[current]}
         </Typography>
+        <StepTimerButtons
+          durations={findDurations(steps[current] ?? "")}
+          full={timers.timers.length >= MAX_TIMERS}
+          onStart={(duration) => timers.start(current, duration)}
+        />
       </Paper>
+
+      {last && timers.timers.length > 0 ? (
+        <Typography variant="caption" color="text.secondary">
+          A timer is still running.{" "}
+          {timers.inApp
+            ? "Its notification will still come."
+            : "It only sounds while this page is open."}
+        </Typography>
+      ) : null}
 
       <Stack direction="row" spacing={1.5}>
         <Button
