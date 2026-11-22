@@ -85,6 +85,12 @@ final class TimerBridge: NSObject, WKScriptMessageHandler {
         content.title = title
         content.body = body
         content.sound = .default
+        // A timer is the kind of notification worth breaking through a Focus:
+        // a cook with Sleep or Do Not Disturb on would otherwise never hear it.
+        // Needs the Time Sensitive Notifications capability on the app (Xcode,
+        // Signing & Capabilities). Without it iOS delivers it as an ordinary
+        // notification, so this is safe to ship before the capability is on.
+        content.interruptionLevel = .timeSensitive
 
         let request = UNNotificationRequest(
             identifier: id,
