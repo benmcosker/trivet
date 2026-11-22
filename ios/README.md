@@ -151,7 +151,12 @@ iOS suspends when the phone locks. So each timer also tells the app over
 `trivetTimer` (`TimerBridge.swift`, `src/lib/timer-bridge.ts`), which schedules a
 local notification for its end time: `schedule` (id, end time in epoch
 milliseconds, title, body) replaces any pending one with that id, `cancel`
-removes it. Notification permission is asked at the first timer. While Trivet is
+removes it. Notification permission is asked at the first timer. Timers are
+**time-sensitive** notifications, so they can break through a Focus: turn on the
+Time Sensitive Notifications capability for the TrivetBox target (Signing &
+Capabilities, + Capability), which adds the entitlement and the App ID setting.
+Without it they are ordinary notifications and a Focus can silence them. A
+person can still turn it off per app in Settings. While Trivet is
 open the system banner is held back (`TimerNotificationDelegate`), because the
 page rings itself. The handler name must match `TIMER_BRIDGE`. Needs a new build;
 not yet tested on a device. To test: start a one-minute timer on a step, lock
