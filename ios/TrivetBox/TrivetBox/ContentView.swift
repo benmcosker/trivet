@@ -49,8 +49,38 @@ final class WebState {
     /// but a link). It is not opened again until the app next comes forward,
     /// so a page that never asks cannot be reloaded over and over.
     @ObservationIgnored var offeredShare = false
+    /// A trivetbox.com link tapped elsewhere (Universal Links) that arrived
+    /// before the web view existed: it opens instead of the home page.
+    @ObservationIgnored var pendingLink: URL?
+    /// The last link opened, and when: SwiftUI can hand the same tap over
+    /// twice, once as a URL and once as a browsing activity.
+    @ObservationIgnored private var lastLink: (url: URL, at: Date)?
 
     init(home: URL) { self.home = home }
+
+    /// The first page the web view loads: a tapped link if one is waiting,
+    /// otherwise home.
+    func firstPage() -> URL {
+        defer { pendingLink = nil }
+        return pendingLink ?? home
+    }
+
+    /// Open a trivetbox.com link tapped in Mail, Messages or anywhere else,
+    /// which iOS hands to the app instead of Safari (Universal Links; the
+    /// site's side is src/app/.well-known/apple-app-site-association). Only
+    /// Trivet's own https pages; anything else is ignored.
+    func open(_ url: URL) {
+        guard url.scheme?.lowercased() == "https",
+              trivetHosts.contains(url.host?.lowercased() ?? "") else { return }
+        if let last = lastLink, last.url == url, Date().timeIntervalSince(last.at) < 2 { return }
+        lastLink = (url, Date())
+        showOffline = false
+        if let webView {
+            webView.load(URLRequest(url: url))
+        } else {
+            pendingLink = url
+        }
+    }
 
     func retry() {
         showOffline = false
@@ -126,6 +156,13 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { state.cameForward() }
         }
+        // A trivetbox.com link tapped in another app: an invite, a password
+        // reset, a recipe someone sent. SwiftUI may deliver it either way, so
+        // both are handled and `open` ignores the second.
+        .onOpenURL { state.open($0) }
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+            if let url = activity.webpageURL { state.open(url) }
+        }
     }
 }
 
@@ -179,7 +216,7 @@ struct TrivetWebView: UIViewRepresentable {
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true // swipe back
         state.webView = webView
-        webView.load(URLRequest(url: state.home))
+        webView.load(URLRequest(url: state.firstPage()))
         return webView
     }
 

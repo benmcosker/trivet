@@ -128,10 +128,49 @@ words being read.
 green square, since iOS rounds the corners itself. It must stay 1024 x 1024
 with no transparency, or App Store Connect rejects the upload.
 
+## Links open in the app
+
+From build 11, a trivetbox.com link tapped in Mail, Messages, Notes or any
+other app opens in Trivet rather than Safari (Universal Links): an invite, a
+password reset, a recipe someone sent. Two halves, which must agree:
+
+- **The site** serves `/.well-known/apple-app-site-association`
+  (`src/app/.well-known/apple-app-site-association/route.ts`), naming the
+  app (`5HF5FS3MHN.com.trivetbox.app`) and which paths are its. Everything is,
+  except `/api/` (downloads, the assistant endpoints, sign-in callbacks) and
+  `/consent`, where an AI assistant is approved in the browser it started in.
+  Password-reset links, which pass through `/api/auth/reset-password/`, are
+  the exception: reset in Safari, and the new password signs the app out.
+  `test/apple-app-site-association.test.ts` checks the App ID against this
+  project's Team ID and bundle ID, since a mismatch fails silently.
+- **The app** claims `applinks:trivetbox.com` in `TrivetBox.entitlements` and
+  loads the link in the web view (`WebState.open` in `ContentView.swift`),
+  including on a cold launch, when it opens instead of the home page.
+
+The same entitlement carries `webcredentials:trivetbox.com`, so passwords
+saved in Safari for trivetbox.com are offered on the app's sign-in page.
+
+**Setting it up.** The Associated Domains entitlement needs the capability on
+the App ID. With automatic signing Xcode adds it on the next build; if it
+complains instead, add **Associated Domains** under the TrivetBox target's
+Signing & Capabilities, which lists the same two domains.
+
+**Testing it.** iOS reads the site's file through Apple's CDN when the app is
+installed or updated, so deploy the site first, then install the build. Send
+yourself an invite link in Messages or Notes and tap it: Trivet opens on the
+sign-up page. A long press offers "Open in Trivet". Three things that look
+like failures and are not:
+
+- A trivetbox.com link tapped _inside Safari_ on trivetbox.com stays in
+  Safari. iOS only hands over links that come from another app or site.
+- Choosing "Open in Safari" from a long press is remembered for that domain.
+  Long-press a link and choose "Open in Trivet" to undo it.
+- A change to the site's file can take a day or so to reach phones, because
+  Apple's CDN caches it.
+
 ## Known gaps
 
-- Links in emails and texts (invites, password resets, shopping lists) open
-  the website, not the app.
+- Shopping lists sent by text carry no link, so there is nothing to tap.
 
 ## Printing
 
