@@ -202,6 +202,12 @@ sheet leaves words or photos, with a `pages` count, and the app brings
 `/upload?shared=1` forward, which reads it over `ShareBridge` like any share and
 labels it "Scanned · N pages".
 
+The page's `open` is answered when the scan is done with: `{scanned: true}`
+(the app then brings the upload page forward), null when cancelled, or an
+error sentence the page shows as it is - the scanner failed, more than six
+pages (refused rather than cut short), or the scan could not be saved. In the
+app, Scan a card is the main button and "Choose a file" sits beside it.
+
 The handler name (`trivetScan`) must match `SCAN_BRIDGE`, and `maxPages` must
 match `MAX_SHARED_FILES`. `Info.plist` carries the camera permission text. Needs
 a new build and a phone: the simulator has no camera. To test: Upload, Scan a

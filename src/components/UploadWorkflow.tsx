@@ -215,6 +215,38 @@ export function UploadWorkflow({
     setDuplicateOf(null);
   }
 
+  /** The app's scanner is open, or reading what it scanned. */
+  const [scanning, setScanning] = useState(false);
+
+  /**
+   * Open the app's scanner and wait for it to finish. A scan the app has
+   * left for the page needs nothing more here: the app brings
+   * `/upload?shared=1` forward, which reads it like a share. A cancelled scan
+   * changes nothing. A failed one says why, in the app's own words.
+   */
+  async function scanCard() {
+    if (busy || scanning) return;
+    setError(null);
+    setScanning(true);
+    try {
+      const outcome = await openScanner();
+      // Scanned: leave "Scanning…" up until the app opens the scan, but not
+      // for ever, should it never come.
+      if (outcome === "scanned") {
+        window.setTimeout(() => setScanning(false), 15_000);
+      } else {
+        setScanning(false);
+      }
+    } catch (failure) {
+      setScanning(false);
+      setError(
+        failure instanceof Error && failure.message
+          ? failure.message
+          : "The scan didn't come through. Try again, or choose a photo of the card instead.",
+      );
+    }
+  }
+
   async function handleFiles(files: File[]) {
     startWork("file");
 
@@ -897,10 +929,9 @@ export function UploadWorkflow({
                       color="text.secondary"
                       sx={{ mt: 1 }}
                     >
-                      A PDF, a photo of a printed or handwritten card, or a
-                      screenshot of a recipe, such as an Instagram caption. Up
-                      to 20 MB. For a recipe that runs across screens or both
-                      sides of a card, pick all the photos at once, in order.
+                      {canScan
+                        ? "Scan a printed or handwritten card, both sides if it has two, or choose a PDF, a photo or a screenshot. Pick several photos at once, in order. Up to 20 MB."
+                        : "A PDF, a photo of a printed or handwritten card, or a screenshot of a recipe, such as an Instagram caption. Up to 20 MB. For a recipe that runs across screens or both sides of a card, pick all the photos at once, in order."}
                     </Typography>
 
                     <input
@@ -917,30 +948,49 @@ export function UploadWorkflow({
                       }}
                     />
 
+                    {/*
+                     * In the app, scanning leads: the scanner squares up and
+                     * cleans the card, which a photo from the picker does
+                     * not. Choosing a file stays beside it, quieter. Outside
+                     * the app there is no scanner, and choosing leads.
+                     */}
                     <Stack
                       direction="row"
-                      sx={{ mt: 2.5, flexWrap: "wrap", gap: 1.5 }}
+                      sx={{
+                        mt: 2.5,
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        columnGap: 2,
+                        rowGap: 1,
+                      }}
                     >
                       <Button
                         variant="contained"
                         size="large"
-                        disabled={busy !== null}
-                        onClick={() => inputRef.current?.click()}
+                        disabled={busy !== null || scanning}
+                        onClick={() =>
+                          canScan ? void scanCard() : inputRef.current?.click()
+                        }
                       >
                         {busy === "file"
                           ? elapsed > 0
                             ? `Reading the card… ${elapsed}s`
                             : "Reading the card…"
-                          : "Select a PDF or photos"}
+                          : scanning
+                            ? "Scanning…"
+                            : canScan
+                              ? "Scan a card"
+                              : "Select a PDF or photos"}
                       </Button>
                       {canScan ? (
                         <Button
-                          variant="outlined"
                           size="large"
-                          disabled={busy !== null}
-                          onClick={() => openScanner()}
+                          color="primary"
+                          disabled={busy !== null || scanning}
+                          onClick={() => inputRef.current?.click()}
+                          sx={{ px: 0 }}
                         >
-                          Scan a card
+                          Choose a file
                         </Button>
                       ) : null}
                     </Stack>
