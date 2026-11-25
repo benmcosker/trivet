@@ -367,9 +367,10 @@ export function UploadWorkflow({
 
   /**
    * `origin` is "screenshots" for words the share sheet read off screenshots,
-   * which the model is told to expect the app's own words in.
+   * which the model is told to expect the app's own words in, and "scan" for
+   * words the app read off a scanned card.
    */
-  async function readText(raw: string, origin?: "screenshots") {
+  async function readText(raw: string, origin?: "screenshots" | "scan") {
     if (busy) return;
 
     // The same checks the route makes, here first so an empty or one-line
@@ -461,7 +462,13 @@ export function UploadWorkflow({
         setArrival({ half: "text", summary: item.summary });
         await readText(
           item.summary.text,
-          item.summary.screenshots ? "screenshots" : undefined,
+          // A scanned card's words are marked as such: no app around them,
+          // but the same odd misread letter.
+          item.summary.pages
+            ? "scan"
+            : item.summary.screenshots
+              ? "screenshots"
+              : undefined,
         );
       } else {
         setArrival({ half: "file", summary: item.summary });

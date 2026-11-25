@@ -189,14 +189,25 @@ The upload page offers **Scan a card** inside the app only
 (`src/lib/scan-bridge.ts`). It posts `{type: "open"}` to `ScanBridge`, which opens
 VisionKit's document scanner (edge detection, straightening, several pages). The
 pages come back as JPEGs of at most 2,000 pixels, up to six (the photo import's
-limit), saved through `PendingShare.store` exactly as the share sheet leaves
-photos. The app then brings `/upload?shared=1` forward, which reads them over
-`ShareBridge` like any share, so the import itself is unchanged. The handler name
-(`trivetScan`) must match `SCAN_BRIDGE`, and `maxPages` must match
-`MAX_SHARED_FILES`. `Info.plist` carries the camera permission text. Needs a new
-build and a phone: the simulator has no camera. To test: Upload, Scan a card,
-scan a recipe card, Done; the page should open already reading it. Cancel the
-scanner and nothing should happen.
+limit).
+
+They are then read on the phone (`ScanReader`), by the same rule and
+thresholds as shared screenshots (`ScreenshotReader`; change them together). A
+printed card with enough clean words is left as **text**, which the text import
+reads quicker and cheaper, sending only the words, marked `origin: "scan"` so
+the model expects the odd misread letter. A handwritten card reads as a few
+uncertain words and is left as the scanned **pages**, which the photo import
+reads far better. Either way `PendingShare.store` leaves it exactly as the share
+sheet leaves words or photos, with a `pages` count, and the app brings
+`/upload?shared=1` forward, which reads it over `ShareBridge` like any share and
+labels it "Scanned · N pages".
+
+The handler name (`trivetScan`) must match `SCAN_BRIDGE`, and `maxPages` must
+match `MAX_SHARED_FILES`. `Info.plist` carries the camera permission text. Needs
+a new build and a phone: the simulator has no camera. To test: Upload, Scan a
+card, scan a printed recipe card, Done; the page should open with its words in
+the text box, already reading them. Then a handwritten card: it should be read
+as photos. Cancel the scanner and nothing should happen.
 
 ## Cooking timers
 

@@ -392,6 +392,12 @@ export type TextExtractionInput = {
    * and the odd misread letter.
    */
   fromScreenshots?: boolean;
+  /**
+   * Read off a card or page scanned with the iPhone's document scanner, by
+   * its text recognition (ios/TrivetBox/TrivetBox/ScanReader.swift). No app
+   * words around it, but the same odd misread letter.
+   */
+  fromScan?: boolean;
 };
 
 /**
@@ -411,7 +417,9 @@ export async function extractRecipeFromText(
       text:
         (input.fromScreenshots
           ? `Extract the recipe from this text, read off screenshots somebody shared.\n\n`
-          : `Extract the recipe from this text somebody pasted.\n\n`) +
+          : input.fromScan
+            ? `Extract the recipe from this text, read by the phone's text recognition off a recipe card or page somebody scanned. Where a letter is plainly misread in a word, read the word; never guess at a misread amount.\n\n`
+            : `Extract the recipe from this text somebody pasted.\n\n`) +
         (input.link ? `It came with this link: ${input.link}\n\n` : "") +
         `The text:\n\n${input.text}`,
     },
