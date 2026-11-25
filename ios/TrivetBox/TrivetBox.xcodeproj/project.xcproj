@@ -68,7 +68,7 @@
         "INFOPLIST_FILE": "Info.plist",
         "INFOPLIST_KEY_CFBundleDisplayName": "Trivet",
         "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption": "NO",
-        "INFOPLIST_KEY_NSCameraUsageDescription": "Trivet uses the camera to photograph recipe cards.",
+        "INFOPLIST_KEY_NSCameraUsageDescription": "Trivet uses the camera to scan or photograph recipe cards and cookbook pages.",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]": "YES",
         "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]": "YES",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]": "YES",

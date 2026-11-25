@@ -209,7 +209,7 @@ pages (refused rather than cut short), or the scan could not be saved. In the
 app, Scan a card is the main button and "Choose a file" sits beside it.
 
 The handler name (`trivetScan`) must match `SCAN_BRIDGE`, and `maxPages` must
-match `MAX_SHARED_FILES`. `Info.plist` carries the camera permission text. Needs
+match `MAX_SHARED_FILES`. The camera permission text is the `INFOPLIST_KEY_NSCameraUsageDescription` build setting (one string for both the scanner and the web view's photo capture); do not add the key to `Info.plist` as well, as the two disagree and the build setting wins. Needs
 a new build and a phone: the simulator has no camera. To test: Upload, Scan a
 card, scan a printed recipe card, Done; the page should open with its words in
 the text box, already reading them. Then a handwritten card: it should be read
