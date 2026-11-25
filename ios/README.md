@@ -144,6 +144,21 @@ decide what is on paper. Needs a new build (the Swift changed); not yet tested
 on a device. To test: the planner's Print and a recipe's Print should each open
 the print sheet showing the print layout, not the screen layout.
 
+## Scanning a card
+
+The upload page offers **Scan a card** inside the app only
+(`src/lib/scan-bridge.ts`). It posts `{type: "open"}` to `ScanBridge`, which opens
+VisionKit's document scanner (edge detection, straightening, several pages). The
+pages come back as JPEGs of at most 2,000 pixels, up to six (the photo import's
+limit), saved through `PendingShare.store` exactly as the share sheet leaves
+photos. The app then brings `/upload?shared=1` forward, which reads them over
+`ShareBridge` like any share, so the import itself is unchanged. The handler name
+(`trivetScan`) must match `SCAN_BRIDGE`, and `maxPages` must match
+`MAX_SHARED_FILES`. `Info.plist` carries the camera permission text. Needs a new
+build and a phone: the simulator has no camera. To test: Upload, Scan a card,
+scan a recipe card, Done; the page should open already reading it. Cancel the
+scanner and nothing should happen.
+
 ## Cooking timers
 
 Cooking mode's timers (`src/components/CookingTimers.tsx`) run in the page, which

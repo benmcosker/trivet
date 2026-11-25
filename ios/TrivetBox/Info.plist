@@ -30,6 +30,8 @@
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<false/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Trivet uses the camera to scan recipe cards and cookbook pages.</string>
 	<key>WKAppBoundDomains</key>
 	<array>
 		<string>trivetbox.com</string>

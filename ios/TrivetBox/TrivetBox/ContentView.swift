@@ -164,6 +164,14 @@ struct TrivetWebView: UIViewRepresentable {
             contentWorld: .page,
             name: TimerBridge.name
         )
+        // The upload page's "Scan a card" button: the page asks here to open the
+        // document scanner, which leaves its pages like a share and brings the
+        // upload page forward to read them (src/lib/scan-bridge.ts).
+        config.userContentController.add(
+            ScanBridge(allowedHosts: trivetHosts) { [weak state] in state?.cameForward() },
+            contentWorld: .page,
+            name: ScanBridge.name
+        )
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear

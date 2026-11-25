@@ -81,6 +81,43 @@ enum PendingShare {
         }
     }
 
+    /// A file the app itself leaves, as the share sheet would.
+    struct NewFile {
+        let data: Data
+        let name: String
+        let type: String
+    }
+
+    /// Leave scanned pages for the upload page, in the form the share sheet
+    /// uses for photos (`SharedLink.save(files:)`): a record and the files in
+    /// the App Group folder. Replaces whatever share was waiting.
+    @discardableResult
+    static func store(files: [NewFile]) -> Bool {
+        guard let folder else { return false }
+        let filesURL = folder.appendingPathComponent(filesFolder, isDirectory: true)
+        try? FileManager.default.removeItem(at: filesURL)
+        do {
+            try FileManager.default.createDirectory(at: filesURL, withIntermediateDirectories: true)
+            var entries: [[String: Any]] = []
+            for (index, file) in files.enumerated() {
+                let stored = "\(index)"
+                try file.data.write(to: filesURL.appendingPathComponent(stored), options: .atomic)
+                entries.append(["name": file.name, "type": file.type, "size": file.data.count, "file": stored])
+            }
+            let record: [String: Any] = [
+                "kind": "files",
+                "files": entries,
+                "sharedAt": Date().timeIntervalSince1970,
+            ]
+            let data = try JSONSerialization.data(withJSONObject: record)
+            try data.write(to: folder.appendingPathComponent(fileName), options: .atomic)
+            return true
+        } catch {
+            clear()
+            return false
+        }
+    }
+
     static func clear() {
         guard let folder else { return }
         try? FileManager.default.removeItem(at: folder.appendingPathComponent(fileName))
