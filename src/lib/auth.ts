@@ -55,6 +55,12 @@ function readName(body: unknown): string {
  */
 const NAME_PATHS = new Set([SIGN_UP_PATH, "/update-user"]);
 
+function readTermsAccepted(body: unknown): boolean {
+  if (typeof body !== "object" || body === null) return false;
+  // Strictly true, as with SMS consent: nothing else counts as agreeing.
+  return (body as { termsAccepted?: unknown }).termsAccepted === true;
+}
+
 function readEmail(body: unknown): string {
   if (typeof body !== "object" || body === null) return "";
   const email = (body as { email?: unknown }).email;
@@ -201,6 +207,14 @@ export const auth = betterAuth({
       }
       if (ctx.path !== SIGN_UP_PATH) return;
 
+      // Guideline 1.2: agreeing to the terms is part of making an account.
+      if (!readTermsAccepted(ctx.body)) {
+        throw new APIError("BAD_REQUEST", {
+          message:
+            "Agree to the Terms of Service and Privacy Policy to create an account.",
+        });
+      }
+
       const code = readInviteCode(ctx.body);
       if (!code) {
         throw new APIError("FORBIDDEN", {
@@ -254,6 +268,17 @@ export const auth = betterAuth({
       }
 
       if (redeemed) {
+        // The before-hook refused the sign-up without the tick, so this is a
+        // record of it rather than a check.
+        await prisma.user
+          .update({
+            where: { id: userId },
+            data: { termsAcceptedAt: new Date() },
+          })
+          .catch((error) => {
+            reportError("[signup] could not record terms", error);
+          });
+
         // Optional, and stored after the account is safely its own. A number
         // that will not parse is dropped rather than refused: it buys one
         // convenience, and losing a whole signup over a typo in a field nobody

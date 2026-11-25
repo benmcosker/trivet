@@ -627,6 +627,11 @@ not filtered: one reaches another household only because somebody chose to
 share it, and reports and hiding cover that. The list is meant to stay short;
 a filter that refuses "damn good" teaches people to work around it.
 
+The same guideline wants people to agree to terms saying objectionable content
+and abusive users are not tolerated. Sign-up has a required box for the terms
+and privacy policy; the sign-up route refuses without it and records the date
+(`termsAcceptedAt`). Accounts from before 20 November 2026 have no date.
+
 **A household can download its own recipes**, which the terms promise until
 the day Trivet closes. The Household page offers a page to read or print
 (`.html`) and schema.org recipe data other apps import (`.json`), built by
