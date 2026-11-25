@@ -91,8 +91,11 @@ enum PendingShare {
     /// Leave scanned pages for the upload page, in the form the share sheet
     /// uses for photos (`SharedLink.save(files:)`): a record and the files in
     /// the App Group folder. Replaces whatever share was waiting.
+    ///
+    /// `scannedPages` marks pages from the scanner (`ScanBridge`), so the
+    /// upload page says "Scanned" rather than "Shared".
     @discardableResult
-    static func store(files: [NewFile]) -> Bool {
+    static func store(files: [NewFile], scannedPages: Int? = nil) -> Bool {
         guard let folder else { return false }
         let filesURL = folder.appendingPathComponent(filesFolder, isDirectory: true)
         try? FileManager.default.removeItem(at: filesURL)
@@ -104,11 +107,12 @@ enum PendingShare {
                 try file.data.write(to: filesURL.appendingPathComponent(stored), options: .atomic)
                 entries.append(["name": file.name, "type": file.type, "size": file.data.count, "file": stored])
             }
-            let record: [String: Any] = [
+            var record: [String: Any] = [
                 "kind": "files",
                 "files": entries,
                 "sharedAt": Date().timeIntervalSince1970,
             ]
+            if let scannedPages { record["pages"] = scannedPages }
             let data = try JSONSerialization.data(withJSONObject: record)
             try data.write(to: folder.appendingPathComponent(fileName), options: .atomic)
             return true
@@ -116,6 +120,38 @@ enum PendingShare {
             clear()
             return false
         }
+    }
+
+    /// Leave the words read off a scanned card, as the share sheet leaves
+    /// screenshots' words (`SharedLink.save(text:)`), with how many pages
+    /// they came from. Replaces whatever share was waiting.
+    @discardableResult
+    static func store(text: String, scannedPages: Int) -> Bool {
+        guard let folder else { return false }
+        try? FileManager.default.removeItem(at: folder.appendingPathComponent(filesFolder, isDirectory: true))
+        let record: [String: Any] = [
+            "kind": "text",
+            "text": text,
+            "pages": scannedPages,
+            "sharedAt": Date().timeIntervalSince1970,
+        ]
+        do {
+            let data = try JSONSerialization.data(withJSONObject: record)
+            try data.write(to: folder.appendingPathComponent(fileName), options: .atomic)
+            return true
+        } catch {
+            clear()
+            return false
+        }
+    }
+
+    /// How many pages the waiting item was scanned from, or nil for a share.
+    static func scannedPages() -> Int? {
+        guard let folder,
+              let data = try? Data(contentsOf: folder.appendingPathComponent(fileName)),
+              let record = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        return record["pages"] as? Int
     }
 
     static func clear() {

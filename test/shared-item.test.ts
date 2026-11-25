@@ -133,3 +133,41 @@ describe("fileFromBase64", () => {
     expect(file.size).toBe(4);
   });
 });
+
+/**
+ * What the app's scanner leaves (`ScanBridge`, read on the phone by
+ * `ScanReader`) arrives like a share, carrying how many pages were scanned.
+ */
+describe("a scanned card", () => {
+  const photo = { name: "scan-1.jpg", type: "image/jpeg", size: 3 };
+
+  it("reads the page count on words and on photos", () => {
+    expect(
+      readSharedSummary({ kind: "text", text: "Scones…", pages: 2 }),
+    ).toEqual({ kind: "text", text: "Scones…", screenshots: null, pages: 2 });
+    expect(
+      readSharedSummary({ kind: "files", files: [photo], pages: 1 }),
+    ).toEqual({ kind: "files", files: [photo], pages: 1 });
+  });
+
+  it("ignores a page count that isn't one", () => {
+    expect(
+      readSharedSummary({ kind: "text", text: "Scones…", pages: -1 }),
+    ).toEqual({ kind: "text", text: "Scones…", screenshots: null });
+  });
+
+  it("says it was scanned", () => {
+    expect(
+      sharedLabel({ kind: "text", text: "x", screenshots: null, pages: 1 }),
+    ).toBe("Scanned · 1 page");
+    expect(
+      sharedLabel({ kind: "files", files: [photo, photo], pages: 2 }),
+    ).toBe("Scanned · 2 pages");
+    expect(sharedSentence({ kind: "files", files: [photo], pages: 1 })).toBe(
+      "Trivet is reading the scan.",
+    );
+    expect(
+      sharedSentence({ kind: "text", text: "x", screenshots: null, pages: 1 }),
+    ).toBe("Read on your phone. Trivet is turning the words into a recipe.");
+  });
+});

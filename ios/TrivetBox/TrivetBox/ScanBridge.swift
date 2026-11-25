@@ -8,11 +8,14 @@ import WebKit
 /// The upload page's "Scan a card" button (src/components/UploadWorkflow.tsx,
 /// src/lib/scan-bridge.ts) posts `{type: "open"}` over
 /// `window.webkit.messageHandlers.trivetScan`. VisionKit finds the edges of a
-/// card or a cookbook page and straightens it, and can scan several pages. The
-/// pages are saved as JPEGs through `PendingShare.store`, exactly as the share
-/// sheet leaves photos, and `onScanned` brings the upload page forward
-/// (`/upload?shared=1`), which reads them over `ShareBridge` the way it reads a
-/// share. Nothing else about the import changes.
+/// card or a cookbook page and straightens it, and can scan several pages.
+///
+/// The pages are then read on the phone (`ScanReader`). A printed card with
+/// enough clean words is left as text, a handwritten one as the scanned pages,
+/// through `PendingShare.store` exactly as the share sheet leaves screenshots'
+/// words or photos, marked with how many pages were scanned. `onScanned`
+/// brings the upload page forward (`/upload?shared=1`), which reads it over
+/// `ShareBridge` the way it reads a share and labels it "Scanned".
 ///
 /// Like the other bridges it answers Trivet's own pages in the main frame only.
 @MainActor
@@ -59,13 +62,27 @@ final class ScanBridge: NSObject, WKScriptMessageHandler, VNDocumentCameraViewCo
     ) {
         controller.dismiss(animated: true)
 
-        var files: [PendingShare.NewFile] = []
+        var pages: [Data] = []
         for index in 0..<min(scan.pageCount, Self.maxPages) {
             guard let data = Self.jpeg(scan.imageOfPage(at: index)) else { continue }
-            files.append(PendingShare.NewFile(data: data, name: "scan-\(index + 1).jpg", type: "image/jpeg"))
+            pages.append(data)
         }
-        guard !files.isEmpty, PendingShare.store(files: files) else { return }
-        onScanned()
+        guard !pages.isEmpty else { return }
+
+        // Read off the main actor; the scanner has already gone.
+        Task {
+            let reading = await ScanReader.read(pages)
+            let stored: Bool
+            if reading.isEnough {
+                stored = PendingShare.store(text: reading.text, scannedPages: pages.count)
+            } else {
+                let files = pages.enumerated().map { index, data in
+                    PendingShare.NewFile(data: data, name: "scan-\(index + 1).jpg", type: "image/jpeg")
+                }
+                stored = PendingShare.store(files: files, scannedPages: pages.count)
+            }
+            if stored { onScanned() }
+        }
     }
 
     func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {

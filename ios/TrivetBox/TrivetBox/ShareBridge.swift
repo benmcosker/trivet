@@ -74,18 +74,21 @@ final class ShareBridge: NSObject, WKScriptMessageHandlerWithReply {
 
     /// What `readSharedSummary` in src/lib/shared-item.ts reads.
     private static func summary(of item: PendingShare.Item) -> [String: Any]? {
+        var summary: [String: Any]
         switch item {
         case .link:
             return nil
         case .text(let text, let screenshots):
-            var summary: [String: Any] = ["kind": "text", "text": text]
+            summary = ["kind": "text", "text": text]
             if let screenshots { summary["screenshots"] = screenshots }
-            return summary
         case .files(let files):
-            return [
+            summary = [
                 "kind": "files",
                 "files": files.map { ["name": $0.name, "type": $0.type, "size": $0.size] },
             ]
         }
+        // From the scanner (`ScanBridge`): the page says "Scanned".
+        if let pages = PendingShare.scannedPages() { summary["pages"] = pages }
+        return summary
     }
 }

@@ -68,6 +68,7 @@ describe("POST /api/import-text", () => {
       text: caption,
       link: "https://www.tiktok.com/@cook/video/1",
       fromScreenshots: false,
+      fromScan: false,
     });
     const payload = await response.json();
     expect(payload).toMatchObject({
@@ -81,6 +82,13 @@ describe("POST /api/import-text", () => {
     await post({ text: caption, origin: "screenshots" });
     expect(mocks.extractRecipeFromText).toHaveBeenCalledWith(
       expect.objectContaining({ fromScreenshots: true }),
+    );
+  });
+
+  it("tells the model when the words were read off a scanned card", async () => {
+    await post({ text: caption, origin: "scan" });
+    expect(mocks.extractRecipeFromText).toHaveBeenCalledWith(
+      expect.objectContaining({ fromScan: true, fromScreenshots: false }),
     );
   });
 
