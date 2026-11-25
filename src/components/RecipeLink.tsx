@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 
+import { rememberWayBack } from "@/lib/library-return";
 import { type OpeningRecipe, setOpeningRecipe } from "@/lib/opening-recipe";
 
 /**
@@ -28,7 +29,11 @@ export function RecipeLink({
       // page at all, so this is opt-in rather than something every anchor in
       // the app inherits.
       transitionTypes={["nav-forward"]}
-      onClick={() => setOpeningRecipe(opening)}
+      onClick={() => {
+        setOpeningRecipe(opening);
+        // The list as it is now, search and all, for the recipe's way back.
+        rememberWayBack(opening.path);
+      }}
       style={style}
     >
       {children}

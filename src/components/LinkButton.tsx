@@ -14,11 +14,22 @@ import type { ReactNode } from "react";
  */
 export function LinkButton({
   href,
+  transitionTypes,
   children,
   ...buttonProps
-}: { href: string; children: ReactNode } & Omit<ButtonProps, "href">) {
+}: {
+  href: string;
+  /** For `PageTransition`: `nav-back` slides the page the way back. */
+  transitionTypes?: string[];
+  children: ReactNode;
+} & Omit<ButtonProps, "href">) {
   return (
-    <Button component={Link} href={href} {...buttonProps}>
+    <Button
+      component={Link}
+      href={href}
+      transitionTypes={transitionTypes}
+      {...buttonProps}
+    >
       {children}
     </Button>
   );
