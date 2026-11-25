@@ -14,7 +14,14 @@ import type { Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from "react";
 
 import {
   discardUploadAction,
@@ -25,6 +32,7 @@ import { PASTED_TEXT_REFUSAL, readPastedText } from "@/lib/pasted-text";
 import { hostLabel, normaliseAddress } from "@/lib/recipe-address";
 import type { ExtractedRecipe, RecipeInput } from "@/lib/recipe-schema";
 import { recipePath } from "@/lib/recipe-url";
+import { hasScanBridge, openScanner } from "@/lib/scan-bridge";
 import {
   shareBridge,
   sharedLabel,
@@ -131,6 +139,13 @@ export function UploadWorkflow({
   sharedFromApp?: boolean;
 } = {}) {
   const inputRef = useRef<HTMLInputElement>(null);
+  // Inside the iPhone app only: the page can ask it to open the document
+  // scanner. False on the server and in a browser, so nothing is rendered there.
+  const canScan = useSyncExternalStore(
+    () => () => {},
+    () => hasScanBridge(),
+    () => false,
+  );
   const [busy, setBusy] = useState<Half | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -895,7 +910,10 @@ export function UploadWorkflow({
                       }}
                     />
 
-                    <Box sx={{ mt: 2.5 }}>
+                    <Stack
+                      direction="row"
+                      sx={{ mt: 2.5, flexWrap: "wrap", gap: 1.5 }}
+                    >
                       <Button
                         variant="contained"
                         size="large"
@@ -908,7 +926,17 @@ export function UploadWorkflow({
                             : "Reading the card…"
                           : "Select a PDF or photos"}
                       </Button>
-                    </Box>
+                      {canScan ? (
+                        <Button
+                          variant="outlined"
+                          size="large"
+                          disabled={busy !== null}
+                          onClick={() => openScanner()}
+                        >
+                          Scan a card
+                        </Button>
+                      ) : null}
+                    </Stack>
 
                     {busy === "file" ? <LinearProgress sx={{ mt: 2 }} /> : null}
                   </Box>
