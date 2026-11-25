@@ -31,6 +31,7 @@ import {
   scaleQuantity,
   servingsHref,
 } from "@/lib/scale";
+import { BackToRecipes } from "@/components/BackToRecipes";
 import { RecipeFacts, recipeFacts } from "@/components/RecipeFacts";
 import { RecipePlaceholder } from "@/components/RecipePlaceholder";
 import { PageTransition } from "@/components/PageTransition";
@@ -113,6 +114,8 @@ export default async function RecipePage({
   return (
     <AppShell>
       <PageTransition>
+        {/* Back to the list it was opened from, search and all. */}
+        <BackToRecipes />
         <Stack
           direction={{ xs: "column", md: "row" }}
           sx={{
