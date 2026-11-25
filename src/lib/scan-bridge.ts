@@ -16,7 +16,7 @@
 /** Must match `ScanBridge.name` in the app. */
 export const SCAN_BRIDGE = "trivetScan";
 
-type Handler = { postMessage?: (message: unknown) => void } | undefined;
+type Handler = { postMessage?: (message: unknown) => unknown } | undefined;
 type BridgeWindow = {
   webkit?: { messageHandlers?: Record<string, Handler> };
 };
@@ -33,10 +33,28 @@ export function hasScanBridge(win: BridgeWindow | undefined = here()): boolean {
   return Boolean(handler(win)?.postMessage);
 }
 
-/** Ask the app to open the scanner. Returns false when there is no app. */
-export function openScanner(win: BridgeWindow | undefined = here()): boolean {
+/**
+ * How a scan ended:
+ * - `scanned`: it was left for the page, and the app is bringing
+ *   `/upload?shared=1` forward to read it.
+ * - `cancelled`: the person closed the scanner. Also what an app from before
+ *   the scanner answered says, since its handler answered nothing.
+ * - `unavailable`: there is no app here to ask.
+ */
+export type ScanOutcome = "scanned" | "cancelled" | "unavailable";
+
+/**
+ * Open the app's scanner and wait for it to finish. Throws with the app's
+ * own sentence when the scan fails - the scanner broke, too many pages, it
+ * could not be saved - which the page shows as it is.
+ */
+export async function openScanner(
+  win: BridgeWindow | undefined = here(),
+): Promise<ScanOutcome> {
   const target = handler(win);
-  if (!target?.postMessage) return false;
-  target.postMessage({ type: "open" });
-  return true;
+  if (!target?.postMessage) return "unavailable";
+  const answer = await target.postMessage({ type: "open" });
+  return answer && typeof answer === "object" && "scanned" in answer
+    ? "scanned"
+    : "cancelled";
 }
