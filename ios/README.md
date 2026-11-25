@@ -121,6 +121,34 @@ should be reading that link. For screenshots: Photos, select two screenshots of
 a caption, Share, **Trivet**; the sheet reads them, then Trivet opens on the
 words being read.
 
+## Scanning a card
+
+On Add a recipe, **Scan a card** opens the iPhone's own document scanner
+(VisionKit), which finds the card's edges, squares it up and cleans it, and
+keeps going for a second side. The page asks for it over
+`window.webkit.messageHandlers.trivetScan` (`ScanBridge.swift`), in the same
+messages as the share bridge, so `takeSharedItem` in src/lib/shared-item.ts
+takes a scan exactly as it takes a share, opened with `scan` instead of
+`ready`.
+
+The scan is read on the phone first, with the same text recognition and the
+same rule as shared screenshots (`ScreenshotReader`, whose thresholds
+`ScanReading` must match): a printed card with enough clean words goes to the
+text import as words, marked `origin: "scan"` so the model expects the odd
+misread letter; a handwritten card reads as a few uncertain words and goes to
+the photo import as the scanned pages, up to six, which the model reads far
+better. Either way the page shows "Scanned · N pages" while it reads, and the
+review screen is the same as for any import.
+
+The bridge is installed only where `VNDocumentCameraViewController.isSupported`
+(not in the simulator), and the page only shows the button when it finds the
+bridge, so the website and older builds are unchanged. The camera permission
+prompt uses the existing `NSCameraUsageDescription`.
+
+**Testing it.** On a phone: Add a recipe, **Scan a card**, scan a printed
+card. The text box fills with its words and it is read as text. Then a
+handwritten card: it goes as photos, "Scanned · 1 page" in the band.
+
 ## App icon
 
 `TrivetBox/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, drawn from

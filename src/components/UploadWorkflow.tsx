@@ -14,7 +14,14 @@ import type { Theme } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from "react";
 
 import {
   discardUploadAction,
@@ -26,6 +33,7 @@ import { hostLabel, normaliseAddress } from "@/lib/recipe-address";
 import type { ExtractedRecipe, RecipeInput } from "@/lib/recipe-schema";
 import { recipePath } from "@/lib/recipe-url";
 import {
+  scanBridge,
   shareBridge,
   sharedLabel,
   sharedSentence,
@@ -37,6 +45,12 @@ import { fonts } from "@/theme/theme";
 import { PaperNote } from "./PaperNote";
 import { RecipePhoto } from "./RecipePhoto";
 import { RecipeForm } from "./RecipeForm";
+
+/** What the app hands over, from the share sheet or the scanner. */
+type AppItem = NonNullable<Awaited<ReturnType<typeof takeSharedItem>>>;
+
+/** Whether the app has a scanner never changes while the page is open. */
+const noSubscription = () => () => {};
 
 /** A little beyond the server's own 60s ceiling. */
 const UPLOAD_TIMEOUT_MS = 70_000;
@@ -352,9 +366,10 @@ export function UploadWorkflow({
 
   /**
    * `origin` is "screenshots" for words the share sheet read off screenshots,
-   * which the model is told to expect the app's own words in.
+   * which the model is told to expect the app's own words in, and "scan" for
+   * words the app read off a scanned card.
    */
-  async function readText(raw: string, origin?: "screenshots") {
+  async function readText(raw: string, origin?: "screenshots" | "scan") {
     if (busy) return;
 
     // The same checks the route makes, here first so an empty or one-line
@@ -440,22 +455,73 @@ export function UploadWorkflow({
       }
       if (!item) return;
       void bridge.postMessage({ type: "taken" }).catch(() => {});
-
-      if (item.kind === "text") {
-        setPasted(item.summary.text);
-        setArrival({ half: "text", summary: item.summary });
-        await readText(
-          item.summary.text,
-          item.summary.screenshots ? "screenshots" : undefined,
-        );
-      } else {
-        setArrival({ half: "file", summary: item.summary });
-        await handleFiles(item.files);
-      }
+      await readItem(item);
     })();
     // Once, for what the page arrived with.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedFromApp]);
+
+  /** Read what the app handed over, from the share sheet or the scanner. */
+  async function readItem(item: AppItem) {
+    if (item.kind === "text") {
+      setPasted(item.summary.text);
+      setArrival({ half: "text", summary: item.summary });
+      await readText(
+        item.summary.text,
+        item.summary.pages
+          ? "scan"
+          : item.summary.screenshots
+            ? "screenshots"
+            : undefined,
+      );
+    } else {
+      setArrival({ half: "file", summary: item.summary });
+      await handleFiles(item.files);
+    }
+  }
+
+  /*
+   * The iPhone's document scanner, where the app has one (`ScanBridge`). Read
+   * after hydration, never on the server, which cannot know: the server
+   * snapshot says no, so the first render matches the HTML.
+   */
+  const canScan = useSyncExternalStore(
+    noSubscription,
+    () => scanBridge() !== null,
+    () => false,
+  );
+  const [scanning, setScanning] = useState(false);
+
+  /**
+   * Open the scanner and read what comes back: the words, when the phone
+   * could read enough of them, otherwise the scanned pages as photos. A
+   * cancelled scan comes back as nothing and changes nothing.
+   */
+  async function scanCard() {
+    const bridge = scanBridge();
+    if (!bridge || busy || scanning) return;
+    setError(null);
+    setScanning(true);
+    let item: Awaited<ReturnType<typeof takeSharedItem>>;
+    try {
+      item = await takeSharedItem(bridge, "scan");
+    } catch (failure) {
+      setScanning(false);
+      // The app's own refusals are sentences meant for people; a page that
+      // never arrived is not.
+      const message = failure instanceof Error ? failure.message : "";
+      setError(
+        message && !/did not arrive$/.test(message)
+          ? message
+          : "The scan didn't come through. Try again, or choose a photo instead.",
+      );
+      return;
+    }
+    setScanning(false);
+    if (!item) return;
+    void bridge.postMessage({ type: "taken" }).catch(() => {});
+    await readItem(item);
+  }
 
   if (extracted) {
     const { recipe, ...assets } = extracted;
@@ -875,10 +941,9 @@ export function UploadWorkflow({
                       color="text.secondary"
                       sx={{ mt: 1 }}
                     >
-                      A PDF, a photo of a printed or handwritten card, or a
-                      screenshot of a recipe, such as an Instagram caption. Up
-                      to 20 MB. For a recipe that runs across screens or both
-                      sides of a card, pick all the photos at once, in order.
+                      {canScan
+                        ? "Scan a printed or handwritten card, both sides if it has two, or choose a PDF, a photo or a screenshot. Pick several photos at once, in order. Up to 20 MB."
+                        : "A PDF, a photo of a printed or handwritten card, or a screenshot of a recipe, such as an Instagram caption. Up to 20 MB. For a recipe that runs across screens or both sides of a card, pick all the photos at once, in order."}
                     </Typography>
 
                     <input
@@ -895,19 +960,50 @@ export function UploadWorkflow({
                       }}
                     />
 
-                    <Box sx={{ mt: 2.5 }}>
+                    {/*
+                     * In the app, scanning leads: the scanner squares up and
+                     * cleans the card, which a photo from the picker does
+                     * not. Choosing a file stays beside it, quieter.
+                     */}
+                    <Box
+                      sx={{
+                        mt: 2.5,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        columnGap: 2,
+                        rowGap: 1,
+                      }}
+                    >
                       <Button
                         variant="contained"
                         size="large"
-                        disabled={busy !== null}
-                        onClick={() => inputRef.current?.click()}
+                        disabled={busy !== null || scanning}
+                        onClick={() =>
+                          canScan ? void scanCard() : inputRef.current?.click()
+                        }
                       >
                         {busy === "file"
                           ? elapsed > 0
                             ? `Reading the card… ${elapsed}s`
                             : "Reading the card…"
-                          : "Select a PDF or photos"}
+                          : scanning
+                            ? "Scanning…"
+                            : canScan
+                              ? "Scan a card"
+                              : "Select a PDF or photos"}
                       </Button>
+                      {canScan ? (
+                        <Button
+                          size="large"
+                          disabled={busy !== null || scanning}
+                          onClick={() => inputRef.current?.click()}
+                          color="primary"
+                          sx={{ px: 0 }}
+                        >
+                          Choose a file
+                        </Button>
+                      ) : null}
                     </Box>
 
                     {busy === "file" ? <LinearProgress sx={{ mt: 2 }} /> : null}

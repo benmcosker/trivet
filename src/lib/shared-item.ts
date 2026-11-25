@@ -19,6 +19,15 @@
 /** Must match `ShareBridge.name` in the app. */
 export const SHARE_BRIDGE = "trivetShare";
 
+/**
+ * Must match `ScanBridge.name` in the app. The upload page's "Scan a card"
+ * button: the same three messages as the share bridge, except that the first
+ * is `scan`, which opens the iPhone's document scanner and is answered when it
+ * closes (ios/TrivetBox/TrivetBox/ScanBridge.swift). Only installed where the
+ * scanner works, so its presence is what shows the button.
+ */
+export const SCAN_BRIDGE = "trivetScan";
+
 /** The most files one share carries. The photo import's own limit. */
 export const MAX_SHARED_FILES = 6;
 
@@ -30,8 +39,23 @@ export type SharedSummary =
       text: string;
       /** How many screenshots it was read from; null for text shared as text. */
       screenshots: number | null;
+      /** How many pages were scanned, for a scan. Absent otherwise. */
+      pages?: number;
     }
-  | { kind: "files"; files: SharedFileInfo[] };
+  | { kind: "files"; files: SharedFileInfo[]; pages?: number };
+
+/** `{pages}` for a scan, nothing for a share. */
+function scanned(value: Record<string, unknown>): { pages?: number } {
+  const pages = count(value.pages);
+  return pages ? { pages } : {};
+}
+
+/** A positive whole number, or null. */
+function count(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value > 0
+    ? value
+    : null;
+}
 
 const FILE_TYPES = new Set([
   "application/pdf",
@@ -50,14 +74,11 @@ export function readSharedSummary(raw: unknown): SharedSummary | null {
 
   if (value.kind === "text") {
     if (typeof value.text !== "string" || !value.text.trim()) return null;
-    const count = value.screenshots;
     return {
       kind: "text",
       text: value.text,
-      screenshots:
-        typeof count === "number" && Number.isInteger(count) && count > 0
-          ? count
-          : null,
+      screenshots: count(value.screenshots),
+      ...scanned(value),
     };
   }
 
@@ -81,7 +102,7 @@ export function readSharedSummary(raw: unknown): SharedSummary | null {
     // One PDF on its own, or photos: the upload route reads one or the other.
     const pdfs = files.filter((file) => file.type === "application/pdf");
     if (pdfs.length > 0 && files.length > 1) return null;
-    return { kind: "files", files };
+    return { kind: "files", files, ...scanned(value) };
   }
 
   return null;
@@ -90,6 +111,7 @@ export function readSharedSummary(raw: unknown): SharedSummary | null {
 /** The band's overline: `Shared to Trivet · 2 screenshots`. */
 export function sharedLabel(summary: SharedSummary): string {
   const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
+  if (summary.pages) return `Scanned · ${plural(summary.pages, "page")}`;
   if (summary.kind === "text") {
     return summary.screenshots
       ? `Shared to Trivet · ${plural(summary.screenshots, "screenshot")}`
@@ -104,12 +126,17 @@ export function sharedLabel(summary: SharedSummary): string {
 /** The band's sentence, while it is being read. */
 export function sharedSentence(summary: SharedSummary): string {
   if (summary.kind === "text") {
-    return summary.screenshots
+    return summary.screenshots || summary.pages
       ? "Read on your phone. Trivet is turning the words into a recipe."
       : "Trivet is turning it into a recipe.";
   }
   if (summary.files[0].type === "application/pdf") {
     return "Trivet is reading it now.";
+  }
+  if (summary.pages) {
+    return summary.files.length === 1
+      ? "Trivet is reading the scan."
+      : "Trivet is reading the pages as one recipe.";
   }
   return summary.files.length === 1
     ? "Trivet is reading the photo."
@@ -126,18 +153,28 @@ export function fileFromBase64(base64: string, info: SharedFileInfo): File {
 
 type Bridge = { postMessage(message: unknown): Promise<unknown> };
 
-/** The app's handler, or null outside the app. */
-export function shareBridge(): Bridge | null {
+/** One of the app's handlers by name, or null outside the app. */
+function appBridge(name: string): Bridge | null {
   if (typeof window === "undefined") return null;
   const handlers = (
     window as unknown as {
       webkit?: { messageHandlers?: Record<string, Partial<Bridge>> };
     }
   ).webkit?.messageHandlers;
-  const handler = handlers?.[SHARE_BRIDGE];
+  const handler = handlers?.[name];
   return handler && typeof handler.postMessage === "function"
     ? (handler as Bridge)
     : null;
+}
+
+/** The share sheet's handler, or null outside the app. */
+export function shareBridge(): Bridge | null {
+  return appBridge(SHARE_BRIDGE);
+}
+
+/** The document scanner's handler, or null where there is none. */
+export function scanBridge(): Bridge | null {
+  return appBridge(SCAN_BRIDGE);
 }
 
 /**
@@ -147,14 +184,14 @@ export function shareBridge(): Bridge | null {
  */
 export async function takeSharedItem(
   bridge: Bridge,
+  /** `scan` for the scanner, which opens it and answers when it closes. */
+  first: "ready" | "scan" = "ready",
 ): Promise<
   | { kind: "text"; summary: SharedSummary & { kind: "text" } }
   | { kind: "files"; summary: SharedSummary & { kind: "files" }; files: File[] }
   | null
 > {
-  const summary = readSharedSummary(
-    await bridge.postMessage({ type: "ready" }),
-  );
+  const summary = readSharedSummary(await bridge.postMessage({ type: first }));
   if (!summary) return null;
   if (summary.kind === "text") return { kind: "text", summary };
 

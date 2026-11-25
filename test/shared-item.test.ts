@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   fileFromBase64,
   readSharedSummary,
+  scanBridge,
+  shareBridge,
   sharedLabel,
   sharedSentence,
   takeSharedItem,
@@ -131,5 +133,74 @@ describe("fileFromBase64", () => {
     });
     expect(file.name).toBe("cake.pdf");
     expect(file.size).toBe(4);
+  });
+});
+
+/**
+ * The scanner (`ScanBridge` in the app) speaks the same protocol, opened
+ * with `scan`, and its summaries carry how many pages were scanned.
+ */
+describe("a scanned card", () => {
+  const photo = { name: "scan-1.jpg", type: "image/jpeg", size: 3 };
+
+  it("reads the page count on words and on photos", () => {
+    expect(
+      readSharedSummary({ kind: "text", text: "Scones…", pages: 2 }),
+    ).toEqual({ kind: "text", text: "Scones…", screenshots: null, pages: 2 });
+    expect(
+      readSharedSummary({ kind: "files", files: [photo], pages: 1 }),
+    ).toEqual({ kind: "files", files: [photo], pages: 1 });
+  });
+
+  it("ignores a page count that isn't one", () => {
+    expect(
+      readSharedSummary({ kind: "text", text: "Scones…", pages: -1 }),
+    ).toEqual({ kind: "text", text: "Scones…", screenshots: null });
+  });
+
+  it("says it was scanned", () => {
+    expect(
+      sharedLabel({ kind: "text", text: "x", screenshots: null, pages: 1 }),
+    ).toBe("Scanned · 1 page");
+    expect(
+      sharedLabel({ kind: "files", files: [photo, photo], pages: 2 }),
+    ).toBe("Scanned · 2 pages");
+    expect(sharedSentence({ kind: "files", files: [photo], pages: 1 })).toBe(
+      "Trivet is reading the scan.",
+    );
+    expect(
+      sharedSentence({ kind: "text", text: "x", screenshots: null, pages: 1 }),
+    ).toBe("Read on your phone. Trivet is turning the words into a recipe.");
+  });
+
+  it("opens the scanner, then takes each page", async () => {
+    const postMessage = vi.fn(async (message: { type: string }) =>
+      message.type === "scan"
+        ? { kind: "files", files: [photo], pages: 1 }
+        : btoa("abc"),
+    );
+    const item = await takeSharedItem({ postMessage }, "scan");
+    expect(postMessage.mock.calls.map(([m]) => m)).toEqual([
+      { type: "scan" },
+      { type: "file", index: 0 },
+    ]);
+    expect(item?.kind).toBe("files");
+  });
+
+  it("is null when the scan is cancelled", async () => {
+    expect(
+      await takeSharedItem({ postMessage: async () => null }, "scan"),
+    ).toBeNull();
+  });
+
+  it("finds the scanner only where the app installed it", () => {
+    expect(scanBridge()).toBeNull();
+    const postMessage = async () => null;
+    vi.stubGlobal("window", {
+      webkit: { messageHandlers: { trivetScan: { postMessage } } },
+    });
+    expect(scanBridge()).not.toBeNull();
+    expect(shareBridge()).toBeNull();
+    vi.unstubAllGlobals();
   });
 });

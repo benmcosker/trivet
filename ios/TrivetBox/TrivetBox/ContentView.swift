@@ -164,6 +164,16 @@ struct TrivetWebView: UIViewRepresentable {
             contentWorld: .page,
             name: TimerBridge.name
         )
+        // Scan a card: the upload page asks here to open the iPhone's document
+        // scanner (src/lib/shared-item.ts). Only where the scanner works, so the
+        // page only offers the button there.
+        if ScanBridge.isAvailable {
+            config.userContentController.addScriptMessageHandler(
+                ScanBridge(allowedHosts: trivetHosts),
+                contentWorld: .page,
+                name: ScanBridge.name
+            )
+        }
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear
