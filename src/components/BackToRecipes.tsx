@@ -11,6 +11,9 @@ import { LinkButton } from "./LinkButton";
  * list exactly as it was left: its search, filters, sort and page
  * (`library-return.ts`). Nothing for a recipe reached any other way.
  *
+ * The recipe page shows it in the iPhone app only, which has no Back button;
+ * in a browser, Back already does this.
+ *
  * The same small text button as the cooking view's "← Back to the recipe",
  * and the same `nav-back` slide the Recipes tab uses to leave a recipe.
  */

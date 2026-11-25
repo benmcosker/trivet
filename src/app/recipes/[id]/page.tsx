@@ -32,6 +32,7 @@ import {
   servingsHref,
 } from "@/lib/scale";
 import { BackToRecipes } from "@/components/BackToRecipes";
+import { inTrivetApp } from "@/lib/in-app";
 import { RecipeFacts, recipeFacts } from "@/components/RecipeFacts";
 import { RecipePlaceholder } from "@/components/RecipePlaceholder";
 import { PageTransition } from "@/components/PageTransition";
@@ -49,6 +50,7 @@ export default async function RecipePage({
   searchParams,
 }: PageProps<"/recipes/[id]">) {
   const user = await requireHousehold();
+  const inApp = await inTrivetApp();
 
   const { id } = await params;
   const recipe = await getRecipe(id, user.householdId);
@@ -114,8 +116,11 @@ export default async function RecipePage({
   return (
     <AppShell>
       <PageTransition>
-        {/* Back to the list it was opened from, search and all. */}
-        <BackToRecipes />
+        {/*
+         * Back to the list it was opened from, search and all. In the iPhone
+         * app only: it has no Back button, and a browser has one already.
+         */}
+        {inApp ? <BackToRecipes /> : null}
         <Stack
           direction={{ xs: "column", md: "row" }}
           sx={{
