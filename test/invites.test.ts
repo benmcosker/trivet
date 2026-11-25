@@ -24,6 +24,8 @@ async function signUpStatus(params: {
   /** Optional to join; left out unless a test gives one. */
   phone?: string;
   smsConsent?: boolean;
+  /** Ticked unless a test says otherwise. */
+  termsAccepted?: boolean;
 }): Promise<number> {
   try {
     const res = await auth.api.signUpEmail({
@@ -38,6 +40,7 @@ async function signUpStatus(params: {
         ...(params.smsConsent === undefined
           ? {}
           : { smsConsent: params.smsConsent }),
+        ...{ termsAccepted: params.termsAccepted ?? true },
       },
       asResponse: true,
     });
@@ -81,6 +84,36 @@ describe.skipIf(!hasDb)("invite-gated signup", () => {
     });
     expect(status).toBe(403);
     expect(await userCount("nobody@example.com")).toBe(0);
+  });
+
+  it("refuses a sign-up that has not agreed to the terms", async () => {
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+    expect(
+      await signUpStatus({
+        email: "unticked@example.com",
+        inviteCode: code,
+        termsAccepted: false,
+      }),
+    ).toBe(400);
+    expect(await userCount("unticked@example.com")).toBe(0);
+  });
+
+  it("records when the terms were agreed to", async () => {
+    const { code } = await createInvite({
+      createdById: inviterId,
+      householdId,
+    });
+    expect(
+      await signUpStatus({ email: "ticked@example.com", inviteCode: code }),
+    ).toBe(200);
+    const user = await prisma.user.findFirst({
+      where: { email: "ticked@example.com" },
+      select: { termsAcceptedAt: true },
+    });
+    expect(user?.termsAcceptedAt).toBeInstanceOf(Date);
   });
 
   it("refuses a name other households would see as a slur", async () => {
