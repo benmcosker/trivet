@@ -103,7 +103,7 @@ be a string`. The way through is the Unix socket and peer auth, with a role
 ### Colour contrast has a gate
 
 `design/tokens.json` restates the core palette for the design system generator,
-and `npm run check:design` (run in CI) fails when a pair drops below WCAG AA.
+and `npm run check:design` (run in CI) fails when one of the eight core colours' pairs drops below WCAG AA; the rest are in `test/theme-contrast.test.ts`.
 `src/theme/theme.ts` is the source of truth and `test/design-tokens.test.ts`
 fails when the spec drifts from it: change the theme, then the spec. What it
 does not cover is in `design/README.md`.

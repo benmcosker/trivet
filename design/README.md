@@ -19,12 +19,18 @@ and muted on the raised surface and the stripes, `soft`, `mutedLight` and
 `secondary` text on the page, the clay accent as text, and the timer dock's
 "done" bar (page colour on clay).
 
-**Measured gaps, light mode, 28 November 2026** (not failed by the test, because
-nothing paints them there today): `text.mutedLight` on the raised surface is
-4.45, `text.secondary` on the raised surface 4.29 and on the darker stripe 3.67.
-Do not put the faint greys on those grounds without darkening them. `disabled`
-text (3.85 light) is exempt from WCAG.
+**Found by review, 28 November 2026:** `text.secondary` (text buttons) on the
+raised surface measured 4.29 in the timer dock's "+1 min", and `mutedLight`
+4.45 beside it. Both greys were darkened (`secondary` #746c5c to #625b4d,
+`mutedLight` #6f6a5e to #686355) and the pairs are now tested. `disabled` text is
+exempt from WCAG and left alone.
 
+- **The pairs are hand-picked, not derived from usage.** A new colour-on-ground
+  combination is not covered until someone adds it to the test.
+- **MUI's own defaults are unmeasured**, such as the dock's close icon
+  (`action.active`).
+- **Dark mode passes numerically** and has not been looked at; the gate does not
+  change that.
 - **Danger, success and warning** are Material UI's defaults, because Trivet does
   not set its own. If it ever does, update the spec, and the test will say so.
 - **Contrast is not the whole of accessibility:** it does not check touch-target

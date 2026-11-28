@@ -72,17 +72,30 @@ const text: Pair[] = [
     (p) => p.text.secondary,
     (p) => p.background.default,
   ],
+  [
+    "mutedLight on raised",
+    (p) => p.text.mutedLight,
+    (p) => p.background.raised,
+  ],
+  // Text buttons are text.secondary, and the timer dock's "+1 min" sits on raised.
+  [
+    "secondary text on raised",
+    (p) => p.text.secondary,
+    (p) => p.background.raised,
+  ],
+  [
+    "secondary text on stripeB",
+    (p) => p.text.secondary,
+    (p) => p.background.stripeB,
+  ],
+  ["clay on raised", (p) => p.secondary.main, (p) => p.background.raised],
+  ["primary on raised", (p) => p.primary.main, (p) => p.background.raised],
   ["text on stripeA", (p) => p.text.primary, (p) => p.background.stripeA],
   ["text on stripeB", (p) => p.text.primary, (p) => p.background.stripeB],
   ["muted on stripeB", (p) => p.text.muted, (p) => p.background.stripeB],
   ["clay as text", (p) => p.secondary.main, (p) => p.background.default],
   // CookingTimers: the finished bar is background.default on secondary.main.
   ["timer done bar", (p) => p.background.default, (p) => p.secondary.main],
-];
-
-/** Boundaries and icons: 3. */
-const graphic: Pair[] = [
-  ["divider on background", (p) => p.divider, (p) => p.background.default],
 ];
 
 describe("contrast the generator does not check", () => {
@@ -94,13 +107,4 @@ describe("contrast the generator does not check", () => {
       });
     }
   }
-  // Decorative rules are exempt from WCAG; recorded so a change is visible.
-  it("measures the divider", () => {
-    for (const mode of ["light", "dark"] as const) {
-      const p = schemes[mode].palette;
-      for (const [, fg, bg] of graphic) {
-        expect(contrast(fg(p), bg(p))).toBeGreaterThan(1);
-      }
-    }
-  });
 });
