@@ -100,6 +100,14 @@ be a string`. The way through is the Unix socket and peer auth, with a role
     since the server has no storage) and write only from the handler that moved
     something. `CookingView` does both.
 
+### Colour contrast has a gate
+
+`design/tokens.json` restates the core palette for the design system generator,
+and `npm run check:design` (run in CI) fails when a pair drops below WCAG AA.
+`src/theme/theme.ts` is the source of truth and `test/design-tokens.test.ts`
+fails when the spec drifts from it: change the theme, then the spec. What it
+does not cover is in `design/README.md`.
+
 ### Things checked, so they need not be checked again
 
 Each carries a date, because what they record can change and a confident
