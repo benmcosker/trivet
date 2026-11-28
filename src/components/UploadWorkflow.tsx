@@ -33,6 +33,7 @@ import { hostLabel, normaliseAddress } from "@/lib/recipe-address";
 import type { ExtractedRecipe, RecipeInput } from "@/lib/recipe-schema";
 import { recipePath } from "@/lib/recipe-url";
 import { hasScanBridge, openScanner } from "@/lib/scan-bridge";
+import { hasVideoBridge, importFromVideo } from "@/lib/video-bridge";
 import {
   shareBridge,
   sharedLabel,
@@ -146,6 +147,13 @@ export function UploadWorkflow({
     () => hasScanBridge(),
     () => false,
   );
+  // Inside the app only: read a video the person has (a screen recording of a
+  // reel) on the phone. See src/lib/video-bridge.ts.
+  const canVideo = useSyncExternalStore(
+    () => () => {},
+    () => hasVideoBridge(),
+    () => false,
+  );
   const [busy, setBusy] = useState<Half | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -243,6 +251,35 @@ export function UploadWorkflow({
         failure instanceof Error && failure.message
           ? failure.message
           : "The scan didn't come through. Try again, or choose a photo of the card instead.",
+      );
+    }
+  }
+
+  /** The app's video picker is open, or reading the video. */
+  const [readingVideo, setReadingVideo] = useState(false);
+
+  /**
+   * Open the app's video picker and wait. An approved reading has been left for
+   * the page, and the app brings `/upload?shared=1` forward to read it; a closed
+   * picker changes nothing; a failure says why, in the app's own words.
+   */
+  async function importVideo() {
+    if (busy || scanning || readingVideo) return;
+    setError(null);
+    setReadingVideo(true);
+    try {
+      const outcome = await importFromVideo();
+      if (outcome === "imported") {
+        window.setTimeout(() => setReadingVideo(false), 15_000);
+      } else {
+        setReadingVideo(false);
+      }
+    } catch (failure) {
+      setReadingVideo(false);
+      setError(
+        failure instanceof Error && failure.message
+          ? failure.message
+          : "The video couldn't be read. Try a shorter one, or screenshot the recipe instead.",
       );
     }
   }
@@ -991,6 +1028,17 @@ export function UploadWorkflow({
                           sx={{ px: 0 }}
                         >
                           Choose a file
+                        </Button>
+                      ) : null}
+                      {canVideo ? (
+                        <Button
+                          size="large"
+                          color="primary"
+                          disabled={busy !== null || scanning || readingVideo}
+                          onClick={() => void importVideo()}
+                          sx={{ px: 0 }}
+                        >
+                          {readingVideo ? "Reading the video…" : "From a video"}
                         </Button>
                       ) : null}
                     </Stack>
