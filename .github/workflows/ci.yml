@@ -117,6 +117,11 @@ jobs:
 
       - run: npm run typecheck
 
+      # The palette against WCAG AA, by the design system generator
+      # (design/README.md). Pinned, so a new release cannot fail an unrelated
+      # pull request; the version is in package.json.
+      - run: npm run check:design
+
       - run: npm run db:deploy
 
       - run: npm test

@@ -504,9 +504,26 @@ or renew are in [`DEPLOYING.md`](DEPLOYING.md#the-dmca-agent).
 | `npm run library:apply`    | Apply a reviewed rewrite of the shared library (dry run unless `--write`)                              |
 | `npm run photos:own`       | Show replaced library photos to every household (dry run unless `--write`)                             |
 | `npm run originals:delete` | Delete stored original cards and files no recipe uses (dry run unless `--write`; needs the blob token) |
+| `npm run check:design`     | Check the palette in `design/tokens.json` against WCAG AA (downloads the generator; runs in CI)        |
 
 The integration tests share one database and clean up after themselves, which
 means running them against a database you care about will empty it.
+
+## Colour contrast
+
+Contrast is checked in two places, and both run on every pull request:
+
+- `npm run check:design` hands `design/tokens.json` (the eight core colours,
+  light and dark) to the [design system generator](https://github.com/benmcosker/design-system-generator),
+  which fails when a pair drops below WCAG AA.
+- `test/theme-contrast.test.ts` covers the pairs the generator does not: the
+  quieter greys, the raised surface and stripes, the clay accent, and the timer
+  dock. `test/design-tokens.test.ts` fails when the spec drifts from the theme.
+
+`src/theme/theme.ts` is the source of truth: change the theme, then the spec.
+The pairs are hand-picked, so a new colour-on-ground combination is not covered
+until it is added to the test. What the gate leaves out is in
+[`design/README.md`](design/README.md).
 
 ## Notes and limitations
 

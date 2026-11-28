@@ -97,8 +97,8 @@ const base = createTheme({
           primary: "#1a1815",
           soft: "#2c2820",
           muted: "#4a453c",
-          mutedLight: "#6f6a5e",
-          secondary: "#746c5c",
+          mutedLight: "#686355",
+          secondary: "#625b4d",
           disabled: "#847a69",
         },
         // `light`/`dark` are spelled out rather than left to MUI: custom
