@@ -126,15 +126,15 @@ enum PendingShare {
     /// screenshots' words (`SharedLink.save(text:)`), with how many pages
     /// they came from. Replaces whatever share was waiting.
     @discardableResult
-    static func store(text: String, scannedPages: Int) -> Bool {
+    static func store(text: String, scannedPages: Int? = nil) -> Bool {
         guard let folder else { return false }
         try? FileManager.default.removeItem(at: folder.appendingPathComponent(filesFolder, isDirectory: true))
-        let record: [String: Any] = [
+        var record: [String: Any] = [
             "kind": "text",
             "text": text,
-            "pages": scannedPages,
             "sharedAt": Date().timeIntervalSince1970,
         ]
+        if let scannedPages { record["pages"] = scannedPages }
         do {
             let data = try JSONSerialization.data(withJSONObject: record)
             try data.write(to: folder.appendingPathComponent(fileName), options: .atomic)

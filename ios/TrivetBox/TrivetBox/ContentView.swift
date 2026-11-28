@@ -209,6 +209,15 @@ struct TrivetWebView: UIViewRepresentable {
             contentWorld: .page,
             name: ScanBridge.name
         )
+        // The upload page's "From a video": the page asks here to pick a video,
+        // which is read on the phone and shown for the person to correct; what
+        // they approve is left like a share and the upload page comes forward
+        // to read it (src/lib/video-bridge.ts).
+        config.userContentController.addScriptMessageHandler(
+            VideoBridge(allowedHosts: trivetHosts) { [weak state] in state?.cameForward() },
+            contentWorld: .page,
+            name: VideoBridge.name
+        )
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
         webView.backgroundColor = .clear

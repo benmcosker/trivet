@@ -215,6 +215,28 @@ card, scan a printed recipe card, Done; the page should open with its words in
 the text box, already reading them. Then a handwritten card: it should be read
 as photos. Cancel the scanner and nothing should happen.
 
+## Importing from a video (spike)
+
+The upload page offers **From a video** inside the app only
+(`src/lib/video-bridge.ts`). It posts `{type: "open"}` to `VideoBridge`, which
+opens the photo picker filtered to videos (no photo-library permission is
+needed), copies the chosen video to a temporary file, and reads it with
+`VideoReader` **on the phone**: a frame every three seconds read with Vision, and
+the speech transcribed with on-device speech recognition (a language the phone
+cannot recognise itself is skipped with a note, never sent to Apple's servers).
+A video over three minutes is refused with its length. The result is shown in a
+sheet, editable, with how long the reading took, and on Import it is left through
+`PendingShare.store(text:)` like a share's text; the app then brings
+`/upload?shared=1` forward, which reads it over `ShareBridge` and sends the text
+to the existing import. The video is never uploaded, and the copy is deleted.
+`maxCharacters` must match `MAX_PASTED_CHARS`; the handler name `trivetVideo`
+must match `VIDEO_BRIDGE`. The speech permission text is the
+`INFOPLIST_KEY_NSSpeechRecognitionUsageDescription` build setting.
+
+This is the first spike of `REEL-IMPORT-PLAN.md` in the plans repo: try five real
+reels (screen-record one in Control Center, then choose it) and judge the text.
+Needs a build and a phone; the simulator has no useful video or speech to try.
+
 ## Cooking timers
 
 Cooking mode's timers (`src/components/CookingTimers.tsx`) run in the page, which
