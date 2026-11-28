@@ -75,6 +75,9 @@ nonisolated enum VideoReader {
 
         var notes: [String] = []
         if let note { notes.append(note) }
+        if spoken.isEmpty && lines.count < 8 {
+            notes.append("Very little was found. Many videos keep the recipe in the caption, not in the video: open the caption, copy it and paste it into the text box, or screenshot it.")
+        }
         return Reading(
             onScreen: lines,
             spoken: spoken,
